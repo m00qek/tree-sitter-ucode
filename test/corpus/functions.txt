@@ -1,0 +1,206 @@
+================================================================================
+Named function declaration
+================================================================================
+
+function add(a, b) {
+  return a + b;
+}
+
+--------------------------------------------------------------------------------
+
+(program
+  (function_declaration
+    name: (identifier)
+    parameters: (formal_parameters
+      (identifier)
+      (identifier))
+    body: (statement_block
+      (return_statement
+        (binary_expression
+          left: (identifier)
+          right: (identifier))))))
+
+================================================================================
+Alternative function/endfunction syntax
+================================================================================
+
+function greet(): print("hi"); endfunction
+
+--------------------------------------------------------------------------------
+
+(program
+  (function_declaration
+    name: (identifier)
+    parameters: (formal_parameters)
+    body: (expression_statement
+      (call_expression
+        function: (identifier)
+        arguments: (arguments (string (string_fragment)))))))
+
+================================================================================
+Forward function declaration
+================================================================================
+
+function foo;
+function foo() { return 1; }
+
+--------------------------------------------------------------------------------
+
+(program
+  (function_forward_declaration
+    name: (identifier))
+  (function_declaration
+    name: (identifier)
+    parameters: (formal_parameters)
+    body: (statement_block
+      (return_statement
+        (number)))))
+
+================================================================================
+Arrow function — single parameter, expression body
+================================================================================
+
+let f = x => x * 2;
+
+--------------------------------------------------------------------------------
+
+(program
+  (lexical_declaration
+    (variable_declarator
+      name: (identifier)
+      value: (arrow_function
+        parameter: (identifier)
+        body: (binary_expression
+          left: (identifier)
+          right: (number))))))
+
+================================================================================
+Arrow function — multiple parameters
+================================================================================
+
+let g = (a, b) => a + b;
+
+--------------------------------------------------------------------------------
+
+(program
+  (lexical_declaration
+    (variable_declarator
+      name: (identifier)
+      value: (arrow_function
+        parameters: (formal_parameters
+          (identifier)
+          (identifier))
+        body: (binary_expression
+          left: (identifier)
+          right: (identifier))))))
+
+================================================================================
+Arrow function — block body
+================================================================================
+
+let h = (x) => { return x * x; };
+
+--------------------------------------------------------------------------------
+
+(program
+  (lexical_declaration
+    (variable_declarator
+      name: (identifier)
+      value: (arrow_function
+        parameters: (formal_parameters (identifier))
+        body: (statement_block
+          (return_statement
+            (binary_expression
+              left: (identifier)
+              right: (identifier))))))))
+
+================================================================================
+Arrow function returning object literal requires parens
+================================================================================
+
+let f = x => ({ key: x });
+
+--------------------------------------------------------------------------------
+
+(program
+  (lexical_declaration
+    (variable_declarator
+      name: (identifier)
+      value: (arrow_function
+        parameter: (identifier)
+        body: (parenthesized_expression
+          (object
+            (pair
+              key: (property_identifier)
+              value: (identifier))))))))
+
+================================================================================
+Variadic function with rest parameter
+================================================================================
+
+function sum(...args) {
+  return args;
+}
+
+--------------------------------------------------------------------------------
+
+(program
+  (function_declaration
+    name: (identifier)
+    parameters: (formal_parameters
+      (rest_element
+        (identifier)))
+    body: (statement_block
+      (return_statement
+        (identifier)))))
+
+================================================================================
+Anonymous function expression
+================================================================================
+
+let fn = function(x) { return x; };
+
+--------------------------------------------------------------------------------
+
+(program
+  (lexical_declaration
+    (variable_declarator
+      name: (identifier)
+      value: (function_expression
+        parameters: (formal_parameters (identifier))
+        body: (statement_block
+          (return_statement (identifier)))))))
+
+================================================================================
+Arrow function with no parameters
+================================================================================
+
+let f = () => 42;
+
+--------------------------------------------------------------------------------
+
+(program
+  (lexical_declaration
+    (variable_declarator
+      name: (identifier)
+      value: (arrow_function
+        parameters: (formal_parameters)
+        body: (number)))))
+
+================================================================================
+Named function expression
+================================================================================
+
+let f = function foo() { return 1; };
+
+--------------------------------------------------------------------------------
+
+(program
+  (lexical_declaration
+    (variable_declarator
+      name: (identifier)
+      value: (function_expression
+        name: (identifier)
+        parameters: (formal_parameters)
+        body: (statement_block
+          (return_statement (number)))))))

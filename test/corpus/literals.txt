@@ -1,0 +1,299 @@
+================================================================================
+Decimal integer
+================================================================================
+
+let x = 42;
+
+--------------------------------------------------------------------------------
+
+(program
+  (lexical_declaration
+    (variable_declarator name: (identifier) value: (number))))
+
+================================================================================
+Decimal float
+================================================================================
+
+let x = 3.14;
+
+--------------------------------------------------------------------------------
+
+(program
+  (lexical_declaration
+    (variable_declarator name: (identifier) value: (number))))
+
+================================================================================
+Hex literal
+================================================================================
+
+let x = 0xFF;
+
+--------------------------------------------------------------------------------
+
+(program
+  (lexical_declaration
+    (variable_declarator name: (identifier) value: (number))))
+
+================================================================================
+Octal with 0o prefix (lowercase)
+================================================================================
+
+let x = 0o77;
+
+--------------------------------------------------------------------------------
+
+(program
+  (lexical_declaration
+    (variable_declarator name: (identifier) value: (number))))
+
+================================================================================
+Octal with 0O prefix (uppercase — ucode extension over JS)
+================================================================================
+
+let x = 0O77;
+
+--------------------------------------------------------------------------------
+
+(program
+  (lexical_declaration
+    (variable_declarator name: (identifier) value: (number))))
+
+================================================================================
+Binary with 0b prefix (lowercase)
+================================================================================
+
+let x = 0b1010;
+
+--------------------------------------------------------------------------------
+
+(program
+  (lexical_declaration
+    (variable_declarator name: (identifier) value: (number))))
+
+================================================================================
+Binary with 0B prefix (uppercase — ucode extension over JS)
+================================================================================
+
+let x = 0B1010;
+
+--------------------------------------------------------------------------------
+
+(program
+  (lexical_declaration
+    (variable_declarator name: (identifier) value: (number))))
+
+================================================================================
+C-style legacy octal (leading zero — ucode extension over JS)
+================================================================================
+
+let x = 0177;
+
+--------------------------------------------------------------------------------
+
+(program
+  (lexical_declaration
+    (variable_declarator name: (identifier) value: (number))))
+
+================================================================================
+Hex float literal (ucode extension over JS)
+================================================================================
+
+let x = 0x1.8;
+
+--------------------------------------------------------------------------------
+
+(program
+  (lexical_declaration
+    (variable_declarator name: (identifier) value: (number))))
+
+================================================================================
+Regex literal with flags
+================================================================================
+
+let r = /foo/gi;
+
+--------------------------------------------------------------------------------
+
+(program
+  (lexical_declaration
+    (variable_declarator
+      name: (identifier)
+      value: (regex
+        pattern: (regex_pattern)
+        flags: (regex_flags)))))
+
+================================================================================
+Regex without flags
+================================================================================
+
+let r = /^test$/;
+
+--------------------------------------------------------------------------------
+
+(program
+  (lexical_declaration
+    (variable_declarator
+      name: (identifier)
+      value: (regex
+        pattern: (regex_pattern)))))
+
+================================================================================
+Boolean and null literals
+================================================================================
+
+let x = true; let y = false; let z = null;
+
+--------------------------------------------------------------------------------
+
+(program
+  (lexical_declaration
+    (variable_declarator name: (identifier) value: (true)))
+  (lexical_declaration
+    (variable_declarator name: (identifier) value: (false)))
+  (lexical_declaration
+    (variable_declarator name: (identifier) value: (null))))
+
+================================================================================
+Single-quoted string
+================================================================================
+
+let s = 'hello';
+
+--------------------------------------------------------------------------------
+
+(program
+  (lexical_declaration
+    (variable_declarator
+      name: (identifier)
+      value: (string (string_fragment)))))
+
+================================================================================
+Double-quoted string
+================================================================================
+
+let s = "hello";
+
+--------------------------------------------------------------------------------
+
+(program
+  (lexical_declaration
+    (variable_declarator
+      name: (identifier)
+      value: (string (string_fragment)))))
+
+================================================================================
+Template literal with substitution
+================================================================================
+
+let s = `hello ${name}!`;
+
+--------------------------------------------------------------------------------
+
+(program
+  (lexical_declaration
+    (variable_declarator
+      name: (identifier)
+      value: (template_string
+        (string_fragment)
+        (template_substitution (identifier))
+        (string_fragment)))))
+
+================================================================================
+this keyword
+================================================================================
+
+let x = this.foo;
+
+--------------------------------------------------------------------------------
+
+(program
+  (lexical_declaration
+    (variable_declarator
+      name: (identifier)
+      value: (member_expression
+        object: (this)
+        property: (property_identifier)))))
+
+================================================================================
+String with standard escape sequences
+================================================================================
+
+let x = "hello\nworld";
+
+--------------------------------------------------------------------------------
+
+(program
+  (lexical_declaration
+    (variable_declarator
+      name: (identifier)
+      value: (string
+        (string_fragment)
+        (escape_sequence)
+        (string_fragment)))))
+
+================================================================================
+String with ucode-specific escapes (\e ESC, \a BEL)
+================================================================================
+
+let x = "test\e\a\t";
+
+--------------------------------------------------------------------------------
+
+(program
+  (lexical_declaration
+    (variable_declarator
+      name: (identifier)
+      value: (string
+        (string_fragment)
+        (escape_sequence)
+        (escape_sequence)
+        (escape_sequence)))))
+
+================================================================================
+Regex with s flag only
+================================================================================
+
+let r = /pat/s;
+
+--------------------------------------------------------------------------------
+
+(program
+  (lexical_declaration
+    (variable_declarator
+      name: (identifier)
+      value: (regex
+        pattern: (regex_pattern)
+        flags: (regex_flags)))))
+
+================================================================================
+Octal escape sequence in string (ucode extension over JS strict mode)
+================================================================================
+
+let x = "octal\177end";
+
+--------------------------------------------------------------------------------
+
+(program
+  (lexical_declaration
+    (variable_declarator
+      name: (identifier)
+      value: (string
+        (string_fragment)
+        (escape_sequence)
+        (string_fragment)))))
+
+================================================================================
+POSIX regex escape macros in pattern (\d, \w, \s)
+================================================================================
+
+let r = /\d+/g;
+
+--------------------------------------------------------------------------------
+
+(program
+  (lexical_declaration
+    (variable_declarator
+      name: (identifier)
+      value: (regex
+        pattern: (regex_pattern)
+        flags: (regex_flags)))))

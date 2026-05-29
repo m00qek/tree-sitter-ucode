@@ -1,0 +1,383 @@
+================================================================================
+Optional chaining
+================================================================================
+
+let x = a?.b?.c;
+
+--------------------------------------------------------------------------------
+
+(program
+  (lexical_declaration
+    (variable_declarator
+      name: (identifier)
+      value: (member_expression
+        object: (member_expression
+          object: (identifier)
+          optional_chain: (optional_chain)
+          property: (property_identifier))
+        optional_chain: (optional_chain)
+        property: (property_identifier)))))
+
+================================================================================
+Nullish coalescing — freely mixable with ||
+================================================================================
+
+let y = a ?? b ?? c;
+
+--------------------------------------------------------------------------------
+
+(program
+  (lexical_declaration
+    (variable_declarator
+      name: (identifier)
+      value: (binary_expression
+        left: (binary_expression
+          left: (identifier)
+          right: (identifier))
+        right: (identifier)))))
+
+================================================================================
+Nullish coalescing mixed with logical or
+================================================================================
+
+let z = a || b ?? c;
+
+--------------------------------------------------------------------------------
+
+(program
+  (lexical_declaration
+    (variable_declarator
+      name: (identifier)
+      value: (binary_expression
+        left: (binary_expression
+          left: (identifier)
+          right: (identifier))
+        right: (identifier)))))
+
+================================================================================
+Ternary expression
+================================================================================
+
+let r = x > 0 ? "pos" : "neg";
+
+--------------------------------------------------------------------------------
+
+(program
+  (lexical_declaration
+    (variable_declarator
+      name: (identifier)
+      value: (ternary_expression
+        condition: (binary_expression
+          left: (identifier)
+          right: (number))
+        consequence: (string (string_fragment))
+        alternative: (string (string_fragment))))))
+
+================================================================================
+Spread in array
+================================================================================
+
+let arr = [...a, ...b];
+
+--------------------------------------------------------------------------------
+
+(program
+  (lexical_declaration
+    (variable_declarator
+      name: (identifier)
+      value: (array
+        (spread_element (identifier))
+        (spread_element (identifier))))))
+
+================================================================================
+Object shorthand property
+================================================================================
+
+let obj = { a, b: 2 };
+
+--------------------------------------------------------------------------------
+
+(program
+  (lexical_declaration
+    (variable_declarator
+      name: (identifier)
+      value: (object
+        (shorthand_property_identifier)
+        (pair
+          key: (property_identifier)
+          value: (number))))))
+
+================================================================================
+Template literal
+================================================================================
+
+let s = `hello ${name}!`;
+
+--------------------------------------------------------------------------------
+
+(program
+  (lexical_declaration
+    (variable_declarator
+      name: (identifier)
+      value: (template_string
+        (string_fragment)
+        (template_substitution (identifier))
+        (string_fragment)))))
+
+================================================================================
+Delete operator
+================================================================================
+
+delete obj.key;
+
+--------------------------------------------------------------------------------
+
+(program
+  (expression_statement
+    (unary_expression
+      argument: (member_expression
+        object: (identifier)
+        property: (property_identifier)))))
+
+================================================================================
+Exponentiation
+================================================================================
+
+let x = 2 ** 10;
+
+--------------------------------------------------------------------------------
+
+(program
+  (lexical_declaration
+    (variable_declarator
+      name: (identifier)
+      value: (binary_expression
+        left: (number)
+        right: (number)))))
+
+================================================================================
+Optional call expression
+================================================================================
+
+let r = fn?.(arg);
+
+--------------------------------------------------------------------------------
+
+(program
+  (lexical_declaration
+    (variable_declarator
+      name: (identifier)
+      value: (call_expression
+        function: (identifier)
+        optional_chain: (optional_chain)
+        arguments: (arguments (identifier))))))
+
+================================================================================
+Unary operators
+================================================================================
+
+let a = !flag;
+let b = ~bits;
+let c = -n;
+let d = +s;
+
+--------------------------------------------------------------------------------
+
+(program
+  (lexical_declaration
+    (variable_declarator name: (identifier)
+      value: (unary_expression argument: (identifier))))
+  (lexical_declaration
+    (variable_declarator name: (identifier)
+      value: (unary_expression argument: (identifier))))
+  (lexical_declaration
+    (variable_declarator name: (identifier)
+      value: (unary_expression argument: (identifier))))
+  (lexical_declaration
+    (variable_declarator name: (identifier)
+      value: (unary_expression argument: (identifier)))))
+
+================================================================================
+Bitwise operators
+================================================================================
+
+let a = x & y;
+let b = x | y;
+let c = x ^ y;
+let d = x << 2;
+let e = x >> 2;
+
+--------------------------------------------------------------------------------
+
+(program
+  (lexical_declaration
+    (variable_declarator name: (identifier)
+      value: (binary_expression left: (identifier) right: (identifier))))
+  (lexical_declaration
+    (variable_declarator name: (identifier)
+      value: (binary_expression left: (identifier) right: (identifier))))
+  (lexical_declaration
+    (variable_declarator name: (identifier)
+      value: (binary_expression left: (identifier) right: (identifier))))
+  (lexical_declaration
+    (variable_declarator name: (identifier)
+      value: (binary_expression left: (identifier) right: (number))))
+  (lexical_declaration
+    (variable_declarator name: (identifier)
+      value: (binary_expression left: (identifier) right: (number)))))
+
+================================================================================
+Strict equality operators
+================================================================================
+
+let a = x === y;
+let b = x !== y;
+
+--------------------------------------------------------------------------------
+
+(program
+  (lexical_declaration
+    (variable_declarator name: (identifier)
+      value: (binary_expression left: (identifier) right: (identifier))))
+  (lexical_declaration
+    (variable_declarator name: (identifier)
+      value: (binary_expression left: (identifier) right: (identifier)))))
+
+================================================================================
+in operator
+================================================================================
+
+let x = k in obj;
+
+--------------------------------------------------------------------------------
+
+(program
+  (lexical_declaration
+    (variable_declarator name: (identifier)
+      value: (binary_expression
+        left: (identifier)
+        right: (identifier)))))
+
+================================================================================
+Subscript expression
+================================================================================
+
+let x = obj[key];
+
+--------------------------------------------------------------------------------
+
+(program
+  (lexical_declaration
+    (variable_declarator
+      name: (identifier)
+      value: (subscript_expression
+        object: (identifier)
+        index: (identifier)))))
+
+================================================================================
+Optional subscript expression
+================================================================================
+
+let x = obj?.[key];
+
+--------------------------------------------------------------------------------
+
+(program
+  (lexical_declaration
+    (variable_declarator
+      name: (identifier)
+      value: (subscript_expression
+        object: (identifier)
+        optional_chain: (optional_chain)
+        index: (identifier)))))
+
+================================================================================
+Spread in function call
+================================================================================
+
+fn(...args);
+
+--------------------------------------------------------------------------------
+
+(program
+  (expression_statement
+    (call_expression
+      function: (identifier)
+      arguments: (arguments
+        (spread_element (identifier))))))
+
+================================================================================
+Computed property in object
+================================================================================
+
+let o = { [k]: v };
+
+--------------------------------------------------------------------------------
+
+(program
+  (lexical_declaration
+    (variable_declarator
+      name: (identifier)
+      value: (object
+        (pair
+          key: (computed_property_name (identifier))
+          value: (identifier))))))
+
+================================================================================
+Chained method calls
+================================================================================
+
+a.b().c();
+
+--------------------------------------------------------------------------------
+
+(program
+  (expression_statement
+    (call_expression
+      function: (member_expression
+        object: (call_expression
+          function: (member_expression
+            object: (identifier)
+            property: (property_identifier))
+          arguments: (arguments))
+        property: (property_identifier))
+      arguments: (arguments))))
+
+================================================================================
+Sequence expression
+================================================================================
+
+let x = (a, b, c);
+
+--------------------------------------------------------------------------------
+
+(program
+  (lexical_declaration
+    (variable_declarator
+      name: (identifier)
+      value: (parenthesized_expression
+        (sequence_expression
+          (identifier)
+          (identifier)
+          (identifier))))))
+
+================================================================================
+Reserved words usable as property names
+================================================================================
+
+let x = obj.let;
+let y = obj.get;
+
+--------------------------------------------------------------------------------
+
+(program
+  (lexical_declaration
+    (variable_declarator name: (identifier)
+      value: (member_expression
+        object: (identifier)
+        property: (property_identifier))))
+  (lexical_declaration
+    (variable_declarator name: (identifier)
+      value: (member_expression
+        object: (identifier)
+        property: (property_identifier)))))

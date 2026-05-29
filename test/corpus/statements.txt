@@ -1,0 +1,279 @@
+================================================================================
+Variable declaration with let
+================================================================================
+
+let x = 1 + 2;
+
+--------------------------------------------------------------------------------
+
+(program
+  (lexical_declaration
+    (variable_declarator
+      name: (identifier)
+      value: (binary_expression
+        left: (number)
+        right: (number)))))
+
+================================================================================
+Const declaration
+================================================================================
+
+const MAX = 100;
+
+--------------------------------------------------------------------------------
+
+(program
+  (lexical_declaration
+    (variable_declarator
+      name: (identifier)
+      value: (number))))
+
+================================================================================
+Multiple declarators
+================================================================================
+
+let a = 1, b = 2, c;
+
+--------------------------------------------------------------------------------
+
+(program
+  (lexical_declaration
+    (variable_declarator
+      name: (identifier)
+      value: (number))
+    (variable_declarator
+      name: (identifier)
+      value: (number))
+    (variable_declarator
+      name: (identifier))))
+
+================================================================================
+Assignment expression
+================================================================================
+
+x = 42;
+
+--------------------------------------------------------------------------------
+
+(program
+  (expression_statement
+    (assignment_expression
+      left: (identifier)
+      right: (number))))
+
+================================================================================
+Augmented assignments
+================================================================================
+
+x += 1;
+x -= 2;
+x ??= null;
+
+--------------------------------------------------------------------------------
+
+(program
+  (expression_statement
+    (augmented_assignment_expression
+      left: (identifier)
+      right: (number)))
+  (expression_statement
+    (augmented_assignment_expression
+      left: (identifier)
+      right: (number)))
+  (expression_statement
+    (augmented_assignment_expression
+      left: (identifier)
+      right: (null))))
+
+================================================================================
+Return statement
+================================================================================
+
+function f() { return x + 1; }
+
+--------------------------------------------------------------------------------
+
+(program
+  (function_declaration
+    name: (identifier)
+    parameters: (formal_parameters)
+    body: (statement_block
+      (return_statement
+        (binary_expression
+          left: (identifier)
+          right: (number))))))
+
+================================================================================
+Try/catch
+================================================================================
+
+try {
+  risky();
+} catch (e) {
+  handle(e);
+}
+
+--------------------------------------------------------------------------------
+
+(program
+  (try_statement
+    body: (statement_block
+      (expression_statement
+        (call_expression
+          function: (identifier)
+          arguments: (arguments))))
+    handler: (catch_clause
+      parameter: (identifier)
+      body: (statement_block
+        (expression_statement
+          (call_expression
+            function: (identifier)
+            arguments: (arguments
+              (identifier))))))))
+
+================================================================================
+Break and continue
+================================================================================
+
+for (let i = 0; i < 10; i++) {
+  if (i == 5) break;
+  continue;
+}
+
+--------------------------------------------------------------------------------
+
+(program
+  (for_statement
+    initializer: (lexical_declaration
+      (variable_declarator
+        name: (identifier)
+        value: (number)))
+    condition: (binary_expression
+      left: (identifier)
+      right: (number))
+    increment: (update_expression
+      argument: (identifier))
+    body: (statement_block
+      (if_statement
+        condition: (parenthesized_expression
+          (binary_expression
+            left: (identifier)
+            right: (number)))
+        consequence: (break_statement))
+      (continue_statement))))
+
+================================================================================
+Prefix increment and decrement
+================================================================================
+
+++x;
+--y;
+
+--------------------------------------------------------------------------------
+
+(program
+  (expression_statement
+    (update_expression argument: (identifier)))
+  (expression_statement
+    (update_expression argument: (identifier))))
+
+================================================================================
+Hash bang line
+================================================================================
+
+#!/usr/bin/ucode
+
+--------------------------------------------------------------------------------
+
+(program
+  (hash_bang_line))
+
+================================================================================
+Empty for loop
+================================================================================
+
+for (;;) {}
+
+--------------------------------------------------------------------------------
+
+(program
+  (for_statement
+    initializer: (empty_statement)
+    condition: (empty_statement)
+    body: (statement_block)))
+
+================================================================================
+Catch clause without parameter
+================================================================================
+
+try {} catch {}
+
+--------------------------------------------------------------------------------
+
+(program
+  (try_statement
+    body: (statement_block)
+    handler: (catch_clause
+      body: (statement_block))))
+
+================================================================================
+Delete subscript
+================================================================================
+
+delete obj[k];
+
+--------------------------------------------------------------------------------
+
+(program
+  (expression_statement
+    (unary_expression
+      argument: (subscript_expression
+        object: (identifier)
+        index: (identifier)))))
+
+================================================================================
+Labeled statement with break
+================================================================================
+
+loop: for (let i = 0; i < 3; i++) {
+  break loop;
+}
+
+--------------------------------------------------------------------------------
+
+(program
+  (labeled_statement
+    label: (statement_identifier)
+    body: (for_statement
+      initializer: (lexical_declaration
+        (variable_declarator name: (identifier) value: (number)))
+      condition: (binary_expression left: (identifier) right: (number))
+      increment: (update_expression argument: (identifier))
+      body: (statement_block
+        (break_statement label: (statement_identifier))))))
+
+================================================================================
+Single-line comment
+================================================================================
+
+// this is a comment
+
+--------------------------------------------------------------------------------
+
+(program
+  (comment))
+
+================================================================================
+Block comment between statements
+================================================================================
+
+x = 1; /* a comment */ y = 2;
+
+--------------------------------------------------------------------------------
+
+(program
+  (expression_statement
+    (assignment_expression left: (identifier) right: (number)))
+  (comment)
+  (expression_statement
+    (assignment_expression left: (identifier) right: (number))))

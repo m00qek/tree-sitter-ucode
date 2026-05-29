@@ -1,0 +1,49 @@
+{
+  "name": "tree-sitter-ucode",
+  "version": "0.1.0",
+  "description": "Ucode grammar for tree-sitter",
+  "repository": "https://github.com/m00qek/tree-sitter-ucode",
+  "license": "MIT",
+  "main": "bindings/node",
+  "types": "bindings/node",
+  "keywords": [
+    "incremental",
+    "parsing",
+    "tree-sitter",
+    "ucode",
+    "openwrt"
+  ],
+  "files": [
+    "grammar.js",
+    "tree-sitter.json",
+    "binding.gyp",
+    "prebuilds/**",
+    "bindings/node/*",
+    "queries/*",
+    "src/**",
+    "*.wasm"
+  ],
+  "dependencies": {
+    "node-addon-api": "^8.3.1",
+    "node-gyp-build": "^4.8.4"
+  },
+  "devDependencies": {
+    "prebuildify": "^6.0.1",
+    "tree-sitter-cli": "^0.26.0"
+  },
+  "peerDependencies": {
+    "tree-sitter": "^0.22.0"
+  },
+  "peerDependenciesMeta": {
+    "tree-sitter": {
+      "optional": true
+    }
+  },
+  "scripts": {
+    "install": "node-gyp-build",
+    "build": "tree-sitter generate && node-gyp-build",
+    "test": "tree-sitter test",
+    "prestart": "tree-sitter build --wasm",
+    "start": "tree-sitter playground"
+  }
+}

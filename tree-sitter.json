@@ -1,0 +1,42 @@
+{
+  "grammars": [
+    {
+      "name": "ucode",
+      "camelcase": "Ucode",
+      "scope": "source.uc",
+      "path": ".",
+      "file-types": [
+        "uc"
+      ],
+      "highlights": [
+        "queries/highlights.scm"
+      ],
+      "injection-regex": "^ucode$"
+    },
+    {
+      "name": "ucode_tmpl",
+      "camelcase": "UcodeTmpl",
+      "scope": "source.uc.tmpl",
+      "path": ".",
+      "file-types": [
+        "uc.tmpl",
+        "utpl"
+      ],
+      "highlights": [
+        "queries/highlights.scm"
+      ],
+      "injection-regex": "^ucode_tmpl$"
+    }
+  ],
+  "metadata": {
+    "version": "0.1.0",
+    "license": "MIT",
+    "description": "Ucode grammar for tree-sitter",
+    "links": {
+      "repository": "https://github.com/m00qek/tree-sitter-ucode"
+    }
+  },
+  "bindings": {
+    "node": true
+  }
+}

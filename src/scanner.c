@@ -1,0 +1,138 @@
+#include "tree_sitter/parser.h"
+#include <wctype.h>
+
+// Must match the order of externals in grammar.js
+enum TokenType {
+    AUTOMATIC_SEMICOLON,
+    TEMPLATE_CHARS,
+    TERNARY_QMARK,
+};
+
+void *tree_sitter_ucode_external_scanner_create() { return NULL; }
+void tree_sitter_ucode_external_scanner_destroy(void *p) {}
+unsigned tree_sitter_ucode_external_scanner_serialize(void *p, char *buf) { return 0; }
+void tree_sitter_ucode_external_scanner_deserialize(void *p, const char *buf, unsigned n) {}
+
+static inline void advance(TSLexer *lexer) { lexer->advance(lexer, false); }
+static inline void skip(TSLexer *lexer) { lexer->advance(lexer, true); }
+
+static bool scan_template_chars(TSLexer *lexer) {
+    lexer->result_symbol = TEMPLATE_CHARS;
+    for (bool has_content = false;; has_content = true) {
+        lexer->mark_end(lexer);
+        switch (lexer->lookahead) {
+            case '`': return has_content;
+            case '\0': return false;
+            case '$':
+                advance(lexer);
+                if (lexer->lookahead == '{') return has_content;
+                break;
+            case '\\': return has_content;
+            default: advance(lexer);
+        }
+    }
+}
+
+static bool scan_automatic_semicolon(TSLexer *lexer) {
+    lexer->result_symbol = AUTOMATIC_SEMICOLON;
+    lexer->mark_end(lexer);
+
+    // EOF is always a valid semicolon position
+    if (lexer->lookahead == 0) return true;
+
+    // `}` closes the current block — valid semicolon
+    if (lexer->lookahead == '}') return true;
+
+    // Skip whitespace looking for a newline
+    for (;;) {
+        if (lexer->lookahead == 0) return true;
+        if (lexer->lookahead == '}') return true;
+
+        if (lexer->lookahead == '\n' || lexer->lookahead == 0x2028 || lexer->lookahead == 0x2029) {
+            skip(lexer);
+            break;
+        }
+
+        // Skip inline whitespace
+        if (lexer->lookahead == ' ' || lexer->lookahead == '\t' || lexer->lookahead == '\r') {
+            skip(lexer);
+            continue;
+        }
+
+        // Skip single-line comment
+        if (lexer->lookahead == '/') {
+            skip(lexer);
+            if (lexer->lookahead == '/') {
+                skip(lexer);
+                while (lexer->lookahead != 0 && lexer->lookahead != '\n' &&
+                       lexer->lookahead != 0x2028 && lexer->lookahead != 0x2029) {
+                    skip(lexer);
+                }
+                continue;
+            }
+            // Not a comment — division or start of something else, no ASI
+            return false;
+        }
+
+        // Any other non-whitespace on same line: no ASI
+        return false;
+    }
+
+    // We found a newline. Skip further whitespace and comments.
+    while (iswspace(lexer->lookahead)) skip(lexer);
+
+    if (lexer->lookahead == 0) return true;
+
+    // These tokens can never start a new statement continuation:
+    // they must be a new statement, so ASI applies
+    switch (lexer->lookahead) {
+        // Things that could continue the expression — no ASI
+        case '(': case '[': case '`':
+        case '.': case ',': case ';':
+        case '+': case '-': case '*': case '/': case '%':
+        case '=': case '<': case '>': case '!': case '~':
+        case '&': case '|': case '^': case '?':
+            return false;
+        default:
+            return true;
+    }
+}
+
+static bool scan_ternary_qmark(TSLexer *lexer) {
+    while (iswspace(lexer->lookahead)) skip(lexer);
+
+    if (lexer->lookahead != '?') return false;
+    advance(lexer);
+
+    // `??` is nullish coalescing, not ternary
+    if (lexer->lookahead == '?') return false;
+
+    lexer->mark_end(lexer);
+    lexer->result_symbol = TERNARY_QMARK;
+
+    // `?.` followed by digit is ternary (not optional chain)
+    if (lexer->lookahead == '.') {
+        advance(lexer);
+        return iswdigit(lexer->lookahead);
+    }
+
+    return true;
+}
+
+bool tree_sitter_ucode_external_scanner_scan(void *payload, TSLexer *lexer, const bool *valid_symbols) {
+    if (valid_symbols[TEMPLATE_CHARS] && !valid_symbols[AUTOMATIC_SEMICOLON]) {
+        return scan_template_chars(lexer);
+    }
+
+    if (valid_symbols[AUTOMATIC_SEMICOLON]) {
+        if (scan_automatic_semicolon(lexer)) return true;
+        if (valid_symbols[TERNARY_QMARK]) return scan_ternary_qmark(lexer);
+        return false;
+    }
+
+    if (valid_symbols[TERNARY_QMARK]) {
+        return scan_ternary_qmark(lexer);
+    }
+
+    return false;
+}

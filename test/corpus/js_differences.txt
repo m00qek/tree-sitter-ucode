@@ -1,0 +1,280 @@
+================================================================================
+var is not a keyword — produces ERROR
+================================================================================
+
+var x = 1;
+
+--------------------------------------------------------------------------------
+
+(program
+  (expression_statement
+    (assignment_expression
+      left: (identifier)
+      (ERROR (identifier))
+      right: (number))))
+
+================================================================================
+new is not a keyword — produces ERROR
+================================================================================
+
+new Foo();
+
+--------------------------------------------------------------------------------
+
+(program
+  (ERROR (identifier))
+  (expression_statement
+    (call_expression
+      function: (identifier)
+      arguments: (arguments))))
+
+================================================================================
+throw is not a keyword — produces ERROR
+================================================================================
+
+throw err;
+
+--------------------------------------------------------------------------------
+
+(program
+  (expression_statement
+    (identifier)
+    (ERROR (identifier))))
+
+================================================================================
+typeof is not a keyword — produces ERROR
+================================================================================
+
+typeof x;
+
+--------------------------------------------------------------------------------
+
+(program
+  (expression_statement
+    (identifier)
+    (ERROR (identifier))))
+
+================================================================================
+Array destructuring — silently parses as subscript assignment
+================================================================================
+
+let [a, b] = arr;
+
+--------------------------------------------------------------------------------
+
+; Ucode has no destructuring. `let [a, b] = arr` parses as
+; `let[a, b] = arr` — subscript access on `let` (valid identifier in
+; expression position). No ERROR node is produced. This is correct
+; grammar behaviour for a language without destructuring.
+
+(program
+  (expression_statement
+    (assignment_expression
+      left: (subscript_expression
+        object: (identifier)
+        index: (sequence_expression
+          (identifier)
+          (identifier)))
+      right: (identifier))))
+
+================================================================================
+Object destructuring — produces ERROR
+================================================================================
+
+let {x} = obj;
+
+--------------------------------------------------------------------------------
+
+(program
+  (ERROR)
+  (statement_block
+    (expression_statement (identifier)))
+  (ERROR)
+  (expression_statement (identifier)))
+
+================================================================================
+class is not a keyword — produces ERROR
+================================================================================
+
+class Foo {}
+
+--------------------------------------------------------------------------------
+
+(program
+  (ERROR
+    (identifier)
+    (identifier))
+  (statement_block))
+
+================================================================================
+do-while is not supported — produces ERROR
+================================================================================
+
+do { x++; } while (x < 10);
+
+--------------------------------------------------------------------------------
+
+(program
+  (ERROR (identifier))
+  (statement_block
+    (expression_statement
+      (update_expression argument: (identifier))))
+  (while_statement
+    condition: (parenthesized_expression
+      (binary_expression left: (identifier) right: (number)))
+    body: (empty_statement)))
+
+================================================================================
+for...of is not supported — produces ERROR
+================================================================================
+
+for (x of arr) {}
+
+--------------------------------------------------------------------------------
+
+(program
+  (ERROR
+    (ERROR
+      (identifier)
+      (identifier)
+      (identifier))
+    (object)))
+
+================================================================================
+async function is not supported — produces ERROR
+================================================================================
+
+async function f() {}
+
+--------------------------------------------------------------------------------
+
+(program
+  (ERROR (identifier))
+  (function_declaration
+    name: (identifier)
+    parameters: (formal_parameters)
+    body: (statement_block)))
+
+================================================================================
+>>> unsigned right shift is not supported — produces ERROR
+================================================================================
+
+let x = a >>> b;
+
+--------------------------------------------------------------------------------
+
+(program
+  (lexical_declaration
+    (variable_declarator
+      name: (identifier)
+      value: (binary_expression
+        left: (identifier)
+        (ERROR)
+        right: (identifier)))))
+
+================================================================================
+void is not a keyword — produces ERROR
+================================================================================
+
+void x;
+
+--------------------------------------------------------------------------------
+
+(program
+  (expression_statement
+    (identifier)
+    (ERROR (identifier))))
+
+================================================================================
+instanceof is not a keyword — produces ERROR
+================================================================================
+
+a instanceof b;
+
+--------------------------------------------------------------------------------
+
+(program
+  (ERROR
+    (identifier)
+    (identifier))
+  (expression_statement (identifier)))
+
+================================================================================
+debugger is not a keyword — silently parses as identifier
+================================================================================
+
+debugger;
+
+--------------------------------------------------------------------------------
+
+; Unlike other removed JS keywords, `debugger` is not in the reserved list and
+; parses without error as a plain expression statement containing an identifier.
+
+(program
+  (expression_statement (identifier)))
+
+================================================================================
+await is not a keyword — produces ERROR
+================================================================================
+
+await foo();
+
+--------------------------------------------------------------------------------
+
+(program
+  (expression_statement
+    (call_expression
+      function: (identifier)
+      (ERROR (identifier))
+      arguments: (arguments))))
+
+================================================================================
+yield is not a keyword — produces ERROR
+================================================================================
+
+yield x;
+
+--------------------------------------------------------------------------------
+
+(program
+  (expression_statement
+    (identifier)
+    (ERROR (identifier))))
+
+================================================================================
+Bare array destructuring assignment — produces ERROR
+================================================================================
+
+[a, b] = [1, 2];
+
+--------------------------------------------------------------------------------
+
+; Unlike `let [a, b] = arr` which silently parses as subscript, a bare
+; `[a, b] = [...]` produces an ERROR because `=` is not valid inside subscript.
+
+(program
+  (expression_statement
+    (subscript_expression
+      object: (array
+        (identifier)
+        (identifier))
+      (ERROR)
+      index: (sequence_expression
+        (number)
+        (number)))))
+
+================================================================================
+Function parameter destructuring — produces ERROR
+================================================================================
+
+function f([a, b]) {}
+
+--------------------------------------------------------------------------------
+
+(program
+  (ERROR
+    (identifier)
+    (array
+      (identifier)
+      (identifier)))
+  (statement_block))

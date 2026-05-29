@@ -1,0 +1,342 @@
+================================================================================
+Standard if/else
+================================================================================
+
+if (x == 1) {
+  print("one");
+} else {
+  print("other");
+}
+
+--------------------------------------------------------------------------------
+
+(program
+  (if_statement
+    condition: (parenthesized_expression
+      (binary_expression
+        left: (identifier)
+        right: (number)))
+    consequence: (statement_block
+      (expression_statement
+        (call_expression
+          function: (identifier)
+          arguments: (arguments (string (string_fragment))))))
+    alternative: (else_clause
+      (statement_block
+        (expression_statement
+          (call_expression
+            function: (identifier)
+            arguments: (arguments (string (string_fragment)))))))))
+
+================================================================================
+Alternative if/elif/else/endif syntax
+================================================================================
+
+if (x == 1): print("one"); elif (x == 2): print("two"); else print("other"); endif
+
+--------------------------------------------------------------------------------
+
+(program
+  (if_alt_statement
+    condition: (parenthesized_expression
+      (binary_expression
+        left: (identifier)
+        right: (number)))
+    body: (expression_statement
+      (call_expression
+        function: (identifier)
+        arguments: (arguments (string (string_fragment)))))
+    elif_clause: (elif_clause
+      condition: (parenthesized_expression
+        (binary_expression
+          left: (identifier)
+          right: (number)))
+      body: (expression_statement
+        (call_expression
+          function: (identifier)
+          arguments: (arguments (string (string_fragment))))))
+    else_body: (else_alt_clause
+      body: (expression_statement
+        (call_expression
+          function: (identifier)
+          arguments: (arguments (string (string_fragment))))))))
+
+================================================================================
+Standard for-in loop
+================================================================================
+
+for (let k, v in obj) {
+  print(k, v);
+}
+
+--------------------------------------------------------------------------------
+
+(program
+  (for_in_statement
+    left: (identifier)
+    value: (identifier)
+    right: (identifier)
+    body: (statement_block
+      (expression_statement
+        (call_expression
+          function: (identifier)
+          arguments: (arguments
+            (identifier)
+            (identifier)))))))
+
+================================================================================
+For-in with single variable
+================================================================================
+
+for (k in arr) {
+  print(k);
+}
+
+--------------------------------------------------------------------------------
+
+(program
+  (for_in_statement
+    left: (identifier)
+    right: (identifier)
+    body: (statement_block
+      (expression_statement
+        (call_expression
+          function: (identifier)
+          arguments: (arguments (identifier)))))))
+
+================================================================================
+Alternative for-in/endfor syntax
+================================================================================
+
+for (k in arr): print(k); endfor
+
+--------------------------------------------------------------------------------
+
+(program
+  (for_in_alt_statement
+    left: (identifier)
+    right: (identifier)
+    body: (expression_statement
+      (call_expression
+        function: (identifier)
+        arguments: (arguments (identifier))))))
+
+================================================================================
+Counting for loop
+================================================================================
+
+for (let i = 0; i < 10; i++) {
+  print(i);
+}
+
+--------------------------------------------------------------------------------
+
+(program
+  (for_statement
+    initializer: (lexical_declaration
+      (variable_declarator
+        name: (identifier)
+        value: (number)))
+    condition: (binary_expression
+      left: (identifier)
+      right: (number))
+    increment: (update_expression
+      argument: (identifier))
+    body: (statement_block
+      (expression_statement
+        (call_expression
+          function: (identifier)
+          arguments: (arguments (identifier)))))))
+
+================================================================================
+Alternative while/endwhile syntax
+================================================================================
+
+while (x > 0): x--; endwhile
+
+--------------------------------------------------------------------------------
+
+(program
+  (while_alt_statement
+    condition: (parenthesized_expression
+      (binary_expression
+        left: (identifier)
+        right: (number)))
+    body: (expression_statement
+      (update_expression
+        argument: (identifier)))))
+
+================================================================================
+Switch statement
+================================================================================
+
+switch (day) {
+  case 1:
+    print("Monday");
+    break;
+  default:
+    print("Other");
+}
+
+--------------------------------------------------------------------------------
+
+(program
+  (switch_statement
+    value: (parenthesized_expression (identifier))
+    body: (switch_body
+      (switch_case
+        value: (number)
+        body: (expression_statement
+          (call_expression
+            function: (identifier)
+            arguments: (arguments (string (string_fragment)))))
+        body: (break_statement))
+      (switch_default
+        body: (expression_statement
+          (call_expression
+            function: (identifier)
+            arguments: (arguments (string (string_fragment)))))))))
+
+================================================================================
+Standard while loop
+================================================================================
+
+while (x > 0) {
+  x--;
+}
+
+--------------------------------------------------------------------------------
+
+(program
+  (while_statement
+    condition: (parenthesized_expression
+      (binary_expression left: (identifier) right: (number)))
+    body: (statement_block
+      (expression_statement
+        (update_expression argument: (identifier))))))
+
+================================================================================
+Alternative counting for/endfor syntax
+================================================================================
+
+for (let i = 0; i < 3; i++): print(i); endfor
+
+--------------------------------------------------------------------------------
+
+(program
+  (for_alt_statement
+    initializer: (lexical_declaration
+      (variable_declarator
+        name: (identifier)
+        value: (number)))
+    condition: (binary_expression
+      left: (identifier)
+      right: (number))
+    increment: (update_expression argument: (identifier))
+    body: (expression_statement
+      (call_expression
+        function: (identifier)
+        arguments: (arguments (identifier))))))
+
+================================================================================
+For-in with let keyword
+================================================================================
+
+for (let k in obj) print(k);
+
+--------------------------------------------------------------------------------
+
+(program
+  (for_in_statement
+    left: (identifier)
+    right: (identifier)
+    body: (expression_statement
+      (call_expression
+        function: (identifier)
+        arguments: (arguments (identifier))))))
+
+================================================================================
+For-in with const keyword
+================================================================================
+
+for (const k in obj) {}
+
+--------------------------------------------------------------------------------
+
+(program
+  (for_in_statement
+    left: (identifier)
+    right: (identifier)
+    body: (statement_block)))
+
+================================================================================
+For-in with const and two variables
+================================================================================
+
+for (const k, v in obj) {}
+
+--------------------------------------------------------------------------------
+
+(program
+  (for_in_statement
+    left: (identifier)
+    value: (identifier)
+    right: (identifier)
+    body: (statement_block)))
+
+================================================================================
+Alt if with no elif and no else
+================================================================================
+
+if (x): print(x); endif
+
+--------------------------------------------------------------------------------
+
+(program
+  (if_alt_statement
+    condition: (parenthesized_expression (identifier))
+    body: (expression_statement
+      (call_expression
+        function: (identifier)
+        arguments: (arguments (identifier))))))
+
+================================================================================
+Alt if with else but no elif
+================================================================================
+
+if (x): print(x); else print(y); endif
+
+--------------------------------------------------------------------------------
+
+(program
+  (if_alt_statement
+    condition: (parenthesized_expression (identifier))
+    body: (expression_statement
+      (call_expression
+        function: (identifier)
+        arguments: (arguments (identifier))))
+    else_body: (else_alt_clause
+      body: (expression_statement
+        (call_expression
+          function: (identifier)
+          arguments: (arguments (identifier)))))))
+
+================================================================================
+Alt for-in with two variables
+================================================================================
+
+for (let k, v in arr): print(k, v); endfor
+
+--------------------------------------------------------------------------------
+
+(program
+  (for_in_alt_statement
+    left: (identifier)
+    value: (identifier)
+    right: (identifier)
+    body: (expression_statement
+      (call_expression
+        function: (identifier)
+        arguments: (arguments
+          (identifier)
+          (identifier))))))
