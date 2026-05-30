@@ -38,7 +38,7 @@ jobs:
           path: ucode-lang
           sparse-checkout: tests/custom
           sparse-checkout-cone-mode: false
-          depth: 1
+          fetch-depth: 1
 
       - name: Validate grammar against ucode test corpus
         run: node scripts/validate-corpus.js corpus ucode-lang/tests/custom
@@ -48,7 +48,7 @@ jobs:
         with:
           repository: openwrt/firewall4
           path: firewall4
-          depth: 1
+          fetch-depth: 1
 
       - name: Validate grammar against firewall4
         run: node scripts/validate-corpus.js project firewall4
@@ -63,7 +63,7 @@ jobs:
           - { os: ubuntu-24.04-arm, arch: arm64 }
           - { os: macos-latest,     arch: arm64 }
           - { os: macos-13,         arch: x64   }
-          - { os: windows-latest,   arch: x64   }
+          - { os: windows-2022,     arch: x64   }
 
     runs-on: ${{ matrix.os }}
 
@@ -77,7 +77,7 @@ jobs:
           cache: npm
 
       - name: Install dependencies
-        run: npm ci
+        run: npm ci --ignore-scripts
 
       - name: Build prebuilt binary
         run: npx prebuildify --napi --strip
