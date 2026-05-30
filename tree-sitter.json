@@ -11,19 +11,28 @@
       "highlights": [
         "queries/highlights.scm"
       ],
+      "locals": [
+        "queries/locals.scm"
+      ],
       "injection-regex": "^ucode$"
     },
     {
       "name": "ucode_tmpl",
       "camelcase": "UcodeTmpl",
       "scope": "source.uc.tmpl",
-      "path": ".",
+      "path": "./tmpl",
       "file-types": [
         "uc.tmpl",
         "utpl"
       ],
       "highlights": [
-        "queries/highlights.scm"
+        "tmpl/queries/highlights.scm"
+      ],
+      "locals": [
+        "tmpl/queries/locals.scm"
+      ],
+      "injections": [
+        "tmpl/queries/injections.scm"
       ],
       "injection-regex": "^ucode_tmpl$"
     }

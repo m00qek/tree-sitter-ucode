@@ -44,20 +44,20 @@ To regenerate parsers after editing a grammar file:
 npx tree-sitter generate
 
 # ucode_tmpl grammar
-npx tree-sitter generate tmpl/grammar.js
+npx tree-sitter generate tmpl/grammar.js --output tmpl/src
 ```
 
 ## Test
 
 ```sh
-npm test             # runs tree-sitter test for all corpora
+npm test             # runs tree-sitter test for ucode and ucode_tmpl
 ```
 
 To filter by corpus file name:
 
 ```sh
-npx tree-sitter test -f control_flow
-npx tree-sitter test -f template
+npx tree-sitter test --file-name control_flow
+npx tree-sitter test -p tmpl --file-name template
 ```
 
 ## Use in Neovim (nvim-treesitter)
@@ -73,7 +73,7 @@ parser_config.ucode = {
     files = { "src/parser.c", "src/scanner.c" },
     branch = "main",
   },
-  filetype = "uc",
+  filetype = "ucode",
 }
 
 parser_config.ucode_tmpl = {
@@ -82,20 +82,19 @@ parser_config.ucode_tmpl = {
     files = { "tmpl/src/parser.c", "tmpl/src/scanner.c" },
     branch = "main",
   },
-  filetype = "uc_tmpl",
+  filetype = "ucode_tmpl",
 }
 ```
 
-Associate `.uc` and `.uc.tmpl` files:
+Associate `.uc` and `.uc.tmpl` files with the right filetypes:
 
 ```lua
 vim.filetype.add({
   extension = {
-    uc      = "ucode",
-    utpl    = "ucode_tmpl",
+    uc   = "ucode",
+    utpl = "ucode_tmpl",
   },
-  filename = {},
-  pattern  = { [".*%.uc%.tmpl"] = "ucode_tmpl" },
+  pattern = { [".*%.uc%.tmpl"] = "ucode_tmpl" },
 })
 ```
 
@@ -138,7 +137,12 @@ inside the code and expression tags.
 | `{% ... %}` | Execute ucode statements (no output) |
 | `{{ ... }}` | Evaluate expression and emit output |
 | `{# ... #}` | Template comment (discarded) |
-| `{%- -%}` / `{{- -}}` | Same, with surrounding whitespace stripped |
+| `{%- ... -%}` | Statement block — strip whitespace on both sides |
+| `{{- ... -}}` | Expression block — strip whitespace on both sides |
+| `{%+ ... %}` | Statement block — suppress `lstrip_blocks` stripping |
+| `{#- ... -#}` | Comment — strip whitespace on both sides |
+
+Whitespace stripping markers may be used on either side independently: `{%-` strips the preceding text, `-%}` strips the following text.
 
 Example:
 

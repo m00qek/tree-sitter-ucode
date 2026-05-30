@@ -7,11 +7,19 @@
  *
  * The grammar captures raw text verbatim and the inner content of code /
  * expression blocks as opaque `code` nodes.  Editors use language injection
- * (see queries/injections.scm) to parse those nodes as ucode.
+ * (see tmpl/queries/injections.scm) to parse those nodes as ucode.
  *
- * Whitespace-stripping markers are supported on both sides of every tag:
- *   {%-  code  -%}    strip whitespace before and after the tag
- *   {{-  expr  -}}    same for expression tags
+ * Whitespace-stripping markers are supported on both openers and closers:
+ *
+ *   Opener variants   Closer variants
+ *   ─────────────     ──────────────
+ *   {%   {%-  {%+     %}   -%}       (statement)
+ *   {{   {{-           }}   -}}       (expression)
+ *   {#   {#-           #}   -#}       (comment)
+ *
+ * {%-  strips trailing whitespace from the preceding raw-text block.
+ * -%}  strips leading whitespace from the following raw-text block.
+ * {%+  suppresses stripping even when lstrip_blocks is configured.
  */
 
 /// <reference types="tree-sitter-cli/dsl" />
@@ -39,7 +47,7 @@ module.exports = grammar({
     )),
 
     statement_tag: $ => seq(
-      field('open',  choice('{%-', '{%')),
+      field('open',  choice('{%-', '{%+', '{%')),
       field('code',  optional(alias($._stmt_code, $.code))),
       field('close', choice('-%}', '%}')),
     ),
@@ -51,9 +59,9 @@ module.exports = grammar({
     ),
 
     comment_tag: $ => seq(
-      '{#',
+      field('open',    choice('{#-', '{#')),
       field('content', optional(alias($._comment_body, $.comment_content))),
-      '#}',
+      field('close',   choice('-#}', '#}')),
     ),
   },
 });

@@ -8,10 +8,10 @@ enum TokenType {
     TERNARY_QMARK,
 };
 
-void *tree_sitter_ucode_external_scanner_create() { return NULL; }
-void tree_sitter_ucode_external_scanner_destroy(void *p) {}
-unsigned tree_sitter_ucode_external_scanner_serialize(void *p, char *buf) { return 0; }
-void tree_sitter_ucode_external_scanner_deserialize(void *p, const char *buf, unsigned n) {}
+void *tree_sitter_ucode_external_scanner_create(void) { return NULL; }
+void tree_sitter_ucode_external_scanner_destroy(void *p) { (void)p; }
+unsigned tree_sitter_ucode_external_scanner_serialize(void *p, char *buf) { (void)p; (void)buf; return 0; }
+void tree_sitter_ucode_external_scanner_deserialize(void *p, const char *buf, unsigned n) { (void)p; (void)buf; (void)n; }
 
 static inline void advance(TSLexer *lexer) { lexer->advance(lexer, false); }
 static inline void skip(TSLexer *lexer) { lexer->advance(lexer, true); }

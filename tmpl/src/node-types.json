@@ -3,6 +3,20 @@
     "type": "comment_tag",
     "named": true,
     "fields": {
+      "close": {
+        "multiple": false,
+        "required": true,
+        "types": [
+          {
+            "type": "#}",
+            "named": false
+          },
+          {
+            "type": "-#}",
+            "named": false
+          }
+        ]
+      },
       "content": {
         "multiple": false,
         "required": false,
@@ -10,6 +24,20 @@
           {
             "type": "comment_content",
             "named": true
+          }
+        ]
+      },
+      "open": {
+        "multiple": false,
+        "required": true,
+        "types": [
+          {
+            "type": "{#",
+            "named": false
+          },
+          {
+            "type": "{#-",
+            "named": false
           }
         ]
       }
@@ -124,6 +152,10 @@
             "named": false
           },
           {
+            "type": "{%+",
+            "named": false
+          },
+          {
             "type": "{%-",
             "named": false
           }
@@ -137,6 +169,10 @@
   },
   {
     "type": "%}",
+    "named": false
+  },
+  {
+    "type": "-#}",
     "named": false
   },
   {
@@ -164,7 +200,15 @@
     "named": false
   },
   {
+    "type": "{#-",
+    "named": false
+  },
+  {
     "type": "{%",
+    "named": false
+  },
+  {
+    "type": "{%+",
     "named": false
   },
   {

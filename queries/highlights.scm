@@ -120,6 +120,7 @@
 ; -------------------------------------------------------------------------
 
 ["import" "export"] @keyword.import
+["as" "from"] @keyword.import
 ; Dynamic import() uses a named node, not an anonymous string
 (import_expression (import) @keyword.import)
 

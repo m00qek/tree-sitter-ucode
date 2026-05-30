@@ -51,7 +51,7 @@ static bool scan_raw_text(TSLexer *lexer) {
 }
 
 /*
- * Scan statement code: content between {%/-% and %}/-%}.
+ * Scan statement code: content between {%/{%-/{%+ and %}/-%}.
  *
  * Stops (without consuming) before '%}' or '-%}'.
  */
@@ -121,9 +121,9 @@ static bool scan_expr_code(TSLexer *lexer) {
 }
 
 /*
- * Scan comment body: content between {# and #}.
+ * Scan comment body: content between {#/{#- and #}/-#}.
  *
- * Stops (without consuming) before '#}'.
+ * Stops (without consuming) before '#}' or '-#}'.
  */
 static bool scan_comment_body(TSLexer *lexer) {
     lexer->result_symbol = COMMENT_BODY;
@@ -131,7 +131,18 @@ static bool scan_comment_body(TSLexer *lexer) {
         lexer->mark_end(lexer);
         if (lexer->lookahead == '\0') return has_content;
 
-        if (lexer->lookahead == '#') {
+        if (lexer->lookahead == '-') {
+            advance(lexer);
+            if (lexer->lookahead == '#') {
+                advance(lexer);
+                if (lexer->lookahead == '}') {
+                    /* found '-#}' — stop before '-' */
+                    return has_content;
+                }
+                /* was '-#' + non-'}'; commit on next iteration */
+            }
+            /* was '-' + non-'#'; commit on next iteration */
+        } else if (lexer->lookahead == '#') {
             advance(lexer);
             if (lexer->lookahead == '}') {
                 /* found '#}' — stop before '#' */
@@ -149,9 +160,9 @@ bool tree_sitter_ucode_tmpl_external_scanner_scan(
 ) {
     (void)payload;
 
-    if (valid_symbols[RAW_TEXT])    return scan_raw_text(lexer);
-    if (valid_symbols[STMT_CODE])   return scan_stmt_code(lexer);
-    if (valid_symbols[EXPR_CODE])   return scan_expr_code(lexer);
+    if (valid_symbols[RAW_TEXT])     return scan_raw_text(lexer);
+    if (valid_symbols[STMT_CODE])    return scan_stmt_code(lexer);
+    if (valid_symbols[EXPR_CODE])    return scan_expr_code(lexer);
     if (valid_symbols[COMMENT_BODY]) return scan_comment_body(lexer);
 
     return false;
