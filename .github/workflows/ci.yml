@@ -1,0 +1,32 @@
+name: CI
+
+on:
+  push:
+    branches: [main]
+  pull_request:
+    branches: [main]
+
+jobs:
+  test:
+    runs-on: ubuntu-latest
+
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Set up Node.js
+        uses: actions/setup-node@v4
+        with:
+          node-version: '20'
+          cache: npm
+
+      - name: Install dependencies
+        run: npm ci
+
+      - name: Verify generated files are up to date
+        run: |
+          npx tree-sitter generate
+          npx tree-sitter generate tmpl/grammar.js --output tmpl/src
+          git diff --exit-code src/ tmpl/src/
+
+      - name: Run tests
+        run: npm test

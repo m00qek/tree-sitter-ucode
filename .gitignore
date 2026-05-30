@@ -1,4 +1,39 @@
-node_modules/
+# Compiled parser artifacts
+*.a
+*.so
+*.so.*
+*.dylib
+*.dll
+*.pc
+*.exp
+*.lib
+*.obj
+*.o
+
+# Wasm builds
+*.wasm
+
+# Node
 build/
 prebuilds/
-*.wasm
+node_modules/
+
+# Python
+.venv/
+dist/
+*.egg-info/
+*.whl
+
+# Rust
+target/
+
+# Go
+_obj/
+
+# Swift
+.build/
+
+# Zig
+.zig-cache/
+zig-cache/
+zig-out/
