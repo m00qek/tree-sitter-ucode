@@ -16,6 +16,8 @@
 (for_alt_statement) @local.scope
 (for_in_statement) @local.scope
 (for_in_alt_statement) @local.scope
+; catch clause scopes its parameter to the handler body
+(catch_clause) @local.scope
 
 ; -------------------------------------------------------------------------
 ; Definitions — functions
@@ -51,15 +53,23 @@
 
 ; -------------------------------------------------------------------------
 ; Definitions — for-in loop variables
+;
+; Only capture when let/const is present (kind field exists).  A bare
+; `for (k in obj)` is an assignment to an existing variable, not a new
+; binding; tagging it as a definition would incorrectly shadow the outer `k`.
 ; -------------------------------------------------------------------------
 
 (for_in_statement
+  kind: _
   left: (identifier) @local.definition.var)
 (for_in_statement
+  kind: _
   value: (identifier) @local.definition.var)
 (for_in_alt_statement
+  kind: _
   left: (identifier) @local.definition.var)
 (for_in_alt_statement
+  kind: _
   value: (identifier) @local.definition.var)
 
 ; -------------------------------------------------------------------------
