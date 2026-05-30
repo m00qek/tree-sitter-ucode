@@ -123,7 +123,7 @@ source = { git = "https://github.com/m00qek/tree-sitter-ucode", rev = "main" }
 
 [[grammar]]
 name   = "ucode_tmpl"
-source = { git = "https://github.com/m00qek/tree-sitter-ucode", rev = "main" }
+source = { git = "https://github.com/m00qek/tree-sitter-ucode", rev = "main", subpath = "tmpl" }
 ```
 
 ## Template files (.uc.tmpl / .utpl)
@@ -142,7 +142,7 @@ inside the code and expression tags.
 | `{%+ ... %}` | Statement block — suppress `lstrip_blocks` stripping |
 | `{#- ... -#}` | Comment — strip whitespace on both sides |
 
-Whitespace stripping markers may be used on either side independently: `{%-` strips the preceding text, `-%}` strips the following text.
+Opener and closer markers are independent: any opener variant may be combined with any closer variant. `{%-` / `{{-` / `{#-` strip the preceding raw text; `-%}` / `-}}` / `-#}` strip the following raw text. `{%+` suppresses `lstrip_blocks` stripping and may be combined with `-%}` (e.g. `{%+ ... -%}`).
 
 Example:
 
