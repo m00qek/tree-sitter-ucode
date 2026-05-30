@@ -50,13 +50,14 @@ static bool scan_automatic_semicolon(TSLexer *lexer) {
         if (lexer->lookahead == 0) return true;
         if (lexer->lookahead == '}') return true;
 
-        if (lexer->lookahead == '\n' || lexer->lookahead == 0x2028 || lexer->lookahead == 0x2029) {
+        if (lexer->lookahead == '\r' || lexer->lookahead == '\n' ||
+            lexer->lookahead == 0x2028 || lexer->lookahead == 0x2029) {
             skip(lexer);
             break;
         }
 
         // Skip inline whitespace (any Unicode space that is not a line terminator)
-        if (lexer->lookahead != 0x2028 && lexer->lookahead != 0x2029 &&
+        if (lexer->lookahead != '\r' && lexer->lookahead != 0x2028 && lexer->lookahead != 0x2029 &&
             iswspace(lexer->lookahead)) {
             skip(lexer);
             continue;
@@ -67,8 +68,9 @@ static bool scan_automatic_semicolon(TSLexer *lexer) {
             skip(lexer);
             if (lexer->lookahead == '/') {
                 skip(lexer);
-                while (lexer->lookahead != 0 && lexer->lookahead != '\n' &&
-                       lexer->lookahead != 0x2028 && lexer->lookahead != 0x2029) {
+                while (lexer->lookahead != 0 && lexer->lookahead != '\r' &&
+                       lexer->lookahead != '\n' && lexer->lookahead != 0x2028 &&
+                       lexer->lookahead != 0x2029) {
                     skip(lexer);
                 }
                 continue;
@@ -77,8 +79,8 @@ static bool scan_automatic_semicolon(TSLexer *lexer) {
                 skip(lexer);
                 bool has_newline = false;
                 while (lexer->lookahead != 0) {
-                    if (lexer->lookahead == '\n' || lexer->lookahead == 0x2028 ||
-                        lexer->lookahead == 0x2029) {
+                    if (lexer->lookahead == '\r' || lexer->lookahead == '\n' ||
+                        lexer->lookahead == 0x2028 || lexer->lookahead == 0x2029) {
                         has_newline = true;
                         skip(lexer);
                     } else if (lexer->lookahead == '*') {
@@ -113,8 +115,9 @@ static bool scan_automatic_semicolon(TSLexer *lexer) {
             skip(lexer);
             if (lexer->lookahead == '/') {
                 skip(lexer);
-                while (lexer->lookahead != 0 && lexer->lookahead != '\n' &&
-                       lexer->lookahead != 0x2028 && lexer->lookahead != 0x2029) {
+                while (lexer->lookahead != 0 && lexer->lookahead != '\r' &&
+                       lexer->lookahead != '\n' && lexer->lookahead != 0x2028 &&
+                       lexer->lookahead != 0x2029) {
                     skip(lexer);
                 }
                 continue;
@@ -154,7 +157,9 @@ static bool scan_automatic_semicolon(TSLexer *lexer) {
 }
 
 static bool scan_ternary_qmark(TSLexer *lexer) {
-    while (iswspace(lexer->lookahead)) skip(lexer);
+    while (lexer->lookahead != '\r' && lexer->lookahead != '\n' &&
+           lexer->lookahead != 0x2028 && lexer->lookahead != 0x2029 &&
+           iswspace(lexer->lookahead)) skip(lexer);
 
     if (lexer->lookahead != '?') return false;
     advance(lexer);
