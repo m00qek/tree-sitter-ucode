@@ -11,10 +11,9 @@ jobs:
     runs-on: ubuntu-latest
 
     steps:
-      - uses: actions/checkout@v4
+      - uses: actions/checkout@v6
 
-      - name: Set up Node.js
-        uses: actions/setup-node@v4
+      - uses: actions/setup-node@v6
         with:
           node-version: '20'
           cache: npm
@@ -32,7 +31,7 @@ jobs:
         run: npm test
 
       - name: Checkout ucode language test suite
-        uses: actions/checkout@v4
+        uses: actions/checkout@v6
         with:
           repository: jow-/ucode
           path: ucode-lang
@@ -44,7 +43,7 @@ jobs:
         run: node scripts/validate-corpus.js corpus ucode-lang/tests/custom
 
       - name: Checkout firewall4
-        uses: actions/checkout@v4
+        uses: actions/checkout@v6
         with:
           repository: openwrt/firewall4
           path: firewall4
@@ -52,6 +51,38 @@ jobs:
 
       - name: Validate grammar against firewall4
         run: node scripts/validate-corpus.js project firewall4
+
+  wasm:
+    needs: test
+    runs-on: ubuntu-latest
+
+    steps:
+      - uses: actions/checkout@v6
+
+      - uses: actions/setup-node@v6
+        with:
+          node-version: '20'
+          cache: npm
+
+      - name: Install dependencies
+        run: npm ci --ignore-scripts
+
+      - name: Cache wasi-sdk
+        uses: actions/cache@v5
+        with:
+          path: ~/.cache/tree-sitter
+          key: wasi-sdk-${{ hashFiles('package-lock.json') }}
+
+      - name: Build WASM
+        run: |
+          npx tree-sitter build --wasm .
+          npx tree-sitter build --wasm tmpl
+
+      - name: Upload WASM artifact
+        uses: actions/upload-artifact@v7
+        with:
+          name: wasm
+          path: "*.wasm"
 
   prebuild:
     needs: test
@@ -66,10 +97,9 @@ jobs:
     runs-on: ${{ matrix.os }}
 
     steps:
-      - uses: actions/checkout@v4
+      - uses: actions/checkout@v6
 
-      - name: Set up Node.js
-        uses: actions/setup-node@v4
+      - uses: actions/setup-node@v6
         with:
           node-version: '20'
           cache: npm
@@ -99,7 +129,7 @@ jobs:
         run: npx prebuildify --napi --strip
 
       - name: Upload prebuild artifact
-        uses: actions/upload-artifact@v4
+        uses: actions/upload-artifact@v7
         with:
           name: prebuilds-${{ matrix.os }}-${{ matrix.arch }}
           path: prebuilds/
