@@ -28,5 +28,27 @@ jobs:
           npx tree-sitter generate tmpl/grammar.js --output tmpl/src
           git diff --exit-code src/ tmpl/src/
 
-      - name: Run tests
+      - name: Run corpus tests
         run: npm test
+
+      - name: Checkout ucode language test suite
+        uses: actions/checkout@v4
+        with:
+          repository: jow-/ucode
+          path: ucode-lang
+          sparse-checkout: tests/custom
+          sparse-checkout-cone-mode: false
+          depth: 1
+
+      - name: Validate grammar against ucode test corpus
+        run: python3 scripts/validate-corpus.py corpus ucode-lang/tests/custom
+
+      - name: Checkout firewall4
+        uses: actions/checkout@v4
+        with:
+          repository: openwrt/firewall4
+          path: firewall4
+          depth: 1
+
+      - name: Validate grammar against firewall4
+        run: python3 scripts/validate-corpus.py project firewall4
