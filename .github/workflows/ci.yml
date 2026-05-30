@@ -41,7 +41,7 @@ jobs:
           depth: 1
 
       - name: Validate grammar against ucode test corpus
-        run: python3 scripts/validate-corpus.py corpus ucode-lang/tests/custom
+        run: node scripts/validate-corpus.js corpus ucode-lang/tests/custom
 
       - name: Checkout firewall4
         uses: actions/checkout@v4
@@ -51,4 +51,39 @@ jobs:
           depth: 1
 
       - name: Validate grammar against firewall4
-        run: python3 scripts/validate-corpus.py project firewall4
+        run: node scripts/validate-corpus.js project firewall4
+
+  prebuild:
+    needs: test
+    strategy:
+      fail-fast: false
+      matrix:
+        include:
+          - { os: ubuntu-latest,    arch: x64   }
+          - { os: ubuntu-24.04-arm, arch: arm64 }
+          - { os: macos-latest,     arch: arm64 }
+          - { os: macos-13,         arch: x64   }
+          - { os: windows-latest,   arch: x64   }
+
+    runs-on: ${{ matrix.os }}
+
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Set up Node.js
+        uses: actions/setup-node@v4
+        with:
+          node-version: '20'
+          cache: npm
+
+      - name: Install dependencies
+        run: npm ci
+
+      - name: Build prebuilt binary
+        run: npx prebuildify --napi --strip
+
+      - name: Upload prebuild artifact
+        uses: actions/upload-artifact@v4
+        with:
+          name: prebuilds-${{ matrix.os }}-${{ matrix.arch }}
+          path: prebuilds/
