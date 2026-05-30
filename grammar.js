@@ -106,16 +106,11 @@ module.exports = grammar({
   ],
 
   conflicts: $ => [
-    [$.primary_expression, $._property_name],
-    [$.primary_expression, $.arrow_function],
-    [$.primary_expression, $.arrow_function, $._property_name],
     [$.primary_expression, $.formal_parameters],
     [$.primary_expression, $._for_header],
     [$.variable_declarator, $._for_header],
     [$.assignment_expression, $.pattern],
     [$.labeled_statement, $._property_name],
-    [$.computed_property_name, $.array],
-    [$.binary_expression, $._initializer],
   ],
 
   word: $ => $.identifier,

@@ -4700,19 +4700,6 @@
   "conflicts": [
     [
       "primary_expression",
-      "_property_name"
-    ],
-    [
-      "primary_expression",
-      "arrow_function"
-    ],
-    [
-      "primary_expression",
-      "arrow_function",
-      "_property_name"
-    ],
-    [
-      "primary_expression",
       "formal_parameters"
     ],
     [
@@ -4730,14 +4717,6 @@
     [
       "labeled_statement",
       "_property_name"
-    ],
-    [
-      "computed_property_name",
-      "array"
-    ],
-    [
-      "binary_expression",
-      "_initializer"
     ]
   ],
   "precedences": [
