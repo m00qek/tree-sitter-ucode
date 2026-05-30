@@ -4,7 +4,7 @@
  *
  * Based on tree-sitter-javascript (MIT, Max Brunsfeld, Amaan Qureshi).
  * Ucode is an ECMAScript-like language for OpenWrt system scripting.
- * See linter/diff-to-js.md for a full list of syntax differences from JS.
+ * See README.md for a full list of syntax differences from JavaScript.
  */
 
 /// <reference types="tree-sitter-cli/dsl" />
@@ -325,36 +325,12 @@ module.exports = grammar({
     ),
 
     for_statement: $ => seq(
-      'for',
-      '(',
-      choice(
-        field('initializer', $.lexical_declaration),
-        seq(field('initializer', $._expressions), ';'),
-        field('initializer', $.empty_statement),
-      ),
-      field('condition', choice(
-        seq($._expressions, ';'),
-        $.empty_statement,
-      )),
-      field('increment', optional($._expressions)),
-      ')',
+      forHeader($),
       field('body', $.statement),
     ),
 
     for_alt_statement: $ => seq(
-      'for',
-      '(',
-      choice(
-        field('initializer', $.lexical_declaration),
-        seq(field('initializer', $._expressions), ';'),
-        field('initializer', $.empty_statement),
-      ),
-      field('condition', choice(
-        seq($._expressions, ';'),
-        $.empty_statement,
-      )),
-      field('increment', optional($._expressions)),
-      ')',
+      forHeader($),
       ':',
       field('body', repeat($.statement)),
       'endfor',
@@ -680,7 +656,7 @@ module.exports = grammar({
       field('body', $.statement_block),
     )),
 
-    // Named function declaration with brace body
+    // Function declaration — brace body or alternative colon/endfunction syntax
     function_declaration: $ => prec.right('declaration', seq(
       'function',
       field('name', $.identifier),
@@ -893,6 +869,24 @@ module.exports = grammar({
     _semicolon: $ => choice($._automatic_semicolon, ';'),
   },
 });
+
+function forHeader($) {
+  return seq(
+    'for',
+    '(',
+    choice(
+      field('initializer', $.lexical_declaration),
+      seq(field('initializer', $._expressions), ';'),
+      field('initializer', $.empty_statement),
+    ),
+    field('condition', choice(
+      seq($._expressions, ';'),
+      $.empty_statement,
+    )),
+    field('increment', optional($._expressions)),
+    ')',
+  );
+}
 
 function commaSep1(rule) {
   return seq(rule, repeat(seq(',', rule)));
