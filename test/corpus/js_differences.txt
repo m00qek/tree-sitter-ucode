@@ -156,6 +156,24 @@ async function f() {}
     body: (statement_block)))
 
 ================================================================================
+Generator function is not supported — produces ERROR
+================================================================================
+
+function* gen() {}
+
+--------------------------------------------------------------------------------
+
+; `*` is not valid between `function` and the name; it lands as an ERROR node
+; inside the function_declaration while the rest parses normally.
+
+(program
+  (function_declaration
+    (ERROR)
+    name: (identifier)
+    parameters: (formal_parameters)
+    body: (statement_block)))
+
+================================================================================
 >>> unsigned right shift is not supported — produces ERROR
 ================================================================================
 
