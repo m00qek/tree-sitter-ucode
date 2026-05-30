@@ -33,6 +33,10 @@ TS_ROOT    = os.path.dirname(SCRIPT_DIR)
 TS_RAW     = TS_ROOT
 TS_TMPL    = os.path.join(TS_ROOT, "tmpl")
 
+# Prefer the devDependency binary so the script works without a global install.
+_ts_local = os.path.join(TS_ROOT, "node_modules", ".bin", "tree-sitter")
+TREE_SITTER = _ts_local if os.path.isfile(_ts_local) else "tree-sitter"
+
 # ---------------------------------------------------------------------------
 # Known-invalid testcases in the jow-/ucode corpus.
 # These are intentionally broken snippets (error-handling regression tests,
@@ -74,7 +78,7 @@ def parse(code: str, tmpl: bool) -> tuple[bool, str]:
         fname = f.name
     try:
         result = subprocess.run(
-            ["tree-sitter", "parse", "--quiet", "-p", grammar_dir, fname],
+            [TREE_SITTER, "parse", "--quiet", "-p", grammar_dir, fname],
             capture_output=True, text=True, cwd=TS_ROOT,
         )
         output    = result.stdout + result.stderr
