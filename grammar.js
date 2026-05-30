@@ -84,7 +84,6 @@ module.exports = grammar({
       'binary_times',
       'binary_plus',
       'binary_shift',
-      'binary_compare',
       'binary_relation',
       'binary_equality',
       'bitwise_and',

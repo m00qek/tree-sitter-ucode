@@ -4755,10 +4755,6 @@
       },
       {
         "type": "STRING",
-        "value": "binary_compare"
-      },
-      {
-        "type": "STRING",
         "value": "binary_relation"
       },
       {
