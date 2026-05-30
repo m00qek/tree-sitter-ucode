@@ -33,6 +33,9 @@ static bool scan_template_chars(TSLexer *lexer) {
     }
 }
 
+// Implements the three ASI rules from ECMA-262 §12.10 (Automatic Semicolon
+// Insertion): insert before a token that the grammar doesn't allow if (1) a
+// line terminator precedes it, (2) it is `}`, or (3) the input is exhausted.
 static bool scan_automatic_semicolon(TSLexer *lexer) {
     lexer->result_symbol = AUTOMATIC_SEMICOLON;
     lexer->mark_end(lexer);
@@ -57,8 +60,7 @@ static bool scan_automatic_semicolon(TSLexer *lexer) {
         }
 
         // Skip inline whitespace (any Unicode space that is not a line terminator)
-        if (lexer->lookahead != '\r' && lexer->lookahead != 0x2028 && lexer->lookahead != 0x2029 &&
-            iswspace(lexer->lookahead)) {
+        if (iswspace(lexer->lookahead)) {
             skip(lexer);
             continue;
         }
@@ -141,10 +143,9 @@ static bool scan_automatic_semicolon(TSLexer *lexer) {
         break;
     }
 
-    // These tokens can never start a new statement continuation:
-    // they must be a new statement, so ASI applies
+    // Tokens that can continue the prior expression suppress ASI;
+    // anything else (identifier, keyword, number, …) gets one inserted.
     switch (lexer->lookahead) {
-        // Things that could continue the expression — no ASI
         case '(': case '[': case '`':
         case '.': case ',': case ';':
         case '+': case '-': case '*': case '%':
