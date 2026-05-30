@@ -43,7 +43,9 @@ static bool scan_automatic_semicolon(TSLexer *lexer) {
     // `}` closes the current block — valid semicolon
     if (lexer->lookahead == '}') return true;
 
-    // Skip whitespace looking for a newline
+    // Skip whitespace and comments looking for a line terminator.
+    // Per the ECMAScript spec, a line terminator inside a block comment
+    // counts as a line terminator for ASI purposes.
     for (;;) {
         if (lexer->lookahead == 0) return true;
         if (lexer->lookahead == '}') return true;
@@ -53,13 +55,14 @@ static bool scan_automatic_semicolon(TSLexer *lexer) {
             break;
         }
 
-        // Skip inline whitespace
-        if (lexer->lookahead == ' ' || lexer->lookahead == '\t' || lexer->lookahead == '\r') {
+        // Skip inline whitespace (any Unicode space that is not a line terminator)
+        if (lexer->lookahead != 0x2028 && lexer->lookahead != 0x2029 &&
+            iswspace(lexer->lookahead)) {
             skip(lexer);
             continue;
         }
 
-        // Skip single-line comment
+        // Skip line comment or block comment
         if (lexer->lookahead == '/') {
             skip(lexer);
             if (lexer->lookahead == '/') {
@@ -70,6 +73,24 @@ static bool scan_automatic_semicolon(TSLexer *lexer) {
                 }
                 continue;
             }
+            if (lexer->lookahead == '*') {
+                skip(lexer);
+                bool has_newline = false;
+                while (lexer->lookahead != 0) {
+                    if (lexer->lookahead == '\n' || lexer->lookahead == 0x2028 ||
+                        lexer->lookahead == 0x2029) {
+                        has_newline = true;
+                        skip(lexer);
+                    } else if (lexer->lookahead == '*') {
+                        skip(lexer);
+                        if (lexer->lookahead == '/') { skip(lexer); break; }
+                    } else {
+                        skip(lexer);
+                    }
+                }
+                if (has_newline) break;
+                continue;
+            }
             // Not a comment — division or start of something else, no ASI
             return false;
         }
@@ -78,10 +99,44 @@ static bool scan_automatic_semicolon(TSLexer *lexer) {
         return false;
     }
 
-    // We found a newline. Skip further whitespace and comments.
-    while (iswspace(lexer->lookahead)) skip(lexer);
+    // We found a line terminator. Skip whitespace and comments before
+    // checking whether the next token could continue the expression.
+    for (;;) {
+        if (lexer->lookahead == 0) return true;
 
-    if (lexer->lookahead == 0) return true;
+        if (iswspace(lexer->lookahead)) {
+            skip(lexer);
+            continue;
+        }
+
+        if (lexer->lookahead == '/') {
+            skip(lexer);
+            if (lexer->lookahead == '/') {
+                skip(lexer);
+                while (lexer->lookahead != 0 && lexer->lookahead != '\n' &&
+                       lexer->lookahead != 0x2028 && lexer->lookahead != 0x2029) {
+                    skip(lexer);
+                }
+                continue;
+            }
+            if (lexer->lookahead == '*') {
+                skip(lexer);
+                while (lexer->lookahead != 0) {
+                    if (lexer->lookahead == '*') {
+                        skip(lexer);
+                        if (lexer->lookahead == '/') { skip(lexer); break; }
+                    } else {
+                        skip(lexer);
+                    }
+                }
+                continue;
+            }
+            // Not a comment — treat like any other '/'
+            return false;
+        }
+
+        break;
+    }
 
     // These tokens can never start a new statement continuation:
     // they must be a new statement, so ASI applies
@@ -89,7 +144,7 @@ static bool scan_automatic_semicolon(TSLexer *lexer) {
         // Things that could continue the expression — no ASI
         case '(': case '[': case '`':
         case '.': case ',': case ';':
-        case '+': case '-': case '*': case '/': case '%':
+        case '+': case '-': case '*': case '%':
         case '=': case '<': case '>': case '!': case '~':
         case '&': case '|': case '^': case '?':
             return false;
