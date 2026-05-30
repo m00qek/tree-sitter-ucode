@@ -23,12 +23,19 @@
 ; Definitions — functions
 ; -------------------------------------------------------------------------
 
+; Declaration and forward-declaration names belong to the *enclosing* scope
+; so that callers outside the function body can resolve them.
 (function_declaration
-  name: (identifier) @local.definition.function)
+  name: (identifier) @local.definition.function
+  (#set! definition.function.scope parent))
 
 (function_forward_declaration
-  name: (identifier) @local.definition.function)
+  name: (identifier) @local.definition.function
+  (#set! definition.function.scope parent))
 
+; Named function expressions (let f = function foo() {}) keep their name
+; *inside* the expression scope — foo is only visible for self-recursion,
+; not to the surrounding block.  No (#set! parent) here.
 (function_expression
   name: (identifier) @local.definition.function)
 
