@@ -2,7 +2,10 @@
   "name": "tree-sitter-ucode",
   "version": "0.1.2",
   "description": "Ucode grammar for tree-sitter",
-  "repository": "https://github.com/m00qek/tree-sitter-ucode",
+  "repository": {
+    "type": "git",
+    "url": "git+https://github.com/m00qek/tree-sitter-ucode.git"
+  },
   "license": "MIT",
   "main": "bindings/node",
   "types": "bindings/node",
