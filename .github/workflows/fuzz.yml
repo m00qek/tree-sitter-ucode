@@ -1,0 +1,30 @@
+name: Fuzz
+
+on:
+  push:
+    branches: [main]
+    paths:
+      - src/scanner.c
+      - tmpl/src/scanner.c
+
+jobs:
+  fuzz:
+    name: Fuzz ${{ matrix.grammar }} scanner
+    runs-on: ubuntu-latest
+    strategy:
+      fail-fast: false
+      matrix:
+        include:
+          - grammar: ucode
+            directory: ''
+          - grammar: ucode_tmpl
+            directory: tmpl
+
+    steps:
+      - name: Checkout repository
+        uses: actions/checkout@v6
+
+      - name: Fuzz scanner
+        uses: tree-sitter/fuzz-action@v4
+        with:
+          directory: ${{ matrix.directory }}

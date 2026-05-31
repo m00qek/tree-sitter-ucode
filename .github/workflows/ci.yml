@@ -6,15 +6,51 @@ on:
     tags: ['v*']
   pull_request:
     branches: [main]
+    paths:
+      - grammar.js
+      - src/**
+      - test/**
+      - queries/**
+      - tmpl/**
+      - bindings/**
+      - binding.gyp
+      - package.json
+      - scripts/**
+
+concurrency:
+  group: ${{ github.workflow }}-${{ github.ref }}
+  cancel-in-progress: ${{ github.ref != 'refs/heads/main' && !startsWith(github.ref, 'refs/tags/') }}
 
 jobs:
   test:
+    name: Test parser — ${{ matrix.os }}
+    runs-on: ${{ matrix.os }}
+    strategy:
+      fail-fast: false
+      matrix:
+        os: [ubuntu-latest, macos-latest, windows-latest]
+
+    steps:
+      - name: Checkout repository
+        uses: actions/checkout@v6
+
+      - name: Set up tree-sitter
+        uses: tree-sitter/setup-action/cli@v2
+
+      - name: Run corpus tests
+        shell: bash
+        run: tree-sitter test && tree-sitter test -p tmpl
+
+  validate:
+    name: Validate
     runs-on: ubuntu-latest
 
     steps:
-      - uses: actions/checkout@v6
+      - name: Checkout repository
+        uses: actions/checkout@v6
 
-      - uses: actions/setup-node@v6
+      - name: Set up Node.js
+        uses: actions/setup-node@v6
         with:
           node-version: '20'
           cache: npm
@@ -27,9 +63,6 @@ jobs:
           npx tree-sitter generate
           npx tree-sitter generate tmpl/grammar.js --output tmpl/src
           git diff --exit-code src/ tmpl/src/
-
-      - name: Run corpus tests
-        run: npm test
 
       - name: Checkout ucode language test suite
         uses: actions/checkout@v6
@@ -54,13 +87,16 @@ jobs:
         run: node scripts/validate-corpus.js project firewall4
 
   wasm:
-    needs: test
+    name: Build WASM
+    needs: [test, validate]
     runs-on: ubuntu-latest
 
     steps:
-      - uses: actions/checkout@v6
+      - name: Checkout repository
+        uses: actions/checkout@v6
 
-      - uses: actions/setup-node@v6
+      - name: Set up Node.js
+        uses: actions/setup-node@v6
         with:
           node-version: '20'
           cache: npm
@@ -86,7 +122,8 @@ jobs:
           path: "*.wasm"
 
   prebuild:
-    needs: test
+    name: Prebuild — ${{ matrix.os }} ${{ matrix.arch }}
+    needs: [test, validate]
     strategy:
       fail-fast: false
       matrix:
@@ -98,9 +135,11 @@ jobs:
     runs-on: ${{ matrix.os }}
 
     steps:
-      - uses: actions/checkout@v6
+      - name: Checkout repository
+        uses: actions/checkout@v6
 
-      - uses: actions/setup-node@v6
+      - name: Set up Node.js
+        uses: actions/setup-node@v6
         with:
           node-version: '20'
           cache: npm
@@ -136,6 +175,7 @@ jobs:
           path: prebuilds/
 
   publish:
+    name: Publish to npm
     needs: [wasm, prebuild]
     runs-on: ubuntu-latest
     if: startsWith(github.ref, 'refs/tags/v')
@@ -143,9 +183,11 @@ jobs:
       id-token: write  # required for npm provenance via OIDC
 
     steps:
-      - uses: actions/checkout@v6
+      - name: Checkout repository
+        uses: actions/checkout@v6
 
-      - uses: actions/setup-node@v6
+      - name: Set up Node.js
+        uses: actions/setup-node@v6
         with:
           node-version: '20'
           registry-url: 'https://registry.npmjs.org'
