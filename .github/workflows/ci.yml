@@ -190,21 +190,21 @@ jobs:
         uses: actions/setup-node@v6
         with:
           node-version: '20'
-          # No registry-url: setup-node would inject github.token as NODE_AUTH_TOKEN,
-          # which npm uses instead of the OIDC Trusted Publisher path, causing 404.
-          # npm defaults to registry.npmjs.org and uses OIDC automatically.
+          registry-url: 'https://registry.npmjs.org'
+          token: ''  # prevent github.token being injected as NODE_AUTH_TOKEN;
+                     # npm sees no _authToken and uses OIDC Trusted Publisher instead
 
       - name: Install dependencies
         run: npm ci --ignore-scripts
 
       - name: Download WASM
-        uses: actions/download-artifact@v4
+        uses: actions/download-artifact@v8
         with:
           name: wasm
           path: .
 
       - name: Download prebuilds
-        uses: actions/download-artifact@v4
+        uses: actions/download-artifact@v8
         with:
           pattern: prebuilds-*
           path: prebuilds
