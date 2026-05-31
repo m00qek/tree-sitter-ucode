@@ -54,7 +54,7 @@ module.exports = grammar({
       'try',
       'while',
     ],
-    properties: $ => [],
+    properties: _ => [],
   },
 
   supertypes: $ => [

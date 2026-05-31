@@ -36,7 +36,7 @@ module.exports = grammar({
   ],
 
   // The template scanner handles all whitespace explicitly; no implicit extras.
-  extras: $ => [],
+  extras: _ => [],
 
   rules: {
     document: $ => repeat(choice(

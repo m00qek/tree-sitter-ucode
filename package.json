@@ -1,6 +1,6 @@
 {
   "name": "tree-sitter-ucode",
-  "version": "0.1.0",
+  "version": "0.1.1",
   "description": "Ucode grammar for tree-sitter",
   "repository": "https://github.com/m00qek/tree-sitter-ucode",
   "license": "MIT",
