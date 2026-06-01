@@ -479,7 +479,6 @@ module.exports = grammar({
       $.call_expression,
     ),
 
-    // Dynamic import expression: `let m = import("./mod.uc")`
     object: $ => prec('object', seq(
       '{',
       commaSep(optional(choice(
