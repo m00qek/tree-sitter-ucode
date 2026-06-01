@@ -265,8 +265,9 @@ Bare array destructuring assignment — produces ERROR
 
 --------------------------------------------------------------------------------
 
-; Unlike `let [a, b] = arr` which silently parses as subscript, a bare
-; `[a, b] = [...]` produces an ERROR because `=` is not valid inside subscript.
+; Ucode has no destructuring. A bare `[a, b] = [...]` is parsed as a subscript
+; expression where `[a, b]` is the object and `= [...]` is invalid inside the
+; subscript, so the parser produces an ERROR node around the `=` and its operand.
 
 (program
   (expression_statement
