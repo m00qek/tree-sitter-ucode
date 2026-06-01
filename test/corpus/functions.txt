@@ -192,6 +192,23 @@ let f = () => 42;
         body: (number)))))
 
 ================================================================================
+Arrow function with rest parameter
+================================================================================
+
+let f = (...args) => args;
+
+--------------------------------------------------------------------------------
+
+(program
+  (lexical_declaration
+    (variable_declarator
+      name: (identifier)
+      value: (arrow_function
+        parameters: (formal_parameters
+          (rest_element (identifier)))
+        body: (identifier)))))
+
+================================================================================
 Named function expression
 ================================================================================
 
