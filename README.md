@@ -17,13 +17,12 @@ Ucode is an ECMAScript subset with OpenWrt-specific extensions. Key differences:
 |---------|-------|------------|
 | Alternative block syntax | `if/elif/else/endif`, `for/endfor`, `while/endwhile`, `function/endfunction` | Not supported |
 | Two-variable for-in | `for (k, v in obj)` | Single variable only |
-| Forward declaration | `function foo;` | Not supported |
 | Removed keywords | `var`, `new`, `typeof`, `void`, `class`, `instanceof`, `do`, `async`, `await`, `yield` | All supported |
-| Removed features | Destructuring, `for...of`, `do-while`, generators | All supported |
+| Removed features | Destructuring, `for...of`, `do-while`, generators, forward declarations, dynamic `import()` | All supported |
 | Added number literals | `0177` (C octal), `0x1.8` (hex float), `0B`/`0O` prefixes | Standard only |
 | Added escape sequences | `\e` (ESC), `\a` (BEL), octal `\177` | Standard only |
 | Regex flags | `g`, `i`, `s` only | Full set |
-| Module system | Static `import`/`export`, dynamic `import(path)`; no `from` on re-exports | Full ES modules |
+| Module system | Static `import`/`export` only; no `from` on re-exports | Full ES modules |
 
 ## Requirements
 
