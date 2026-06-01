@@ -46,6 +46,7 @@ module.exports = grammar({
       'if',
       'import',
       'in',
+      'let',
       'null',
       'return',
       'switch',

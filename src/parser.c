@@ -15,7 +15,7 @@
 #define EXTERNAL_TOKEN_COUNT 3
 #define FIELD_COUNT 31
 #define MAX_ALIAS_SEQUENCE_LENGTH 11
-#define MAX_RESERVED_WORD_SET_SIZE 27
+#define MAX_RESERVED_WORD_SET_SIZE 28
 #define PRODUCTION_ID_COUNT 89
 #define SUPERTYPE_COUNT 4
 
@@ -4683,6 +4683,7 @@ static const TSSymbol ts_reserved_words[12][MAX_RESERVED_WORD_SET_SIZE] = {
     anon_sym_export,
     anon_sym_default,
     anon_sym_import,
+    anon_sym_let,
     anon_sym_const,
     anon_sym_else,
     anon_sym_if,
@@ -4795,6 +4796,7 @@ static const TSSymbol ts_reserved_words[12][MAX_RESERVED_WORD_SET_SIZE] = {
     anon_sym_export,
     anon_sym_default,
     anon_sym_import,
+    anon_sym_let,
     anon_sym_const,
     anon_sym_else,
     anon_sym_if,
@@ -32486,7 +32488,7 @@ TS_PUBLIC const TSLanguage *tree_sitter_ucode(void) {
     .primary_state_ids = ts_primary_state_ids,
     .name = "ucode",
     .reserved_words = &ts_reserved_words[0][0],
-    .max_reserved_word_set_size = 27,
+    .max_reserved_word_set_size = 28,
     .metadata = {
       .major_version = 0,
       .minor_version = 1,
