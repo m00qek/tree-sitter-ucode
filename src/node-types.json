@@ -8,10 +8,6 @@
         "named": true
       },
       {
-        "type": "function_forward_declaration",
-        "named": true
-      },
-      {
         "type": "lexical_declaration",
         "named": true
       }
@@ -31,10 +27,6 @@
       },
       {
         "type": "binary_expression",
-        "named": true
-      },
-      {
-        "type": "import_expression",
         "named": true
       },
       {
@@ -1230,22 +1222,6 @@
     }
   },
   {
-    "type": "function_forward_declaration",
-    "named": true,
-    "fields": {
-      "name": {
-        "multiple": false,
-        "required": true,
-        "types": [
-          {
-            "type": "identifier",
-            "named": true
-          }
-        ]
-      }
-    }
-  },
-  {
     "type": "if_alt_statement",
     "named": true,
     "fields": {
@@ -1328,11 +1304,6 @@
     }
   },
   {
-    "type": "import",
-    "named": true,
-    "fields": {}
-  },
-  {
     "type": "import_clause",
     "named": true,
     "fields": {},
@@ -1350,32 +1321,6 @@
         },
         {
           "type": "namespace_import",
-          "named": true
-        }
-      ]
-    }
-  },
-  {
-    "type": "import_expression",
-    "named": true,
-    "fields": {
-      "source": {
-        "multiple": false,
-        "required": true,
-        "types": [
-          {
-            "type": "expression",
-            "named": true
-          }
-        ]
-      }
-    },
-    "children": {
-      "multiple": false,
-      "required": true,
-      "types": [
-        {
-          "type": "import",
           "named": true
         }
       ]

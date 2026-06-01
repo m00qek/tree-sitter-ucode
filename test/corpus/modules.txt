@@ -71,20 +71,26 @@ import * as ns from "./mod.uc";
     source: (string (string_fragment))))
 
 ================================================================================
-Dynamic import expression
+Dynamic import expression — not supported, produces ERROR
 ================================================================================
 
 let mod = import("./mod.uc");
 
 --------------------------------------------------------------------------------
 
+; `import(...)` as an expression is not valid ucode. Only the static
+; statement form `import "mod.uc"` is supported. The `import` keyword
+; produces an ERROR node; the parenthesised path is recovered as the
+; variable's value.
+
 (program
   (lexical_declaration
     (variable_declarator
       name: (identifier)
-      value: (import_expression
-        (import)
-        source: (string (string_fragment))))))
+      (ERROR)
+      value: (parenthesized_expression
+        (string
+          (string_fragment))))))
 
 ================================================================================
 Export let
@@ -162,17 +168,20 @@ import def, { a } from "./mod.uc";
     source: (string (string_fragment))))
 
 ================================================================================
-Export forward declaration
+Export forward declaration — not supported, produces ERROR
 ================================================================================
 
 export function foo;
 
 --------------------------------------------------------------------------------
 
+; `export function foo;` (forward declaration) is not valid ucode.
+; The parser produces an ERROR node and the semicolon becomes an empty_statement.
+
 (program
-  (export_statement
-    declaration: (function_forward_declaration
-      name: (identifier))))
+  (ERROR
+    (identifier))
+  (empty_statement))
 
 ================================================================================
 Export with rename

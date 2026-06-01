@@ -15,19 +15,6 @@
 )
 
 ; -------------------------------------------------------------------------
-; Function definitions — forward declarations: `function name;`
-; -------------------------------------------------------------------------
-
-(
-  (comment)* @doc
-  .
-  (function_forward_declaration
-    name: (identifier) @name) @definition.function
-  (#strip! @doc "^[\\s\\*/]+|^[\\s\\*/]$")
-  (#select-adjacent! @doc @definition.function)
-)
-
-; -------------------------------------------------------------------------
 ; Function definitions — named function expressions
 ; -------------------------------------------------------------------------
 

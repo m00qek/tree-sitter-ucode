@@ -99,7 +99,6 @@ module.exports = grammar({
     ['member', 'call', $.expression],
     ['declaration', 'literal'],
     [$.primary_expression, $.statement_block, 'object'],
-    [$.import_statement, $.import],
     [$.export_statement, $.primary_expression],
     [$.lexical_declaration, $.primary_expression],
   ],
@@ -143,7 +142,7 @@ module.exports = grammar({
             'default',
             seq(
               field('value', $.expression),
-              $._semicolon,
+              ';',
             ),
           ),
         ),
@@ -173,17 +172,13 @@ module.exports = grammar({
 
     declaration: $ => choice(
       $.function_declaration,
-      $.function_forward_declaration,
       $.lexical_declaration,
     ),
 
     //
     // Import declarations
     // Ucode keeps full ES module static import syntax.
-    // Also adds dynamic `import(path)` as a unary expression (see import_expression).
     //
-
-    import: _ => token('import'),
 
     import_statement: $ => seq(
       'import',
@@ -461,7 +456,6 @@ module.exports = grammar({
       $.binary_expression,
       $.ternary_expression,
       $.update_expression,
-      $.import_expression,
     ),
 
     primary_expression: $ => choice(
@@ -486,13 +480,6 @@ module.exports = grammar({
     ),
 
     // Dynamic import expression: `let m = import("./mod.uc")`
-    import_expression: $ => prec('call', seq(
-      $.import,
-      '(',
-      field('source', $.expression),
-      ')',
-    )),
-
     object: $ => prec('object', seq(
       '{',
       commaSep(optional(choice(
@@ -661,13 +648,6 @@ module.exports = grammar({
       )),
       optional($._automatic_semicolon),
     )),
-
-    // Forward declaration: `function name;`
-    function_forward_declaration: $ => seq(
-      'function',
-      field('name', $.identifier),
-      ';',
-    ),
 
     arrow_function: $ => seq(
       choice(
@@ -857,7 +837,6 @@ module.exports = grammar({
     _reserved_identifier: _ => choice(
       'get',
       'set',
-      'let',
     ),
 
     _semicolon: $ => choice($._automatic_semicolon, ';'),

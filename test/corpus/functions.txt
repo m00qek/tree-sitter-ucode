@@ -38,7 +38,7 @@ function greet(): print("hi"); endfunction
         arguments: (arguments (string (string_fragment)))))))
 
 ================================================================================
-Forward function declaration
+Forward function declaration — not supported, produces ERROR
 ================================================================================
 
 function foo;
@@ -46,9 +46,13 @@ function foo() { return 1; }
 
 --------------------------------------------------------------------------------
 
+; `function foo;` is not valid ucode. The grammar produces an ERROR node
+; and the semicolon is parsed as an empty_statement.
+
 (program
-  (function_forward_declaration
-    name: (identifier))
+  (ERROR
+    (identifier))
+  (empty_statement)
   (function_declaration
     name: (identifier)
     parameters: (formal_parameters)

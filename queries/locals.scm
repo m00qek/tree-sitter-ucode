@@ -6,7 +6,6 @@
 ; -------------------------------------------------------------------------
 
 (function_declaration) @local.scope
-; function_forward_declaration has no body — it is a definition, not a scope
 (function_expression) @local.scope
 (arrow_function) @local.scope
 ; statement_block provides block scoping for let/const
@@ -23,13 +22,9 @@
 ; Definitions — functions
 ; -------------------------------------------------------------------------
 
-; Declaration and forward-declaration names belong to the *enclosing* scope
-; so that callers outside the function body can resolve them.
+; Function declaration names belong to the enclosing scope so that
+; callers outside the function body can resolve them.
 (function_declaration
-  name: (identifier) @local.definition.function
-  (#set! definition.function.scope parent))
-
-(function_forward_declaration
   name: (identifier) @local.definition.function
   (#set! definition.function.scope parent))
 
