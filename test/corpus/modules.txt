@@ -224,3 +224,19 @@ export default 42;
 (program
   (export_statement
     value: (number)))
+
+================================================================================
+Export default without semicolon — produces MISSING node
+================================================================================
+
+export default 42
+
+--------------------------------------------------------------------------------
+
+; Unlike JS, ucode `export default` has no ASI — a literal ';' is required.
+; The parser produces a MISSING ";" node rather than silently accepting a newline.
+
+(program
+  (export_statement
+    value: (number)
+    (MISSING ";")))
