@@ -1,6 +1,26 @@
 {
   "grammars": [
     {
+      "name": "ucode_tmpl",
+      "camelcase": "UcodeTmpl",
+      "scope": "source.uc.tmpl",
+      "path": "./tmpl",
+      "file-types": [
+        "uc"
+      ],
+      "content-regex": "(?m)^\\s*\\{[%{#]",
+      "highlights": [
+        "tmpl/queries/highlights.scm"
+      ],
+      "locals": [
+        "tmpl/queries/locals.scm"
+      ],
+      "injections": [
+        "tmpl/queries/injections.scm"
+      ],
+      "injection-regex": "^ucode_tmpl$"
+    },
+    {
       "name": "ucode",
       "camelcase": "Ucode",
       "scope": "source.uc",
@@ -18,26 +38,6 @@
         "queries/tags.scm"
       ],
       "injection-regex": "^ucode$"
-    },
-    {
-      "name": "ucode_tmpl",
-      "camelcase": "UcodeTmpl",
-      "scope": "source.uc.tmpl",
-      "path": "./tmpl",
-      "file-types": [
-        "uc.tmpl",
-        "utpl"
-      ],
-      "highlights": [
-        "tmpl/queries/highlights.scm"
-      ],
-      "locals": [
-        "tmpl/queries/locals.scm"
-      ],
-      "injections": [
-        "tmpl/queries/injections.scm"
-      ],
-      "injection-regex": "^ucode_tmpl$"
     }
   ],
   "metadata": {
