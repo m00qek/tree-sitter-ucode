@@ -9,10 +9,10 @@
 #define LANGUAGE_VERSION 15
 #define STATE_COUNT 17
 #define LARGE_STATE_COUNT 4
-#define SYMBOL_COUNT 23
+#define SYMBOL_COUNT 24
 #define ALIAS_COUNT 0
-#define TOKEN_COUNT 18
-#define EXTERNAL_TOKEN_COUNT 4
+#define TOKEN_COUNT 19
+#define EXTERNAL_TOKEN_COUNT 5
 #define FIELD_COUNT 4
 #define MAX_ALIAS_SEQUENCE_LENGTH 3
 #define MAX_RESERVED_WORD_SET_SIZE 0
@@ -37,11 +37,12 @@ enum ts_symbol_identifiers {
   sym__stmt_code = 15,
   sym__expr_code = 16,
   sym__comment_body = 17,
-  sym_document = 18,
-  sym_statement_tag = 19,
-  sym_expression_tag = 20,
-  sym_comment_tag = 21,
-  aux_sym_document_repeat1 = 22,
+  sym_eof_close = 18,
+  sym_document = 19,
+  sym_statement_tag = 20,
+  sym_expression_tag = 21,
+  sym_comment_tag = 22,
+  aux_sym_document_repeat1 = 23,
 };
 
 static const char * const ts_symbol_names[] = {
@@ -63,6 +64,7 @@ static const char * const ts_symbol_names[] = {
   [sym__stmt_code] = "code",
   [sym__expr_code] = "code",
   [sym__comment_body] = "comment_content",
+  [sym_eof_close] = "eof_close",
   [sym_document] = "document",
   [sym_statement_tag] = "statement_tag",
   [sym_expression_tag] = "expression_tag",
@@ -89,6 +91,7 @@ static const TSSymbol ts_symbol_map[] = {
   [sym__stmt_code] = sym__stmt_code,
   [sym__expr_code] = sym__stmt_code,
   [sym__comment_body] = sym__comment_body,
+  [sym_eof_close] = sym_eof_close,
   [sym_document] = sym_document,
   [sym_statement_tag] = sym_statement_tag,
   [sym_expression_tag] = sym_expression_tag,
@@ -166,6 +169,10 @@ static const TSSymbolMetadata ts_symbol_metadata[] = {
     .named = true,
   },
   [sym__comment_body] = {
+    .visible = true,
+    .named = true,
+  },
+  [sym_eof_close] = {
     .visible = true,
     .named = true,
   },
@@ -359,7 +366,7 @@ static const TSLexerMode ts_lex_modes[STATE_COUNT] = {
   [10] = {.lex_state = 0, .external_lex_state = 3},
   [11] = {.lex_state = 0, .external_lex_state = 4},
   [12] = {.lex_state = 0, .external_lex_state = 5},
-  [13] = {.lex_state = 0},
+  [13] = {.lex_state = 0, .external_lex_state = 6},
   [14] = {.lex_state = 0},
   [15] = {.lex_state = 0},
   [16] = {.lex_state = 0},
@@ -385,6 +392,7 @@ static const uint16_t ts_parse_table[LARGE_STATE_COUNT][SYMBOL_COUNT] = {
     [sym__stmt_code] = ACTIONS(1),
     [sym__expr_code] = ACTIONS(1),
     [sym__comment_body] = ACTIONS(1),
+    [sym_eof_close] = ACTIONS(1),
   },
   [STATE(1)] = {
     [sym_document] = STATE(16),
@@ -510,34 +518,36 @@ static const uint16_t ts_small_parse_table[] = {
   [84] = 2,
     ACTIONS(72), 1,
       sym__stmt_code,
-    ACTIONS(70), 2,
+    ACTIONS(70), 3,
+      sym_eof_close,
       anon_sym_DASH_PERCENT_RBRACE,
       anon_sym_PERCENT_RBRACE,
-  [92] = 2,
+  [93] = 2,
     ACTIONS(76), 1,
       sym__expr_code,
     ACTIONS(74), 2,
       anon_sym_DASH_RBRACE_RBRACE,
       anon_sym_RBRACE_RBRACE,
-  [100] = 2,
+  [101] = 2,
     ACTIONS(80), 1,
       sym__comment_body,
     ACTIONS(78), 2,
       anon_sym_DASH_POUND_RBRACE,
       anon_sym_POUND_RBRACE,
-  [108] = 1,
-    ACTIONS(82), 2,
+  [109] = 1,
+    ACTIONS(82), 3,
+      sym_eof_close,
       anon_sym_DASH_PERCENT_RBRACE,
       anon_sym_PERCENT_RBRACE,
-  [113] = 1,
+  [115] = 1,
     ACTIONS(84), 2,
       anon_sym_DASH_RBRACE_RBRACE,
       anon_sym_RBRACE_RBRACE,
-  [118] = 1,
+  [120] = 1,
     ACTIONS(86), 2,
       anon_sym_DASH_POUND_RBRACE,
       anon_sym_POUND_RBRACE,
-  [123] = 1,
+  [125] = 1,
     ACTIONS(88), 1,
       ts_builtin_sym_end,
 };
@@ -550,12 +560,12 @@ static const uint32_t ts_small_parse_table_map[] = {
   [SMALL_STATE(8)] = 56,
   [SMALL_STATE(9)] = 70,
   [SMALL_STATE(10)] = 84,
-  [SMALL_STATE(11)] = 92,
-  [SMALL_STATE(12)] = 100,
-  [SMALL_STATE(13)] = 108,
-  [SMALL_STATE(14)] = 113,
-  [SMALL_STATE(15)] = 118,
-  [SMALL_STATE(16)] = 123,
+  [SMALL_STATE(11)] = 93,
+  [SMALL_STATE(12)] = 101,
+  [SMALL_STATE(13)] = 109,
+  [SMALL_STATE(14)] = 115,
+  [SMALL_STATE(15)] = 120,
+  [SMALL_STATE(16)] = 125,
 };
 
 static const TSParseActionEntry ts_parse_actions[] = {
@@ -608,6 +618,7 @@ enum ts_external_scanner_symbol_identifiers {
   ts_external_token__stmt_code = 1,
   ts_external_token__expr_code = 2,
   ts_external_token__comment_body = 3,
+  ts_external_token_eof_close = 4,
 };
 
 static const TSSymbol ts_external_scanner_symbol_map[EXTERNAL_TOKEN_COUNT] = {
@@ -615,26 +626,32 @@ static const TSSymbol ts_external_scanner_symbol_map[EXTERNAL_TOKEN_COUNT] = {
   [ts_external_token__stmt_code] = sym__stmt_code,
   [ts_external_token__expr_code] = sym__expr_code,
   [ts_external_token__comment_body] = sym__comment_body,
+  [ts_external_token_eof_close] = sym_eof_close,
 };
 
-static const bool ts_external_scanner_states[6][EXTERNAL_TOKEN_COUNT] = {
+static const bool ts_external_scanner_states[7][EXTERNAL_TOKEN_COUNT] = {
   [1] = {
     [ts_external_token__raw_text] = true,
     [ts_external_token__stmt_code] = true,
     [ts_external_token__expr_code] = true,
     [ts_external_token__comment_body] = true,
+    [ts_external_token_eof_close] = true,
   },
   [2] = {
     [ts_external_token__raw_text] = true,
   },
   [3] = {
     [ts_external_token__stmt_code] = true,
+    [ts_external_token_eof_close] = true,
   },
   [4] = {
     [ts_external_token__expr_code] = true,
   },
   [5] = {
     [ts_external_token__comment_body] = true,
+  },
+  [6] = {
+    [ts_external_token_eof_close] = true,
   },
 };
 

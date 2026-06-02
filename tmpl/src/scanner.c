@@ -6,6 +6,7 @@ enum TokenType {
     STMT_CODE,
     EXPR_CODE,
     COMMENT_BODY,
+    EOF_CLOSE,
 };
 
 void *tree_sitter_ucode_tmpl_external_scanner_create(void)  { return NULL; }
@@ -160,6 +161,10 @@ bool tree_sitter_ucode_tmpl_external_scanner_scan(
 ) {
     (void)payload;
 
+    if (valid_symbols[EOF_CLOSE] && lexer->lookahead == '\0') {
+        lexer->result_symbol = EOF_CLOSE;
+        return true;
+    }
     if (valid_symbols[RAW_TEXT])     return scan_raw_text(lexer);
     if (valid_symbols[STMT_CODE])    return scan_stmt_code(lexer);
     if (valid_symbols[EXPR_CODE])    return scan_expr_code(lexer);

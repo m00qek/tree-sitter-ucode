@@ -130,6 +130,10 @@
           {
             "type": "-%}",
             "named": false
+          },
+          {
+            "type": "eof_close",
+            "named": true
           }
         ]
       },
@@ -189,6 +193,10 @@
   },
   {
     "type": "comment_content",
+    "named": true
+  },
+  {
+    "type": "eof_close",
     "named": true
   },
   {

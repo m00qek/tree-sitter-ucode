@@ -301,7 +301,7 @@ Empty expression tag
   (raw_text))
 
 ================================================================================
-Unclosed statement tag
+Statement tag with implicit EOF close
 ================================================================================
 
 {%
@@ -313,7 +313,7 @@ unclosed
   (raw_text)
   (statement_tag
     (code)
-    (MISSING "-%}")))
+    (eof_close)))
 
 ================================================================================
 Unclosed expression tag

@@ -89,6 +89,10 @@
               {
                 "type": "STRING",
                 "value": "%}"
+              },
+              {
+                "type": "SYMBOL",
+                "name": "eof_close"
               }
             ]
           }
@@ -235,6 +239,10 @@
     {
       "type": "SYMBOL",
       "name": "_comment_body"
+    },
+    {
+      "type": "SYMBOL",
+      "name": "eof_close"
     }
   ],
   "inline": [],

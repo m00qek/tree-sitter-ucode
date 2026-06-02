@@ -33,6 +33,7 @@ module.exports = grammar({
     $._stmt_code,    // content between {% ... %} (before the closer)
     $._expr_code,    // content between {{ ... }} (before the closer)
     $._comment_body, // content between {# ... #} (before the closer)
+    $.eof_close,     // emitted at EOF when inside a statement tag (implicit close)
   ],
 
   // The template scanner handles all whitespace explicitly; no implicit extras.
@@ -49,7 +50,7 @@ module.exports = grammar({
     statement_tag: $ => seq(
       field('open',  choice('{%-', '{%+', '{%')),
       field('code',  optional(alias($._stmt_code, $.code))),
-      field('close', choice('-%}', '%}')),
+      field('close', choice('-%}', '%}', $.eof_close)),
     ),
 
     expression_tag: $ => seq(
