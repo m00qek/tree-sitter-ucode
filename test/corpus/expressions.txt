@@ -381,3 +381,45 @@ let y = obj.get;
       value: (member_expression
         object: (identifier)
         property: (property_identifier)))))
+
+================================================================================
+Spread in object literal
+================================================================================
+
+let obj = { ...a, b: 2 };
+
+--------------------------------------------------------------------------------
+
+(program
+  (lexical_declaration
+    (variable_declarator
+      name: (identifier)
+      value: (object
+        (spread_element (identifier))
+        (pair
+          key: (property_identifier)
+          value: (number))))))
+
+================================================================================
+Method shorthand in object literal
+================================================================================
+
+let obj = { foo: function() {}, bar: () => 1 };
+
+--------------------------------------------------------------------------------
+
+(program
+  (lexical_declaration
+    (variable_declarator
+      name: (identifier)
+      value: (object
+        (pair
+          key: (property_identifier)
+          value: (function_expression
+            parameters: (formal_parameters)
+            body: (statement_block)))
+        (pair
+          key: (property_identifier)
+          value: (arrow_function
+            parameters: (formal_parameters)
+            body: (number)))))))

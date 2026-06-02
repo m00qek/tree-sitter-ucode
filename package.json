@@ -48,7 +48,7 @@
   "scripts": {
     "install": "node-gyp-build",
     "build": "tree-sitter generate && tree-sitter generate tmpl/grammar.js --output tmpl/src && node-gyp-build && tree-sitter build --output ucode.so . && tree-sitter build --output ucode_tmpl.so ./tmpl",
-    "test": "tree-sitter test && tree-sitter test -p tmpl",
+    "test": "tree-sitter test --lib-path ucode.so --lang-name ucode && tree-sitter test -p tmpl",
     "prestart": "tree-sitter build --wasm",
     "start": "tree-sitter playground"
   }

@@ -298,3 +298,69 @@ x = 1; /* a comment */ y = 2;
   (comment)
   (expression_statement
     (assignment_expression left: (identifier) right: (number))))
+
+================================================================================
+Try without catch
+================================================================================
+
+try {
+  risky();
+}
+
+--------------------------------------------------------------------------------
+
+(program
+  (try_statement
+    body: (statement_block
+      (expression_statement
+        (call_expression
+          function: (identifier)
+          arguments: (arguments))))))
+
+================================================================================
+Return without value
+================================================================================
+
+function f() { return; }
+
+--------------------------------------------------------------------------------
+
+(program
+  (function_declaration
+    name: (identifier)
+    parameters: (formal_parameters)
+    body: (statement_block
+      (return_statement))))
+
+================================================================================
+All augmented assignment operators
+================================================================================
+
+x **= 2;
+x ^= 1;
+x &= mask;
+x |= flag;
+x >>= 1;
+x <<= 1;
+x &&= y;
+x ||= y;
+
+--------------------------------------------------------------------------------
+
+(program
+  (expression_statement
+    (augmented_assignment_expression left: (identifier) right: (number)))
+  (expression_statement
+    (augmented_assignment_expression left: (identifier) right: (number)))
+  (expression_statement
+    (augmented_assignment_expression left: (identifier) right: (identifier)))
+  (expression_statement
+    (augmented_assignment_expression left: (identifier) right: (identifier)))
+  (expression_statement
+    (augmented_assignment_expression left: (identifier) right: (number)))
+  (expression_statement
+    (augmented_assignment_expression left: (identifier) right: (number)))
+  (expression_statement
+    (augmented_assignment_expression left: (identifier) right: (identifier)))
+  (expression_statement
+    (augmented_assignment_expression left: (identifier) right: (identifier))))

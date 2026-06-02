@@ -340,3 +340,42 @@ for (let k, v in arr): print(k, v); endfor
         arguments: (arguments
           (identifier)
           (identifier))))))
+
+================================================================================
+Alt if with multiple body statements
+================================================================================
+
+if (x): print(1); print(2); endif
+
+--------------------------------------------------------------------------------
+
+(program
+  (if_alt_statement
+    condition: (parenthesized_expression (identifier))
+    body: (expression_statement
+      (call_expression
+        function: (identifier)
+        arguments: (arguments (number))))
+    body: (expression_statement
+      (call_expression
+        function: (identifier)
+        arguments: (arguments (number))))))
+
+================================================================================
+Nested alt syntax
+================================================================================
+
+if (x): for (k in arr): print(k); endfor endif
+
+--------------------------------------------------------------------------------
+
+(program
+  (if_alt_statement
+    condition: (parenthesized_expression (identifier))
+    body: (for_in_alt_statement
+      left: (identifier)
+      right: (identifier)
+      body: (expression_statement
+        (call_expression
+          function: (identifier)
+          arguments: (arguments (identifier)))))))
