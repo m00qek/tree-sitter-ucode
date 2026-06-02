@@ -7,7 +7,12 @@ Two grammars are provided:
 | Grammar | Scope | File types |
 |---------|-------|------------|
 | `ucode` | `source.uc` | `.uc` |
-| `ucode_tmpl` | `source.uc.tmpl` | `.uc.tmpl`, `.utpl` |
+| `ucode_tmpl` | `source.uc.tmpl` | `.uc` (template files — detected by content) |
+
+Both grammars use the `.uc` extension. Template files are distinguished from plain
+code files by content: any `.uc` file whose first tag opener (`{%`, `{{`, or `{#`)
+appears at the start of a line is automatically parsed by `ucode_tmpl`. Plain code
+files fall back to `ucode`. See [File-type detection](#file-type-detection) below.
 
 ## Ucode vs JavaScript
 
@@ -55,9 +60,17 @@ npm test             # runs tree-sitter test for ucode and ucode_tmpl
 To filter by corpus file name:
 
 ```sh
-npx tree-sitter test --file-name control_flow
+npx tree-sitter test --lib-path ucode.so --lang-name ucode --file-name control_flow
 npx tree-sitter test -p tmpl --file-name template
 ```
+
+## File-type detection
+
+Both grammars claim the `.uc` extension. Tools that respect `content-regex` in
+`tree-sitter.json` (including the tree-sitter CLI ≥ 0.24) automatically route
+template files to `ucode_tmpl` when a tag opener appears at the start of a line.
+Editors that manage their own filetype dispatch (Neovim, Helix) need an explicit
+rule — see the editor sections below.
 
 ## Use in Neovim (nvim-treesitter)
 
@@ -85,15 +98,26 @@ parser_config.ucode_tmpl = {
 }
 ```
 
-Associate `.uc` and `.uc.tmpl` files with the right filetypes:
+Associate `.uc` files with the right filetype. Since nvim-treesitter does not
+use `content-regex`, the mapping must be done with a `BufRead` autocmd or a
+filetype function that inspects the file content:
 
 ```lua
 vim.filetype.add({
   extension = {
-    uc   = "ucode",
-    utpl = "ucode_tmpl",
+    uc = function(path)
+      -- Files whose first tag opener is at the start of a line are templates
+      local f = io.open(path, "r")
+      if f then
+        local content = f:read("*a")
+        f:close()
+        if content:find("^%s*{[%%{#]", 1, false) or content:find("\n%s*{[%%{#]") then
+          return "ucode_tmpl"
+        end
+      end
+      return "ucode"
+    end,
   },
-  pattern = { [".*%.uc%.tmpl"] = "ucode_tmpl" },
 })
 ```
 
@@ -103,32 +127,38 @@ Add to `~/.config/helix/languages.toml`:
 
 ```toml
 [[language]]
-name        = "ucode"
-scope       = "source.uc"
-file-types  = ["uc"]
+name          = "ucode"
+scope         = "source.uc"
+file-types    = [{ glob = "*.uc" }]
 comment-token = "//"
-indent      = { tab-width = 2, unit = "  " }
-grammar     = "ucode"
+indent        = { tab-width = 2, unit = "  " }
+grammar       = "ucode"
 
 [[language]]
-name        = "ucode-tmpl"
-scope       = "source.uc.tmpl"
-file-types  = ["uc.tmpl", "utpl"]
-grammar     = "ucode_tmpl"
+name          = "ucode-tmpl"
+scope         = "source.uc.tmpl"
+comment-token = "{#"
+indent        = { tab-width = 2, unit = "  " }
+grammar       = "ucode_tmpl"
 
 [[grammar]]
 name   = "ucode"
-source = { git = "https://github.com/m00qek/tree-sitter-ucode", rev = "main" }
+source = { git = "https://github.com/m00qek/tree-sitter-ucode", rev = "v0.3.0" }
 
 [[grammar]]
 name   = "ucode_tmpl"
-source = { git = "https://github.com/m00qek/tree-sitter-ucode", rev = "main", subpath = "tmpl" }
+source = { git = "https://github.com/m00qek/tree-sitter-ucode", rev = "v0.3.0", subpath = "tmpl" }
 ```
 
-## Template files (.uc.tmpl / .utpl)
+Helix does not support content-based filetype detection. To open a `.uc`
+template file as `ucode-tmpl`, use `:set-language ucode-tmpl` in command mode,
+or configure a file-specific override via a `.helix/languages.toml` in your
+project.
 
-Template files mix raw text with code tags. The `ucode_tmpl` grammar produces
-a document tree; editors use language injection to apply ucode highlighting
+## Template files
+
+Template files mix raw text with code tags. The `ucode_tmpl` grammar produces a
+`document` tree; editors use language injection to apply ucode highlighting
 inside the code and expression tags.
 
 | Tag | Purpose |
@@ -141,7 +171,17 @@ inside the code and expression tags.
 | `{%+ ... %}` | Statement block — suppress `lstrip_blocks` stripping |
 | `{#- ... -#}` | Comment — strip whitespace on both sides |
 
-Opener and closer markers are independent: any opener variant may be combined with any closer variant. `{%-` / `{{-` / `{#-` strip the preceding raw text; `-%}` / `-}}` / `-#}` strip the following raw text. `{%+` suppresses `lstrip_blocks` stripping and may be combined with `-%}` (e.g. `{%+ ... -%}`).
+Opener and closer markers are independent: any opener variant may be combined
+with any closer variant. `{%-` / `{{-` / `{#-` strip the preceding raw text;
+`-%}` / `-}}` / `-#}` strip the following raw text. `{%+` suppresses
+`lstrip_blocks` stripping and may be combined with `-%}`.
+
+**EOF-implicit close**: a `{%` statement tag that reaches end-of-file without
+an explicit `%}` is treated as implicitly closed. This supports the common
+OpenWrt pattern of a file that opens one `{%` block at the top and contains
+only ucode code, with no closing `%}`. The parse tree shows an `(eof_close)`
+node in the `close` field. Expression (`{{`) and comment (`{#`) tags still
+require explicit closers.
 
 Example:
 
