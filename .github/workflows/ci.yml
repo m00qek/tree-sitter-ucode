@@ -40,9 +40,12 @@ jobs:
       - name: Set up tree-sitter
         uses: tree-sitter/setup-action/cli@v2
 
+      - name: Build ucode parser library
+        run: tree-sitter build --output ucode.so .
+
       - name: Run corpus tests
         shell: bash
-        run: tree-sitter test && tree-sitter test -p tmpl
+        run: tree-sitter test --lib-path ucode.so --lang-name ucode && tree-sitter test -p tmpl
 
   validate:
     name: Validate
