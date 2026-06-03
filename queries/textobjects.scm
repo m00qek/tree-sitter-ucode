@@ -10,10 +10,8 @@
 (function_declaration
   body: (statement_block) @function.inner) @function.outer
 
-; Colon-body function declaration (function f(): ... endfunction)
-(function_declaration
-  "endfunction" @_end
-  (#make-range! "function.inner" @_end @_end)) @function.outer
+; Colon-body function declaration — outer only; no block node to target for inner
+(function_declaration "endfunction") @function.outer
 
 (function_expression
   body: (statement_block) @function.inner) @function.outer
@@ -21,17 +19,27 @@
 (arrow_function
   body: (statement_block) @function.inner) @function.outer
 
+; Arrow function with expression body (no braces)
 (arrow_function
-  body: [(number)(string)(identifier)(call_expression)(binary_expression)
-         (unary_expression)(member_expression)(subscript_expression)
-         (ternary_expression)(object)(array)(template_string)] @function.inner) @function.outer
+  body: [
+    (number) (string) (identifier)
+    (call_expression) (binary_expression) (unary_expression)
+    (member_expression) (subscript_expression) (ternary_expression)
+    (object) (array) (template_string) (regex)
+    (true) (false) (null) (this)
+  ] @function.inner) @function.outer
 
 ; -------------------------------------------------------------------------
 ; Parameters
+;
+; @parameter.inner — the parameter node itself
+; @parameter.outer — same node; nvim-treesitter-textobjects extends the
+;   selection to absorb adjacent ',' delimiters automatically when the
+;   capture name ends in .outer
 ; -------------------------------------------------------------------------
 
-(formal_parameters
-  (_) @parameter.inner @parameter.outer)
+(formal_parameters (_) @parameter.inner)
+(formal_parameters (_) @parameter.outer)
 
 ; -------------------------------------------------------------------------
 ; Conditionals
