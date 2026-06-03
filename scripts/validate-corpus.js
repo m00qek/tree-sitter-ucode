@@ -54,7 +54,10 @@ const EXPECTED_INVALID = new Set([
 // ---------------------------------------------------------------------------
 
 function isTemplate(code) {
-  return /\{[%{#]/.test(code);
+  // Mirror tree-sitter.json content-regex: opener must be at start of line.
+  // An unanchored match would mis-route files with {%/{#/{{ inside string
+  // literals or comments to the ucode_tmpl parser.
+  return /^[ \t]*\{[%{#]/m.test(code);
 }
 
 function parse(code, tmpl) {
