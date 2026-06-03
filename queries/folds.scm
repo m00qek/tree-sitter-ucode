@@ -3,6 +3,10 @@
 
 ; -------------------------------------------------------------------------
 ; Brace-delimited blocks
+;
+; statement_block covers brace-body function_declaration, function_expression,
+; and arrow_function bodies — the signature line stays visible because the
+; fold starts at '{', not at the 'function' keyword.
 ; -------------------------------------------------------------------------
 
 [
@@ -24,13 +28,11 @@
 ] @fold
 
 ; -------------------------------------------------------------------------
-; Top-level function and arrow function bodies
+; Colon-body function declaration (function f(): ... endfunction)
+;
+; Brace-body function declarations are folded via (statement_block) above.
+; The colon form has no statement_block, so we fold the whole declaration.
+; We filter on "endfunction" so this pattern only matches the colon form.
 ; -------------------------------------------------------------------------
 
-(function_declaration) @fold
-
-(function_expression
-  body: (statement_block) @fold)
-
-(arrow_function
-  body: (statement_block) @fold)
+(function_declaration "endfunction") @fold
