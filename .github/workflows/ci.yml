@@ -40,16 +40,13 @@ jobs:
       - name: Set up tree-sitter
         uses: tree-sitter/setup-action/cli@v2
 
-      - name: Build ucode parser library
-        shell: bash
-        run: |
-          EXT=$([[ "$RUNNER_OS" == "Windows" ]] && echo dll || echo so)
-          tree-sitter build --output "ucode.$EXT" .
-          echo "UCODE_LIB=ucode.$EXT" >> "$GITHUB_ENV"
+      - name: Set up Node.js
+        uses: actions/setup-node@v4
+        with:
+          node-version: "22"
 
       - name: Run corpus tests
-        shell: bash
-        run: tree-sitter test --lib-path "$UCODE_LIB" --lang-name ucode && tree-sitter test -p tmpl
+        run: node scripts/run-tests.js
 
   validate:
     name: Validate
