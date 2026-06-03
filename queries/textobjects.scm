@@ -19,15 +19,12 @@
 (arrow_function
   body: (statement_block) @function.inner) @function.outer
 
-; Arrow function with expression body (no braces)
+; Arrow function with expression body (no braces).
+; Uses the 'expression' supertype so all expression forms are matched
+; without an explicit enumeration — including update_expression (x => x++),
+; assignment_expression (x => y = 1), and any type added to the grammar later.
 (arrow_function
-  body: [
-    (number) (string) (identifier)
-    (call_expression) (binary_expression) (unary_expression)
-    (member_expression) (subscript_expression) (ternary_expression)
-    (object) (array) (template_string) (regex)
-    (true) (false) (null) (this)
-  ] @function.inner) @function.outer
+  body: (expression) @function.inner) @function.outer
 
 ; -------------------------------------------------------------------------
 ; Parameters
