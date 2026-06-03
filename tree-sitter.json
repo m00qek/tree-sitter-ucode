@@ -6,7 +6,8 @@
       "scope": "source.uc.tmpl",
       "path": "./tmpl",
       "file-types": [
-        "uc"
+        "uc",
+        "utpl"
       ],
       "content-regex": "(?m)^\\s*\\{[%{#]",
       "highlights": [
