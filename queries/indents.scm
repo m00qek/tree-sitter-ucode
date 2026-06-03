@@ -49,6 +49,12 @@
 (else_alt_clause "else") @indent.branch
 (elif_clause "elif") @indent.branch
 
+; else_alt_clause has no ':' delimiter (grammar: 'else' repeat(statement)),
+; so @indent.branch alone only dedents the 'else' keyword — it does not
+; open an indent scope for the body. Add @indent.begin on the whole node
+; so the body statements are indented one level relative to 'else'.
+(else_alt_clause) @indent.begin
+
 ; -------------------------------------------------------------------------
 ; Switch
 ; -------------------------------------------------------------------------
