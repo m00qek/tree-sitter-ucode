@@ -41,7 +41,7 @@ jobs:
         uses: tree-sitter/setup-action/cli@v2
 
       - name: Set up Node.js
-        uses: actions/setup-node@v4
+        uses: actions/setup-node@v6
         with:
           node-version: "22"
 
@@ -123,7 +123,7 @@ jobs:
           npx tree-sitter build --wasm tmpl
 
       - name: Upload WASM artifact
-        uses: actions/upload-artifact@v7
+        uses: actions/upload-artifact@v4
         with:
           name: wasm
           path: "*.wasm"
@@ -176,7 +176,7 @@ jobs:
         run: npx prebuildify --napi --strip
 
       - name: Upload prebuild artifact
-        uses: actions/upload-artifact@v7
+        uses: actions/upload-artifact@v4
         with:
           name: prebuilds-${{ matrix.os }}-${{ matrix.arch }}
           path: prebuilds/
@@ -203,13 +203,13 @@ jobs:
         run: npm ci --ignore-scripts
 
       - name: Download WASM
-        uses: actions/download-artifact@v8
+        uses: actions/download-artifact@v4
         with:
           name: wasm
           path: .
 
       - name: Download prebuilds
-        uses: actions/download-artifact@v8
+        uses: actions/download-artifact@v4
         with:
           pattern: prebuilds-*
           path: prebuilds
