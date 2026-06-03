@@ -22,7 +22,7 @@ src/
   parser.c              Generated — do not edit
   grammar.json          Generated — do not edit
 tmpl/
-  grammar.js            ucode_tmpl grammar (.uc.tmpl / .utpl files)
+  grammar.js            ucode_tmpl grammar (template .uc files, detected by content)
   src/                  Generated parser for the template grammar
   queries/              Highlight, inject, and locals queries for ucode_tmpl
 queries/                Highlight, locals, and tags queries for ucode
@@ -34,7 +34,7 @@ scripts/
 
 ## Editing the grammar
 
-The grammar for `.uc` files lives in `grammar.js`; the template grammar for `.uc.tmpl` / `.utpl` files lives in `tmpl/grammar.js`. After editing either file, regenerate the parser:
+The grammar for `.uc` files lives in `grammar.js`; the template grammar (for template `.uc` files detected by content) lives in `tmpl/grammar.js`. After editing either file, regenerate the parser:
 
 ```sh
 # ucode grammar
@@ -72,8 +72,8 @@ echo '<code>' > /tmp/test.uc
 npx tree-sitter parse /tmp/test.uc
 
 # ucode_tmpl
-echo '<code>' > /tmp/test.utpl
-npx tree-sitter parse -p tmpl /tmp/test.utpl
+echo '<code>' > /tmp/test.uc
+npx tree-sitter parse --lib-path ucode_tmpl.so --lang-name ucode_tmpl /tmp/test.uc
 ```
 
 Add the test to an existing file whose category matches (e.g. `expressions.txt`, `control_flow.txt`), or create a new file if no suitable one exists. Every new syntactic feature or deliberate removal should have at least one corpus test.
@@ -81,12 +81,17 @@ Add the test to an existing file whose category matches (e.g. `expressions.txt`,
 ## Running tests
 
 ```sh
-npm test                               # both grammars
-npx tree-sitter test                   # ucode only
-npx tree-sitter test -p tmpl           # ucode_tmpl only
+npm test                               # both grammars (builds ucode.so automatically)
 
-# Filter by corpus file name or test name substring:
-npx tree-sitter test --file-name control_flow
+# Individual grammars — ucode_tmpl is first in tree-sitter.json for content-regex
+# routing, so the ucode grammar must be selected explicitly via --lib-path:
+npx tree-sitter build --output ucode.so . && \
+  npx tree-sitter test --lib-path ucode.so --lang-name ucode   # ucode only
+npx tree-sitter test -p tmpl                                    # ucode_tmpl only
+
+# Filter by corpus file name:
+npx tree-sitter build --output ucode.so . && \
+  npx tree-sitter test --lib-path ucode.so --lang-name ucode --file-name control_flow
 npx tree-sitter test -p tmpl --file-name template
 ```
 
