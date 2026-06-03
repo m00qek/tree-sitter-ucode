@@ -35,13 +35,13 @@ jobs:
 
     steps:
       - name: Checkout repository
-        uses: actions/checkout@v6
+        uses: actions/checkout@v4
 
       - name: Set up tree-sitter
         uses: tree-sitter/setup-action/cli@v2
 
       - name: Set up Node.js
-        uses: actions/setup-node@v6
+        uses: actions/setup-node@v4
         with:
           node-version: "22"
 
@@ -54,10 +54,10 @@ jobs:
 
     steps:
       - name: Checkout repository
-        uses: actions/checkout@v6
+        uses: actions/checkout@v4
 
       - name: Set up Node.js
-        uses: actions/setup-node@v6
+        uses: actions/setup-node@v4
         with:
           node-version: '22'
           cache: npm
@@ -72,7 +72,7 @@ jobs:
           git diff --exit-code src/ tmpl/src/
 
       - name: Checkout ucode language test suite
-        uses: actions/checkout@v6
+        uses: actions/checkout@v4
         with:
           repository: jow-/ucode
           path: ucode-lang
@@ -84,7 +84,7 @@ jobs:
         run: node scripts/validate-corpus.js corpus ucode-lang/tests/custom
 
       - name: Checkout firewall4
-        uses: actions/checkout@v6
+        uses: actions/checkout@v4
         with:
           repository: openwrt/firewall4
           path: firewall4
@@ -100,10 +100,10 @@ jobs:
 
     steps:
       - name: Checkout repository
-        uses: actions/checkout@v6
+        uses: actions/checkout@v4
 
       - name: Set up Node.js
-        uses: actions/setup-node@v6
+        uses: actions/setup-node@v4
         with:
           node-version: '22'
           cache: npm
@@ -112,7 +112,7 @@ jobs:
         run: npm ci
 
       - name: Cache wasi-sdk
-        uses: actions/cache@v5
+        uses: actions/cache@v4
         with:
           path: ~/.cache/tree-sitter
           key: wasi-sdk-${{ hashFiles('package-lock.json') }}
@@ -143,10 +143,10 @@ jobs:
 
     steps:
       - name: Checkout repository
-        uses: actions/checkout@v6
+        uses: actions/checkout@v4
 
       - name: Set up Node.js
-        uses: actions/setup-node@v6
+        uses: actions/setup-node@v4
         with:
           node-version: '22'
           cache: npm
@@ -191,10 +191,10 @@ jobs:
 
     steps:
       - name: Checkout repository
-        uses: actions/checkout@v6
+        uses: actions/checkout@v4
 
       - name: Set up Node.js
-        uses: actions/setup-node@v6
+        uses: actions/setup-node@v4
         with:
           node-version: '24'
           registry-url: 'https://registry.npmjs.org'
