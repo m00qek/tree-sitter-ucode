@@ -73,6 +73,12 @@
 
 ; -------------------------------------------------------------------------
 ; Blocks
+;
+; @block.outer — the full statement_block including braces
+; @block.inner — named children only; nvim-treesitter-textobjects selects
+;   from the first to the last captured child, covering the block interior
+;   without needing the deprecated #make-range! predicate
 ; -------------------------------------------------------------------------
 
 (statement_block) @block.outer
+(statement_block (_) @block.inner)
