@@ -71,7 +71,8 @@ To get the expected parse tree for a new input:
 echo '<code>' > /tmp/test.uc
 npx tree-sitter parse /tmp/test.uc
 
-# ucode_tmpl
+# ucode_tmpl (build the shared library first)
+npx tree-sitter build --output ucode_tmpl.so ./tmpl
 echo '<code>' > /tmp/test.uc
 npx tree-sitter parse --lib-path ucode_tmpl.so --lang-name ucode_tmpl /tmp/test.uc
 ```
@@ -81,10 +82,11 @@ Add the test to an existing file whose category matches (e.g. `expressions.txt`,
 ## Running tests
 
 ```sh
-npm test                               # both grammars (builds ucode.so automatically)
+npm test                               # both grammars, platform-aware (recommended)
 
 # Individual grammars — ucode_tmpl is first in tree-sitter.json for content-regex
-# routing, so the ucode grammar must be selected explicitly via --lib-path:
+# routing, so the ucode grammar must be selected explicitly via --lib-path.
+# On Windows replace .so with .dll in the commands below.
 npx tree-sitter build --output ucode.so . && \
   npx tree-sitter test --lib-path ucode.so --lang-name ucode   # ucode only
 npx tree-sitter test -p tmpl                                    # ucode_tmpl only
