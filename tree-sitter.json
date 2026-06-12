@@ -1,25 +1,25 @@
 {
   "grammars": [
     {
-      "name": "ucode_tmpl",
-      "camelcase": "UcodeTmpl",
-      "scope": "source.uc.tmpl",
-      "path": "./tmpl",
+      "name": "ucode_markup",
+      "camelcase": "UcodeMarkup",
+      "scope": "source.ucode.markup",
+      "path": "./markup",
       "file-types": [
-        "uc",
-        "utpl"
+        "utpl",
+        "uc.tmpl"
       ],
       "content-regex": "(?m)^\\s*\\{[%{#]",
       "highlights": [
-        "tmpl/queries/highlights.scm"
+        "markup/queries/highlights.scm"
       ],
       "locals": [
-        "tmpl/queries/locals.scm"
+        "markup/queries/locals.scm"
       ],
       "injections": [
-        "tmpl/queries/injections.scm"
+        "markup/queries/injections.scm"
       ],
-      "injection-regex": "^ucode_tmpl$"
+      "injection-regex": "^ucode_markup$"
     },
     {
       "name": "ucode",
@@ -39,6 +39,22 @@
         "queries/tags.scm"
       ],
       "injection-regex": "^ucode$"
+    },
+    {
+      "name": "ucode_tmpl",
+      "camelcase": "UcodeTmpl",
+      "scope": "source.uc.tmpl",
+      "path": "./tmpl",
+      "highlights": [
+        "tmpl/queries/highlights.scm"
+      ],
+      "locals": [
+        "tmpl/queries/locals.scm"
+      ],
+      "injections": [
+        "tmpl/queries/injections.scm"
+      ],
+      "injection-regex": "^ucode_tmpl$"
     }
   ],
   "metadata": {
