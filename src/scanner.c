@@ -44,12 +44,19 @@ static inline void skip(TSLexer *lexer)    { lexer->advance(lexer, true);  }
  * ---------------------------------------------------------------------- */
 
 /*
- * Scan raw text: everything outside a tag delimiter.
- * Stops (without consuming) before { followed by %, {, or #.
+ * scan_raw_text_from(lexer, has_content)
+ *
+ * Core raw-text loop.  Caller sets has_content=true when it has already
+ * consumed one or more characters (e.g. a lone '{' that turned out not to
+ * be a tag opener) so that the scanner returns true even if no additional
+ * characters follow.
+ *
+ * Stops BEFORE '{' that is followed by '%', '{', or '#' (tag/comment openers).
+ * A lone '{' is committed on the next iteration's mark_end.
  */
-static bool scan_raw_text(TSLexer *lexer) {
+static bool scan_raw_text_from(TSLexer *lexer, bool has_content) {
     lexer->result_symbol = RAW_TEXT;
-    for (bool has_content = false;; has_content = true) {
+    while (true) {
         lexer->mark_end(lexer);
         if (lexer->lookahead == '\0') return has_content;
         if (lexer->lookahead == '{') {
@@ -58,31 +65,74 @@ static bool scan_raw_text(TSLexer *lexer) {
                 lexer->lookahead == '{' ||
                 lexer->lookahead == '#')
                 return has_content;
-            /* lone '{' — will be committed on the next iteration's mark_end */
         } else {
             advance(lexer);
         }
+        has_content = true;
     }
 }
 
 /*
- * Scan statement tag open: {%  {%-  {%+
+ * scan_markup(lexer, valid_symbols)
+ *
+ * Unified handler for all three markup-opener tokens (RAW_TEXT,
+ * STATEMENT_TAG_OPEN, EXPRESSION_TAG_OPEN).  Must be called when at
+ * least one of those three is valid.
+ *
+ * Problem with calling separate sub-scanners sequentially:
+ *   scan_raw_text advances past '{' when it returns false (tag found),
+ *   leaving the lexer at position+1.  Subsequent sub-scanners then see
+ *   the wrong character and also fail, so the whole scanner returns false
+ *   and tree-sitter falls back to the internal '{' token — which has no
+ *   valid action in the markup root state and triggers error recovery.
+ *
+ * Fix: handle '{' atomically here.  Advance past '{' exactly once, inspect
+ * the second character, then dispatch without any further position skew.
  */
-static bool scan_statement_tag_open(TSLexer *lexer) {
-    if (lexer->lookahead != '{') return false;
+static bool scan_markup(TSLexer *lexer, const bool *valid_symbols) {
+    /* Not at '{': only raw text is possible. */
+    if (lexer->lookahead != '{')
+        return valid_symbols[RAW_TEXT] ? scan_raw_text_from(lexer, false) : false;
+
+    /* Peek at the second character by advancing past '{'. */
     advance(lexer);
-    if (lexer->lookahead != '%') return false;
-    advance(lexer);
-    if (lexer->lookahead == '-' || lexer->lookahead == '+') advance(lexer);
-    lexer->mark_end(lexer);
-    lexer->result_symbol = STATEMENT_TAG_OPEN;
-    return true;
+
+    /* {%  {%-  {%+ — statement tag open */
+    if (lexer->lookahead == '%' && valid_symbols[STATEMENT_TAG_OPEN]) {
+        advance(lexer);
+        if (lexer->lookahead == '-' || lexer->lookahead == '+') advance(lexer);
+        lexer->mark_end(lexer);
+        lexer->result_symbol = STATEMENT_TAG_OPEN;
+        return true;
+    }
+
+    /* {{  {{- — expression tag open */
+    if (lexer->lookahead == '{' && valid_symbols[EXPRESSION_TAG_OPEN]) {
+        advance(lexer);
+        if (lexer->lookahead == '-') advance(lexer);
+        lexer->mark_end(lexer);
+        lexer->result_symbol = EXPRESSION_TAG_OPEN;
+        return true;
+    }
+
+    /* {#  {#- — comment tag; let the internal lexer match the literal '{#'. */
+    if (lexer->lookahead == '#') return false;
+
+    /* '{' followed by anything else: include it in raw text. */
+    return valid_symbols[RAW_TEXT] ? scan_raw_text_from(lexer, true) : false;
 }
+
 
 /*
  * Scan statement tag close: %}  -%}
+ * Skip leading whitespace — the scanner is responsible for consuming optional
+ * spaces/tabs between the last code token and the close marker.
  */
 static bool scan_statement_tag_close(TSLexer *lexer) {
+    while (lexer->lookahead == ' ' || lexer->lookahead == '\t' ||
+           lexer->lookahead == '\r' || lexer->lookahead == '\n')
+        skip(lexer);
+
     if (lexer->lookahead == '-') {
         advance(lexer);
         if (lexer->lookahead != '%') return false;
@@ -102,23 +152,14 @@ static bool scan_statement_tag_close(TSLexer *lexer) {
 }
 
 /*
- * Scan expression tag open: {{  {{-
- */
-static bool scan_expression_tag_open(TSLexer *lexer) {
-    if (lexer->lookahead != '{') return false;
-    advance(lexer);
-    if (lexer->lookahead != '{') return false;
-    advance(lexer);
-    if (lexer->lookahead == '-') advance(lexer);
-    lexer->mark_end(lexer);
-    lexer->result_symbol = EXPRESSION_TAG_OPEN;
-    return true;
-}
-
-/*
  * Scan expression tag close: }}  -}}
+ * Skip leading whitespace — spaces between the expression and }} are ignored.
  */
 static bool scan_expression_tag_close(TSLexer *lexer) {
+    while (lexer->lookahead == ' ' || lexer->lookahead == '\t' ||
+           lexer->lookahead == '\r' || lexer->lookahead == '\n')
+        skip(lexer);
+
     if (lexer->lookahead == '-') {
         advance(lexer);
         if (lexer->lookahead != '}') return false;
@@ -378,19 +419,15 @@ bool tree_sitter_ucode_external_scanner_scan(
     /*
      * Markup-mode tokens.
      *
-     * scan_raw_text stops before {%, {{, and {# and returns false when
-     * positioned right at a tag opener (no content before it).
-     * Tree-sitter restores the lexer position when a scanner returns false,
-     * so the tag-open scanners see the '{' as their first character.
+     * All three markup openers are dispatched through scan_markup(), which
+     * handles the '{' character atomically — advancing past it once and then
+     * inspecting the second character — to avoid the position-skew bug that
+     * arises when sequential sub-scanners each try to advance past '{'.
      */
-    if (valid_symbols[RAW_TEXT]) {
-        if (scan_raw_text(lexer)) return true;
-    }
-    if (valid_symbols[STATEMENT_TAG_OPEN]) {
-        if (scan_statement_tag_open(lexer)) return true;
-    }
-    if (valid_symbols[EXPRESSION_TAG_OPEN]) {
-        if (scan_expression_tag_open(lexer)) return true;
+    if (valid_symbols[RAW_TEXT] ||
+        valid_symbols[STATEMENT_TAG_OPEN] ||
+        valid_symbols[EXPRESSION_TAG_OPEN]) {
+        if (scan_markup(lexer, valid_symbols)) return true;
     }
 
     /*
