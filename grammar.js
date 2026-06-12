@@ -14,9 +14,14 @@ module.exports = grammar({
   name: 'ucode',
 
   externals: $ => [
-    $._automatic_semicolon,
-    $._template_chars,
-    $._ternary_qmark,
+    $._automatic_semicolon,   // 0
+    $._template_chars,        // 1
+    $._ternary_qmark,         // 2
+    $.raw_text,               // 3  literal text outside tags
+    $.statement_tag_open,     // 4  {%  {%-  {%+
+    $.statement_tag_close,    // 5  %}  -%}
+    $.expression_tag_open,    // 6  {{  {{-
+    $.expression_tag_close,   // 7  }}  -}}
   ],
 
   extras: $ => [
@@ -73,6 +78,8 @@ module.exports = grammar({
     $._identifier,
     $._reserved_identifier,
     $._lhs_expression,
+    $._markup_node,
+    $._if_markup_node,
   ],
 
   precedences: $ => [
@@ -119,6 +126,63 @@ module.exports = grammar({
       optional($.hash_bang_line),
       repeat($.statement),
     ),
+
+    //
+    // Markup entry point
+    //
+    // A .utpl / .uc.tmpl document is a flat sequence of markup nodes: raw
+    // text, comment tags, expression tags, statement tags, and the
+    // alt-syntax constructs that span multiple tags.
+    //
+    // Statement tags that contain only simple (non-spanning) code are
+    // wrapped in `statement_tag`.  Alt-syntax constructs that span tag
+    // boundaries appear directly as markup nodes with explicit tag-open /
+    // tag-close fields, giving a pristine tree with no empty-statement noise.
+    //
+    markup: $ => seq(
+      optional($.hash_bang_line),
+      repeat($._markup_node),
+    ),
+
+    _markup_node: $ => choice(
+      $.raw_text,
+      $.expression_tag,
+      $.comment_tag,
+      $.statement_tag,
+      // Alt-syntax constructs that span tag boundaries:
+      $.if_alt_statement,
+      $.for_alt_statement,
+      $.for_in_alt_statement,
+      $.while_alt_statement,
+    ),
+
+    // -----------------------------------------------------------------------
+    // Simple tag wrappers
+    // -----------------------------------------------------------------------
+
+    // A statement_tag wraps non-spanning code: {% stmt; stmt; %}
+    statement_tag: $ => seq(
+      field('open',  $.statement_tag_open),
+      repeat($.statement),
+      field('close', $.statement_tag_close),
+    ),
+
+    // {{ expr }} or {{- expr -}}
+    expression_tag: $ => seq(
+      field('open',  $.expression_tag_open),
+      optional($._expressions),
+      field('close', $.expression_tag_close),
+    ),
+
+    // {# ... #}  with optional whitespace-stripping markers
+    comment_tag: $ => seq(
+      field('open',    choice('{#-', '{#')),
+      optional(field('content', $.comment_content)),
+      field('close',   choice('-#}', '#}')),
+    ),
+
+    // Matches everything up to but not including #} or -#}
+    comment_content: _ => /([^#-]|#[^}]|-[^#])+/,
 
     hash_bang_line: _ => /#!.*/,
 
@@ -285,15 +349,46 @@ module.exports = grammar({
       optional(field('alternative', $.else_clause)),
     )),
 
-    // Alternative colon/endif syntax
-    if_alt_statement: $ => seq(
-      'if',
-      field('condition', $.parenthesized_expression),
-      ':',
-      field('body', repeat($.statement)),
-      repeat(field('elif_clause', $.elif_clause)),
-      optional(field('else_body', $.else_alt_clause)),
-      'endif',
+    // Alternative colon/endif syntax — two forms:
+    //   code form:   if (cond): stmts … endif        (used in program / statement_tag)
+    //   markup form: {% if (cond): %} … {% endif %}   (spans tag boundaries in markup)
+    //
+    // The markup form uses a flat content repeat (_if_markup_node) rather than
+    // nested elif/else bodies.  elif_clause_tag and else_alt_clause_tag are pure
+    // header tags that appear as regular items inside that repeat.  This avoids
+    // the shift/reduce conflict that arises when a nested repeat($._markup_node)
+    // can't decide whether statement_tag_open starts another body node or the
+    // enclosing end tag.
+    if_alt_statement: $ => choice(
+      seq(
+        'if',
+        field('condition', $.parenthesized_expression),
+        ':',
+        field('body', repeat($.statement)),
+        repeat(field('elif_clause', $.elif_clause)),
+        optional(field('else_body', $.else_alt_clause)),
+        'endif',
+      ),
+      seq(
+        field('open',    $.statement_tag_open),
+        'if',
+        field('condition', $.parenthesized_expression),
+        ':',
+        field('close',   $.statement_tag_close),
+        repeat($._if_markup_node),
+        field('end_open',  $.statement_tag_open),
+        'endif',
+        field('end_close', $.statement_tag_close),
+      ),
+    ),
+
+    // Flat content node for if_alt_statement markup bodies.
+    // elif_clause_tag and else_alt_clause_tag are plain header tags here;
+    // the actual body content between them is expressed as sibling nodes.
+    _if_markup_node: $ => choice(
+      $._markup_node,
+      $.elif_clause_tag,
+      $.else_alt_clause_tag,
     ),
 
     elif_clause: $ => seq(
@@ -303,9 +398,25 @@ module.exports = grammar({
       field('body', repeat($.statement)),
     ),
 
+    // Markup form of elif: just the header tag; body is sibling _if_markup_nodes
+    elif_clause_tag: $ => seq(
+      field('open',      $.statement_tag_open),
+      'elif',
+      field('condition', $.parenthesized_expression),
+      ':',
+      field('close',     $.statement_tag_close),
+    ),
+
     else_alt_clause: $ => seq(
       'else',
       field('body', repeat($.statement)),
+    ),
+
+    // Markup form of else: just the header tag; body is sibling _if_markup_nodes
+    else_alt_clause_tag: $ => seq(
+      field('open',  $.statement_tag_open),
+      'else',
+      field('close', $.statement_tag_close),
     ),
 
     switch_statement: $ => seq(
@@ -319,11 +430,23 @@ module.exports = grammar({
       field('body', $.statement),
     ),
 
-    for_alt_statement: $ => seq(
-      forHeader($),
-      ':',
-      field('body', repeat($.statement)),
-      'endfor',
+    for_alt_statement: $ => choice(
+      seq(
+        forHeader($),
+        ':',
+        field('body', repeat($.statement)),
+        'endfor',
+      ),
+      seq(
+        field('open',    $.statement_tag_open),
+        forHeader($),
+        ':',
+        field('close',   $.statement_tag_close),
+        field('body',    repeat($._markup_node)),
+        field('end_open',  $.statement_tag_open),
+        'endfor',
+        field('end_close', $.statement_tag_close),
+      ),
     ),
 
     for_in_statement: $ => seq(
@@ -332,12 +455,25 @@ module.exports = grammar({
       field('body', $.statement),
     ),
 
-    for_in_alt_statement: $ => seq(
-      'for',
-      $._for_header,
-      ':',
-      field('body', repeat($.statement)),
-      'endfor',
+    for_in_alt_statement: $ => choice(
+      seq(
+        'for',
+        $._for_header,
+        ':',
+        field('body', repeat($.statement)),
+        'endfor',
+      ),
+      seq(
+        field('open',    $.statement_tag_open),
+        'for',
+        $._for_header,
+        ':',
+        field('close',   $.statement_tag_close),
+        field('body',    repeat($._markup_node)),
+        field('end_open',  $.statement_tag_open),
+        'endfor',
+        field('end_close', $.statement_tag_close),
+      ),
     ),
 
     // Supports both `for (k in obj)` and `for (k, v in obj)` (ucode two-variable form)
@@ -365,12 +501,25 @@ module.exports = grammar({
       field('body', $.statement),
     ),
 
-    while_alt_statement: $ => seq(
-      'while',
-      field('condition', $.parenthesized_expression),
-      ':',
-      field('body', repeat($.statement)),
-      'endwhile',
+    while_alt_statement: $ => choice(
+      seq(
+        'while',
+        field('condition', $.parenthesized_expression),
+        ':',
+        field('body', repeat($.statement)),
+        'endwhile',
+      ),
+      seq(
+        field('open',    $.statement_tag_open),
+        'while',
+        field('condition', $.parenthesized_expression),
+        ':',
+        field('close',   $.statement_tag_close),
+        field('body',    repeat($._markup_node)),
+        field('end_open',  $.statement_tag_open),
+        'endwhile',
+        field('end_close', $.statement_tag_close),
+      ),
     ),
 
     try_statement: $ => seq(
