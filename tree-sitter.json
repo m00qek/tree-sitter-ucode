@@ -5,11 +5,7 @@
       "camelcase": "UcodeMarkup",
       "scope": "source.ucode.markup",
       "path": "./markup",
-      "file-types": [
-        "utpl",
-        "uc.tmpl"
-      ],
-      "content-regex": "(?m)^\\s*\\{[%{#]",
+
       "highlights": [
         "markup/queries/highlights.scm"
       ],
