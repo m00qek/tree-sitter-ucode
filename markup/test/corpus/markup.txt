@@ -402,6 +402,58 @@ Cross-tag variable declaration
     close: (expression_tag_close)))
 
 ================================================================================
+Cross-tag default import
+================================================================================
+{% import fs from "fs"; %}{{ fs.readFile("x") }}
+--------------------------------------------------------------------------------
+
+(markup
+  (statement_tag
+    open: (statement_tag_open)
+    (import_statement
+      (import_clause
+        (identifier))
+      source: (string
+        (string_fragment)))
+    close: (statement_tag_close))
+  (expression_tag
+    open: (expression_tag_open)
+    (call_expression
+      function: (member_expression
+        object: (identifier)
+        property: (property_identifier))
+      arguments: (arguments
+        (string
+          (string_fragment))))
+    close: (expression_tag_close)))
+
+================================================================================
+Cross-tag named import
+================================================================================
+{% import { readFile } from "fs"; %}{{ readFile("x") }}
+--------------------------------------------------------------------------------
+
+(markup
+  (statement_tag
+    open: (statement_tag_open)
+    (import_statement
+      (import_clause
+        (named_imports
+          (import_specifier
+            name: (identifier))))
+      source: (string
+        (string_fragment)))
+    close: (statement_tag_close))
+  (expression_tag
+    open: (expression_tag_open)
+    (call_expression
+      function: (identifier)
+      arguments: (arguments
+        (string
+          (string_fragment))))
+    close: (expression_tag_close)))
+
+================================================================================
 For-in alt-syntax with raw text in body
 ================================================================================
 {% for (let i in items): %}{{ items[i] }}
