@@ -5,10 +5,14 @@
 
 (statement_tag
   ((_) @injection.content
-    (#not-type? @injection.content statement_tag_open statement_tag_close))
+    (#not-type? @injection.content
+      statement_tag_open statement_tag_trim_open statement_tag_lstrip_open
+      statement_tag_close statement_tag_trim_close))
   (#set! injection.language "ucode"))
 
 (expression_tag
   ((_) @injection.content
-    (#not-type? @injection.content expression_tag_open expression_tag_close))
+    (#not-type? @injection.content
+      expression_tag_open expression_tag_trim_open
+      expression_tag_close expression_tag_trim_close))
   (#set! injection.language "ucode"))

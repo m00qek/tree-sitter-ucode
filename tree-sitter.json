@@ -37,6 +37,18 @@
       "injections": [
         "markup/queries/injections.scm"
       ],
+      "tags": [
+        "markup/queries/tags.scm"
+      ],
+      "folds": [
+        "markup/queries/folds.scm"
+      ],
+      "indents": [
+        "markup/queries/indents.scm"
+      ],
+      "textobjects": [
+        "markup/queries/textobjects.scm"
+      ],
       "injection-regex": "^ucode_markup$"
     }
   ],
