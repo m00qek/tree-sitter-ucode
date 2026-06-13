@@ -44,9 +44,9 @@ Expression tag with trim markers
 
 (markup
   (expression_tag
-    open: (expression_tag_open)
+    open: (expression_tag_trim_open)
     (identifier)
-    close: (expression_tag_close)))
+    close: (expression_tag_trim_close)))
 
 ================================================================================
 Statement tag
@@ -96,12 +96,12 @@ Statement tag with left-trim marker
 (markup
   (raw_text)
   (statement_tag
-    open: (statement_tag_open)
+    open: (statement_tag_trim_open)
     (lexical_declaration
       (variable_declarator
         name: (identifier)
         value: (number)))
-    close: (statement_tag_close))
+    close: (statement_tag_trim_close))
   (raw_text))
 
 ================================================================================
@@ -300,7 +300,7 @@ Statement tag with trim-right close marker
       (variable_declarator
         name: (identifier)
         value: (number)))
-    close: (statement_tag_close)))
+    close: (statement_tag_trim_close)))
 
 ================================================================================
 Statement tag with both trim markers
@@ -310,12 +310,12 @@ Statement tag with both trim markers
 
 (markup
   (statement_tag
-    open: (statement_tag_open)
+    open: (statement_tag_trim_open)
     (lexical_declaration
       (variable_declarator
         name: (identifier)
         value: (number)))
-    close: (statement_tag_close)))
+    close: (statement_tag_trim_close)))
 
 ================================================================================
 Statement tag with lstrip-suppress marker
@@ -325,7 +325,7 @@ Statement tag with lstrip-suppress marker
 
 (markup
   (statement_tag
-    open: (statement_tag_open)
+    open: (statement_tag_lstrip_open)
     (lexical_declaration
       (variable_declarator
         name: (identifier)
@@ -340,12 +340,12 @@ Statement tag with lstrip-suppress and trim-right markers
 
 (markup
   (statement_tag
-    open: (statement_tag_open)
+    open: (statement_tag_lstrip_open)
     (lexical_declaration
       (variable_declarator
         name: (identifier)
         value: (number)))
-    close: (statement_tag_close)))
+    close: (statement_tag_trim_close)))
 
 ================================================================================
 Tag-first document

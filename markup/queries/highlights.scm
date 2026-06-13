@@ -3,10 +3,15 @@
 
 ; ── Tag delimiters ────────────────────────────────────────────────────────────
 
-(statement_tag_open)  @punctuation.special
-(statement_tag_close) @punctuation.special
-(expression_tag_open)  @punctuation.special
-(expression_tag_close) @punctuation.special
+(statement_tag_open)        @punctuation.special
+(statement_tag_trim_open)   @punctuation.special
+(statement_tag_lstrip_open) @punctuation.special
+(statement_tag_close)       @punctuation.special
+(statement_tag_trim_close)  @punctuation.special
+(expression_tag_open)       @punctuation.special
+(expression_tag_trim_open)  @punctuation.special
+(expression_tag_close)      @punctuation.special
+(expression_tag_trim_close) @punctuation.special
 
 ; ── Comment tags ─────────────────────────────────────────────────────────────
 

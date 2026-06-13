@@ -6,14 +6,19 @@
  * symbols leak into the markup shared library.
  *
  * Token order MUST match the `externals` array in grammar.js:
- *   0  AUTOMATIC_SEMICOLON   $._automatic_semicolon
- *   1  TEMPLATE_CHARS        $._template_chars
- *   2  TERNARY_QMARK         $._ternary_qmark
- *   3  RAW_TEXT              $.raw_text
- *   4  STATEMENT_TAG_OPEN    $.statement_tag_open   {%  {%-  {%+
- *   5  STATEMENT_TAG_CLOSE   $.statement_tag_close  %}  -%}
- *   6  EXPRESSION_TAG_OPEN   $.expression_tag_open  {{  {{-
- *   7  EXPRESSION_TAG_CLOSE  $.expression_tag_close }}  -}}
+ *   0  AUTOMATIC_SEMICOLON        $._automatic_semicolon
+ *   1  TEMPLATE_CHARS             $._template_chars
+ *   2  TERNARY_QMARK              $._ternary_qmark
+ *   3  RAW_TEXT                   $.raw_text
+ *   4  STATEMENT_TAG_OPEN         $.statement_tag_open         {%
+ *   5  STATEMENT_TAG_TRIM_OPEN    $.statement_tag_trim_open    {%-
+ *   6  STATEMENT_TAG_LSTRIP_OPEN  $.statement_tag_lstrip_open  {%+
+ *   7  STATEMENT_TAG_CLOSE        $.statement_tag_close        %}
+ *   8  STATEMENT_TAG_TRIM_CLOSE   $.statement_tag_trim_close   -%}
+ *   9  EXPRESSION_TAG_OPEN        $.expression_tag_open        {{
+ *  10  EXPRESSION_TAG_TRIM_OPEN   $.expression_tag_trim_open   {{-
+ *  11  EXPRESSION_TAG_CLOSE       $.expression_tag_close       }}
+ *  12  EXPRESSION_TAG_TRIM_CLOSE  $.expression_tag_trim_close  -}}
  */
 
 #ifndef UCODE_SCANNER_IMPL_H_
@@ -28,9 +33,14 @@ enum TokenType {
     TERNARY_QMARK,
     RAW_TEXT,
     STATEMENT_TAG_OPEN,
+    STATEMENT_TAG_TRIM_OPEN,
+    STATEMENT_TAG_LSTRIP_OPEN,
     STATEMENT_TAG_CLOSE,
+    STATEMENT_TAG_TRIM_CLOSE,
     EXPRESSION_TAG_OPEN,
+    EXPRESSION_TAG_TRIM_OPEN,
     EXPRESSION_TAG_CLOSE,
+    EXPRESSION_TAG_TRIM_CLOSE,
 };
 
 static inline void advance(TSLexer *lexer) { lexer->advance(lexer, false); }
@@ -94,19 +104,39 @@ static bool scan_markup(TSLexer *lexer, const bool *valid_symbols) {
     /* Peek at the second character by advancing past '{'. */
     advance(lexer);
 
-    /* {%  {%-  {%+ — statement tag open */
-    if (lexer->lookahead == '%' && valid_symbols[STATEMENT_TAG_OPEN]) {
+    /* {%  {%-  {%+ — statement tag open (emit the precise variant) */
+    if (lexer->lookahead == '%' &&
+        (valid_symbols[STATEMENT_TAG_OPEN] ||
+         valid_symbols[STATEMENT_TAG_TRIM_OPEN] ||
+         valid_symbols[STATEMENT_TAG_LSTRIP_OPEN])) {
         advance(lexer);
-        if (lexer->lookahead == '-' || lexer->lookahead == '+') advance(lexer);
+        if (lexer->lookahead == '-') {
+            advance(lexer);
+            lexer->mark_end(lexer);
+            lexer->result_symbol = STATEMENT_TAG_TRIM_OPEN;
+            return true;
+        }
+        if (lexer->lookahead == '+') {
+            advance(lexer);
+            lexer->mark_end(lexer);
+            lexer->result_symbol = STATEMENT_TAG_LSTRIP_OPEN;
+            return true;
+        }
         lexer->mark_end(lexer);
         lexer->result_symbol = STATEMENT_TAG_OPEN;
         return true;
     }
 
-    /* {{  {{- — expression tag open */
-    if (lexer->lookahead == '{' && valid_symbols[EXPRESSION_TAG_OPEN]) {
+    /* {{  {{- — expression tag open (emit the precise variant) */
+    if (lexer->lookahead == '{' &&
+        (valid_symbols[EXPRESSION_TAG_OPEN] || valid_symbols[EXPRESSION_TAG_TRIM_OPEN])) {
         advance(lexer);
-        if (lexer->lookahead == '-') advance(lexer);
+        if (lexer->lookahead == '-') {
+            advance(lexer);
+            lexer->mark_end(lexer);
+            lexer->result_symbol = EXPRESSION_TAG_TRIM_OPEN;
+            return true;
+        }
         lexer->mark_end(lexer);
         lexer->result_symbol = EXPRESSION_TAG_OPEN;
         return true;
@@ -136,16 +166,19 @@ static bool scan_statement_tag_close(TSLexer *lexer) {
         advance(lexer);
         if (lexer->lookahead != '}') return false;
         advance(lexer);
-    } else if (lexer->lookahead == '%') {
+        lexer->mark_end(lexer);
+        lexer->result_symbol = STATEMENT_TAG_TRIM_CLOSE;
+        return true;
+    }
+    if (lexer->lookahead == '%') {
         advance(lexer);
         if (lexer->lookahead != '}') return false;
         advance(lexer);
-    } else {
-        return false;
+        lexer->mark_end(lexer);
+        lexer->result_symbol = STATEMENT_TAG_CLOSE;
+        return true;
     }
-    lexer->mark_end(lexer);
-    lexer->result_symbol = STATEMENT_TAG_CLOSE;
-    return true;
+    return false;
 }
 
 /*
@@ -163,16 +196,19 @@ static bool scan_expression_tag_close(TSLexer *lexer) {
         advance(lexer);
         if (lexer->lookahead != '}') return false;
         advance(lexer);
-    } else if (lexer->lookahead == '}') {
+        lexer->mark_end(lexer);
+        lexer->result_symbol = EXPRESSION_TAG_TRIM_CLOSE;
+        return true;
+    }
+    if (lexer->lookahead == '}') {
         advance(lexer);
         if (lexer->lookahead != '}') return false;
         advance(lexer);
-    } else {
-        return false;
+        lexer->mark_end(lexer);
+        lexer->result_symbol = EXPRESSION_TAG_CLOSE;
+        return true;
     }
-    lexer->mark_end(lexer);
-    lexer->result_symbol = EXPRESSION_TAG_CLOSE;
-    return true;
+    return false;
 }
 
 /* -------------------------------------------------------------------------
@@ -423,7 +459,10 @@ static bool ucode_scanner_scan(
      */
     if (valid_symbols[RAW_TEXT] ||
         valid_symbols[STATEMENT_TAG_OPEN] ||
-        valid_symbols[EXPRESSION_TAG_OPEN]) {
+        valid_symbols[STATEMENT_TAG_TRIM_OPEN] ||
+        valid_symbols[STATEMENT_TAG_LSTRIP_OPEN] ||
+        valid_symbols[EXPRESSION_TAG_OPEN] ||
+        valid_symbols[EXPRESSION_TAG_TRIM_OPEN]) {
         if (scan_markup(lexer, valid_symbols)) return true;
     }
 
@@ -432,10 +471,10 @@ static bool ucode_scanner_scan(
      * are preferred over a zero-length semicolon when both are valid.
      * When neither matches, fall through to ASI.
      */
-    if (valid_symbols[STATEMENT_TAG_CLOSE]) {
+    if (valid_symbols[STATEMENT_TAG_CLOSE] || valid_symbols[STATEMENT_TAG_TRIM_CLOSE]) {
         if (scan_statement_tag_close(lexer)) return true;
     }
-    if (valid_symbols[EXPRESSION_TAG_CLOSE]) {
+    if (valid_symbols[EXPRESSION_TAG_CLOSE] || valid_symbols[EXPRESSION_TAG_TRIM_CLOSE]) {
         if (scan_expression_tag_close(lexer)) return true;
     }
 

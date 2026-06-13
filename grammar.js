@@ -14,14 +14,19 @@ module.exports = grammar({
   name: 'ucode',
 
   externals: $ => [
-    $._automatic_semicolon,   // 0
-    $._template_chars,        // 1
-    $._ternary_qmark,         // 2
-    $.raw_text,               // 3  literal text outside tags
-    $.statement_tag_open,     // 4  {%  {%-  {%+
-    $.statement_tag_close,    // 5  %}  -%}
-    $.expression_tag_open,    // 6  {{  {{-
-    $.expression_tag_close,   // 7  }}  -}}
+    $._automatic_semicolon,        //  0
+    $._template_chars,             //  1
+    $._ternary_qmark,              //  2
+    $.raw_text,                    //  3  literal text outside tags
+    $.statement_tag_open,          //  4  {%
+    $.statement_tag_trim_open,     //  5  {%-
+    $.statement_tag_lstrip_open,   //  6  {%+
+    $.statement_tag_close,         //  7  %}
+    $.statement_tag_trim_close,    //  8  -%}
+    $.expression_tag_open,         //  9  {{
+    $.expression_tag_trim_open,    // 10  {{-
+    $.expression_tag_close,        // 11  }}
+    $.expression_tag_trim_close,   // 12  -}}
   ],
 
   extras: $ => [
@@ -80,6 +85,10 @@ module.exports = grammar({
     $._lhs_expression,
     $._markup_node,
     $._if_markup_node,
+    $._stmt_open,
+    $._stmt_close,
+    $._expr_open,
+    $._expr_close,
   ],
 
   precedences: $ => [
@@ -162,16 +171,16 @@ module.exports = grammar({
 
     // A statement_tag wraps non-spanning code: {% stmt; stmt; %}
     statement_tag: $ => seq(
-      field('open',  $.statement_tag_open),
+      field('open',  $._stmt_open),
       repeat($.statement),
-      field('close', $.statement_tag_close),
+      field('close', $._stmt_close),
     ),
 
     // {{ expr }} or {{- expr -}}
     expression_tag: $ => seq(
-      field('open',  $.expression_tag_open),
+      field('open',  $._expr_open),
       optional($._expressions),
-      field('close', $.expression_tag_close),
+      field('close', $._expr_close),
     ),
 
     // {# ... #}  with optional whitespace-stripping markers
@@ -370,15 +379,15 @@ module.exports = grammar({
         'endif',
       ),
       seq(
-        field('open',    $.statement_tag_open),
+        field('open',    $._stmt_open),
         'if',
         field('condition', $.parenthesized_expression),
         ':',
-        field('close',   $.statement_tag_close),
+        field('close',   $._stmt_close),
         repeat($._if_markup_node),
-        field('end_open',  $.statement_tag_open),
+        field('end_open',  $._stmt_open),
         'endif',
-        field('end_close', $.statement_tag_close),
+        field('end_close', $._stmt_close),
       ),
     ),
 
@@ -391,6 +400,14 @@ module.exports = grammar({
       $.else_alt_clause_tag,
     ),
 
+    // Inline wrappers for tag delimiter tokens.
+    // Each groups all variants (plain / trim / lstrip) so grammar rules stay
+    // concise while still surfacing distinct node types for highlight queries.
+    _stmt_open:  $ => choice($.statement_tag_open, $.statement_tag_trim_open, $.statement_tag_lstrip_open),
+    _stmt_close: $ => choice($.statement_tag_close, $.statement_tag_trim_close),
+    _expr_open:  $ => choice($.expression_tag_open, $.expression_tag_trim_open),
+    _expr_close: $ => choice($.expression_tag_close, $.expression_tag_trim_close),
+
     elif_clause: $ => seq(
       'elif',
       field('condition', $.parenthesized_expression),
@@ -400,11 +417,11 @@ module.exports = grammar({
 
     // Markup form of elif: just the header tag; body is sibling _if_markup_nodes
     elif_clause_tag: $ => seq(
-      field('open',      $.statement_tag_open),
+      field('open',      $._stmt_open),
       'elif',
       field('condition', $.parenthesized_expression),
       ':',
-      field('close',     $.statement_tag_close),
+      field('close',     $._stmt_close),
     ),
 
     else_alt_clause: $ => seq(
@@ -414,9 +431,9 @@ module.exports = grammar({
 
     // Markup form of else: just the header tag; body is sibling _if_markup_nodes
     else_alt_clause_tag: $ => seq(
-      field('open',  $.statement_tag_open),
+      field('open',  $._stmt_open),
       'else',
-      field('close', $.statement_tag_close),
+      field('close', $._stmt_close),
     ),
 
     switch_statement: $ => seq(
@@ -438,14 +455,14 @@ module.exports = grammar({
         'endfor',
       ),
       seq(
-        field('open',    $.statement_tag_open),
+        field('open',    $._stmt_open),
         forHeader($),
         ':',
-        field('close',   $.statement_tag_close),
+        field('close',   $._stmt_close),
         field('body',    repeat($._markup_node)),
-        field('end_open',  $.statement_tag_open),
+        field('end_open',  $._stmt_open),
         'endfor',
-        field('end_close', $.statement_tag_close),
+        field('end_close', $._stmt_close),
       ),
     ),
 
@@ -464,15 +481,15 @@ module.exports = grammar({
         'endfor',
       ),
       seq(
-        field('open',    $.statement_tag_open),
+        field('open',    $._stmt_open),
         'for',
         $._for_header,
         ':',
-        field('close',   $.statement_tag_close),
+        field('close',   $._stmt_close),
         field('body',    repeat($._markup_node)),
-        field('end_open',  $.statement_tag_open),
+        field('end_open',  $._stmt_open),
         'endfor',
-        field('end_close', $.statement_tag_close),
+        field('end_close', $._stmt_close),
       ),
     ),
 
@@ -510,15 +527,15 @@ module.exports = grammar({
         'endwhile',
       ),
       seq(
-        field('open',    $.statement_tag_open),
+        field('open',    $._stmt_open),
         'while',
         field('condition', $.parenthesized_expression),
         ':',
-        field('close',   $.statement_tag_close),
+        field('close',   $._stmt_close),
         field('body',    repeat($._markup_node)),
-        field('end_open',  $.statement_tag_open),
+        field('end_open',  $._stmt_open),
         'endwhile',
-        field('end_close', $.statement_tag_close),
+        field('end_close', $._stmt_close),
       ),
     ),
 
