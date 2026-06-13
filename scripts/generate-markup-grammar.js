@@ -3,7 +3,7 @@
  * Generate markup/grammar.js from grammar.js.
  *
  * The main grammar has `program` as the first (start) rule so that `.uc`
- * files work.  For `.utpl` / `.uc.tmpl` files we need `markup` to be the
+ * files work.  For `.uc.tmpl` files we need `markup` to be the
  * start rule.  This script produces markup/grammar.js by:
  *
  *   1. Changing the grammar name from 'ucode' to 'ucode_markup'

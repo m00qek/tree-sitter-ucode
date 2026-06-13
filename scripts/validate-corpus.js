@@ -11,7 +11,7 @@
  *
  *                node scripts/validate-corpus.js corpus <path/to/tests/custom>
  *
- *   project  -- Find every .uc / .utpl file under a directory and parse it.
+ *   project  -- Find every .uc / .uc.tmpl file under a directory and parse it.
  *               Auto-detects template vs raw mode from file content.
  *
  *                node scripts/validate-corpus.js project <path/to/project>
@@ -216,7 +216,7 @@ function runCorpus(testsDir) {
 }
 
 // ---------------------------------------------------------------------------
-// Mode: project  (real ucode project — parse .uc / .utpl files directly)
+// Mode: project  (real ucode project — parse .uc / .uc.tmpl files directly)
 // ---------------------------------------------------------------------------
 
 function runProject(projectDir) {
@@ -224,7 +224,7 @@ function runProject(projectDir) {
   const fail = [];
 
   for (const file of walkFiles(projectDir)) {
-    if (!file.endsWith('.uc') && !file.endsWith('.utpl')) continue;
+    if (!file.endsWith('.uc') && !file.endsWith('.uc.tmpl')) continue;
 
     let code;
     try { code = fs.readFileSync(file, 'utf8'); }
