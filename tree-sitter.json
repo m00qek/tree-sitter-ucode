@@ -39,22 +39,6 @@
         "queries/tags.scm"
       ],
       "injection-regex": "^ucode$"
-    },
-    {
-      "name": "ucode_tmpl",
-      "camelcase": "UcodeTmpl",
-      "scope": "source.uc.tmpl",
-      "path": "./tmpl",
-      "highlights": [
-        "tmpl/queries/highlights.scm"
-      ],
-      "locals": [
-        "tmpl/queries/locals.scm"
-      ],
-      "injections": [
-        "tmpl/queries/injections.scm"
-      ],
-      "injection-regex": "^ucode_tmpl$"
     }
   ],
   "metadata": {
