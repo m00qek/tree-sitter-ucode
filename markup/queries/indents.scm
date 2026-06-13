@@ -33,12 +33,17 @@
   "endfunction"
 ] @indent.end
 
-(else_clause     "else") @indent.branch
-(else_alt_clause "else") @indent.branch
-(elif_clause     "elif") @indent.branch
+(else_clause        "else") @indent.branch
+(else_alt_clause    "else") @indent.branch
+(else_alt_clause_tag "else") @indent.branch
+(elif_clause        "elif") @indent.branch
+(elif_clause_tag    "elif") @indent.branch
 
-; else_alt_clause has no ':' so @indent.branch alone doesn't open a body scope
-(else_alt_clause) @indent.begin
+; else variants have no ':' so @indent.branch alone doesn't open a body scope
+(else_alt_clause)     @indent.begin
+(else_alt_clause_tag) @indent.begin
+
+(elif_clause_tag ":" @indent.begin)
 
 ; ── Switch ────────────────────────────────────────────────────────────────────
 
