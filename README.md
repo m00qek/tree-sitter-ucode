@@ -73,62 +73,11 @@ template files to `ucode_markup` when a tag opener appears at the start of a lin
 Editors that manage their own filetype dispatch (Neovim, Helix) need an explicit
 rule — see the editor sections below.
 
-## Use in Neovim (nvim-treesitter)
+## Use in Neovim
 
-Add to your nvim-treesitter config (e.g. `~/.config/nvim/lua/plugins/treesitter.lua`):
-
-```lua
-local parser_config = require("nvim-treesitter.parsers").get_parser_configs()
-
-parser_config.ucode = {
-  install_info = {
-    url = "https://github.com/m00qek/tree-sitter-ucode",
-    files = { "src/parser.c", "src/scanner.c" },
-    branch = "main",
-  },
-  filetype = "ucode",
-}
-
-parser_config.ucode_markup = {
-  install_info = {
-    url = "https://github.com/m00qek/tree-sitter-ucode",
-    files = { "markup/src/parser.c", "markup/src/scanner.c" },
-    branch = "main",
-  },
-  filetype = "ucode_markup",
-}
-```
-
-Associate files with the right filetype. Since nvim-treesitter does not
-use `content-regex`, the mapping must be done with a `BufRead` autocmd or a
-filetype function that inspects the file content:
-
-```lua
-vim.filetype.add({
-  extension = {
-    -- .uc.tmpl files are always templates
-    tmpl = function(path)
-      if path:match("%.uc%.tmpl$") then return "ucode_markup" end
-    end,
-    -- .uc/.ucode/.ut: pick grammar by content
-    uc = function(path) return detect_ucode(path) end,
-    ucode = function(path) return detect_ucode(path) end,
-    ut = function(path) return detect_ucode(path) end,
-  },
-})
-
-function detect_ucode(path)
-  local f = io.open(path, "r")
-  if f then
-    local content = f:read("*a")
-    f:close()
-    if content:find("^%s*{[%%{#]") or content:find("\n%s*{[%%{#]") then
-      return "ucode_markup"
-    end
-  end
-  return "ucode"
-end
-```
+The easiest way to install this grammar in Neovim is with
+[tree-sitter-manager.nvim](https://github.com/m00qek/tree-sitter-manager.nvim),
+which handles parser registration, filetype detection, and query setup automatically.
 
 ## Use in Helix
 
