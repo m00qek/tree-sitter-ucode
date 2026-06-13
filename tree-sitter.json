@@ -27,7 +27,7 @@
       "file-types": [
         "ucode", "uc", "ut"
       ],
-      "content-regex": "\\{[%{#]",
+      "content-regex": "(?m)^\\s*\\{[%{#]",
       "highlights": [
         "markup/queries/highlights.scm"
       ],
