@@ -145,7 +145,7 @@ module.exports = grammar({
     //
     // Markup entry point
     //
-    // A .utpl / .uc.tmpl document is a flat sequence of markup nodes: raw
+    // A .uc.tmpl document is a flat sequence of markup nodes: raw
     // text, comment tags, expression tags, statement tags, and the
     // alt-syntax constructs that span multiple tags.
     //
@@ -192,7 +192,7 @@ module.exports = grammar({
     ),
 
     // Matches everything up to but not including #} or -#}
-    comment_content: _ => /([^#-]|#[^}]|-[^#])+/,
+    comment_content: _ => /([^#-]|#[^}]|-(?:[^#]|#[^}]))+/,
 
     hash_bang_line: _ => /#!.*/,
 

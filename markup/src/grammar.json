@@ -206,7 +206,7 @@
     },
     "comment_content": {
       "type": "PATTERN",
-      "value": "([^#-]|#[^}]|-[^#])+"
+      "value": "([^#-]|#[^}]|-(?:[^#]|#[^}]))+"
     },
     "hash_bang_line": {
       "type": "PATTERN",
