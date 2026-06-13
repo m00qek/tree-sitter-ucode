@@ -5,7 +5,7 @@ on:
     branches: [main]
     paths:
       - src/scanner.c
-      - tmpl/src/scanner.c
+      - markup/src/scanner.c
 
 jobs:
   fuzz:
@@ -17,8 +17,8 @@ jobs:
         include:
           - grammar: ucode
             directory: ''
-          - grammar: ucode_tmpl
-            directory: tmpl
+          - grammar: ucode_markup
+            directory: markup
 
     steps:
       - name: Checkout repository

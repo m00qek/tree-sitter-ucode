@@ -11,7 +11,7 @@ on:
       - src/**
       - test/**
       - queries/**
-      - tmpl/**
+      - markup/**
       - bindings/**
       - binding.gyp
       - package.json
@@ -67,9 +67,10 @@ jobs:
 
       - name: Verify generated files are up to date
         run: |
+          node scripts/generate-markup-grammar.js
           npx tree-sitter generate
-          npx tree-sitter generate tmpl/grammar.js --output tmpl/src
-          git diff --exit-code src/ tmpl/src/
+          npx tree-sitter generate markup/grammar.js --output markup/src
+          git diff --exit-code src/ markup/src/ markup/grammar.js
 
       - name: Checkout ucode language test suite
         uses: actions/checkout@v6
@@ -120,7 +121,7 @@ jobs:
       - name: Build WASM
         run: |
           npx tree-sitter build --wasm .
-          npx tree-sitter build --wasm tmpl
+          npx tree-sitter build --wasm markup
 
       - name: Upload WASM artifact
         uses: actions/upload-artifact@v7
