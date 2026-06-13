@@ -5,6 +5,7 @@
 ; Scopes
 ; -------------------------------------------------------------------------
 
+(program) @local.scope
 (function_declaration) @local.scope
 (function_expression) @local.scope
 (arrow_function) @local.scope
