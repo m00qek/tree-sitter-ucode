@@ -256,3 +256,170 @@ nested for-in inside while body
       end_close: (statement_tag_close))
     end_open: (statement_tag_open)
     end_close: (statement_tag_close)))
+
+================================================================================
+Comment tag with open-trim marker
+================================================================================
+{#- this is a comment #}
+--------------------------------------------------------------------------------
+
+(markup
+  (comment_tag
+    content: (comment_content)))
+
+================================================================================
+Comment tag with close-trim marker
+================================================================================
+{# this is a comment -#}
+--------------------------------------------------------------------------------
+
+(markup
+  (comment_tag
+    content: (comment_content)))
+
+================================================================================
+Comment tag with both trim markers
+================================================================================
+{#- both sides -#}
+--------------------------------------------------------------------------------
+
+(markup
+  (comment_tag
+    content: (comment_content)))
+
+================================================================================
+Statement tag with trim-right close marker
+================================================================================
+{% let x = 1; -%}
+--------------------------------------------------------------------------------
+
+(markup
+  (statement_tag
+    open: (statement_tag_open)
+    (lexical_declaration
+      (variable_declarator
+        name: (identifier)
+        value: (number)))
+    close: (statement_tag_close)))
+
+================================================================================
+Statement tag with both trim markers
+================================================================================
+{%- let x = 1; -%}
+--------------------------------------------------------------------------------
+
+(markup
+  (statement_tag
+    open: (statement_tag_open)
+    (lexical_declaration
+      (variable_declarator
+        name: (identifier)
+        value: (number)))
+    close: (statement_tag_close)))
+
+================================================================================
+Statement tag with lstrip-suppress marker
+================================================================================
+{%+ let x = 1; %}
+--------------------------------------------------------------------------------
+
+(markup
+  (statement_tag
+    open: (statement_tag_open)
+    (lexical_declaration
+      (variable_declarator
+        name: (identifier)
+        value: (number)))
+    close: (statement_tag_close)))
+
+================================================================================
+Statement tag with lstrip-suppress and trim-right markers
+================================================================================
+{%+ let x = 1; -%}
+--------------------------------------------------------------------------------
+
+(markup
+  (statement_tag
+    open: (statement_tag_open)
+    (lexical_declaration
+      (variable_declarator
+        name: (identifier)
+        value: (number)))
+    close: (statement_tag_close)))
+
+================================================================================
+Tag-first document
+================================================================================
+{% x = 1; %}
+raw text after
+--------------------------------------------------------------------------------
+
+(markup
+  (statement_tag
+    open: (statement_tag_open)
+    (expression_statement
+      (assignment_expression
+        left: (identifier)
+        right: (number)))
+    close: (statement_tag_close))
+  (raw_text))
+
+================================================================================
+Object literal inside expression tag
+================================================================================
+{{ {key: "v"} }}
+--------------------------------------------------------------------------------
+
+(markup
+  (expression_tag
+    open: (expression_tag_open)
+    (object
+      (pair
+        key: (property_identifier)
+        value: (string
+          (string_fragment))))
+    close: (expression_tag_close)))
+
+================================================================================
+Cross-tag variable declaration
+================================================================================
+{% let x = 1; %}{{ x + 1 }}
+--------------------------------------------------------------------------------
+
+(markup
+  (statement_tag
+    open: (statement_tag_open)
+    (lexical_declaration
+      (variable_declarator
+        name: (identifier)
+        value: (number)))
+    close: (statement_tag_close))
+  (expression_tag
+    open: (expression_tag_open)
+    (binary_expression
+      left: (identifier)
+      right: (number))
+    close: (expression_tag_close)))
+
+================================================================================
+For-in alt-syntax with raw text in body
+================================================================================
+{% for (let i in items): %}{{ items[i] }}
+{% endfor %}
+--------------------------------------------------------------------------------
+
+(markup
+  (for_in_alt_statement
+    open: (statement_tag_open)
+    left: (identifier)
+    right: (identifier)
+    close: (statement_tag_close)
+    body: (expression_tag
+      open: (expression_tag_open)
+      (subscript_expression
+        object: (identifier)
+        index: (identifier))
+      close: (expression_tag_close))
+    body: (raw_text)
+    end_open: (statement_tag_open)
+    end_close: (statement_tag_close)))
