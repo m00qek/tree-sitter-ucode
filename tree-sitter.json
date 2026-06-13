@@ -27,7 +27,7 @@
       "scope": "source.uc",
       "path": ".",
       "file-types": [
-        "uc"
+        "ucode", "uc", "ut"
       ],
       "highlights": [
         "queries/highlights.scm"
