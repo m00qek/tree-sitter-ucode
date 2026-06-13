@@ -1160,6 +1160,16 @@
           }
         ]
       }
+    },
+    "children": {
+      "multiple": true,
+      "required": false,
+      "types": [
+        {
+          "type": "statement",
+          "named": true
+        }
+      ]
     }
   },
   {
@@ -1239,7 +1249,7 @@
         ]
       },
       "kind": {
-        "multiple": false,
+        "multiple": true,
         "required": false,
         "types": [
           {
@@ -1253,7 +1263,7 @@
         ]
       },
       "left": {
-        "multiple": false,
+        "multiple": true,
         "required": true,
         "types": [
           {
@@ -1289,7 +1299,7 @@
         ]
       },
       "right": {
-        "multiple": false,
+        "multiple": true,
         "required": true,
         "types": [
           {
@@ -1303,7 +1313,7 @@
         ]
       },
       "value": {
-        "multiple": false,
+        "multiple": true,
         "required": false,
         "types": [
           {
@@ -1312,6 +1322,16 @@
           }
         ]
       }
+    },
+    "children": {
+      "multiple": true,
+      "required": false,
+      "types": [
+        {
+          "type": "statement",
+          "named": true
+        }
+      ]
     }
   },
   {
@@ -1689,27 +1709,15 @@
           "named": true
         },
         {
-          "type": "for_alt_statement",
-          "named": true
-        },
-        {
-          "type": "for_in_alt_statement",
-          "named": true
-        },
-        {
-          "type": "if_alt_statement",
-          "named": true
-        },
-        {
           "type": "raw_text",
           "named": true
         },
         {
-          "type": "statement_tag",
+          "type": "statement",
           "named": true
         },
         {
-          "type": "while_alt_statement",
+          "type": "statement_tag",
           "named": true
         }
       ]
@@ -2665,6 +2673,16 @@
           }
         ]
       }
+    },
+    "children": {
+      "multiple": true,
+      "required": false,
+      "types": [
+        {
+          "type": "statement",
+          "named": true
+        }
+      ]
     }
   },
   {

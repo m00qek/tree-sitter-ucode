@@ -114,6 +114,14 @@ function isTemplateProject(code) {
   return /^[ \t]*\{[%{#]/m.test(code);
 }
 
+// Detect template fragments: files whose first statement tag ends with a bare `}`
+// (closing a block opened in the caller's include context) rather than `%}`.
+// These are partial templates that cannot be parsed as standalone files.
+function isCodeFragment(code) {
+  const line = code.split('\n')[0].trimEnd();
+  return /^\{%/.test(line) && /[^%]\s*\}$/.test(line);
+}
+
 function parse(code, tmpl) {
   const libPath  = tmpl ? LIB_UCODE_MARKUP : LIB_UCODE;
   const langName = tmpl ? 'ucode_markup'   : 'ucode';
@@ -212,7 +220,7 @@ function runCorpus(testsDir) {
 // ---------------------------------------------------------------------------
 
 function runProject(projectDir) {
-  let okCount = 0;
+  let okCount = 0, skipCount = 0;
   const fail = [];
 
   for (const file of walkFiles(projectDir)) {
@@ -226,6 +234,12 @@ function runProject(projectDir) {
     const tmpl  = isTemplateProject(code);
     const label = `${rel} [${tmpl ? 'tmpl' : 'raw'}]`;
 
+    if (tmpl && isCodeFragment(code)) {
+      skipCount++;
+      console.log(`  skip  ${label} (template fragment)`);
+      continue;
+    }
+
     const { hasError, output } = parse(code, tmpl);
     if (hasError) {
       fail.push({ label, code: code.slice(0, 400), output });
@@ -236,7 +250,7 @@ function runProject(projectDir) {
     }
   }
 
-  return printReport(okCount, fail, 0, 'project');
+  return printReport(okCount, fail, skipCount, 'project');
 }
 
 // ---------------------------------------------------------------------------
