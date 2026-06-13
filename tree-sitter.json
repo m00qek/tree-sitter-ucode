@@ -1,23 +1,6 @@
 {
   "grammars": [
     {
-      "name": "ucode_markup",
-      "camelcase": "UcodeMarkup",
-      "scope": "source.ucode.markup",
-      "path": "./markup",
-
-      "highlights": [
-        "markup/queries/highlights.scm"
-      ],
-      "locals": [
-        "markup/queries/locals.scm"
-      ],
-      "injections": [
-        "markup/queries/injections.scm"
-      ],
-      "injection-regex": "^ucode_markup$"
-    },
-    {
       "name": "ucode",
       "camelcase": "Ucode",
       "scope": "source.uc",
@@ -35,6 +18,26 @@
         "queries/tags.scm"
       ],
       "injection-regex": "^ucode$"
+    },
+    {
+      "name": "ucode_markup",
+      "camelcase": "UcodeMarkup",
+      "scope": "source.ucode.markup",
+      "path": "./markup",
+      "file-types": [
+        "utpl", "uc.tmpl", "ucode", "uc", "ut"
+      ],
+      "content-regex": "\\{[%{#]",
+      "highlights": [
+        "markup/queries/highlights.scm"
+      ],
+      "locals": [
+        "markup/queries/locals.scm"
+      ],
+      "injections": [
+        "markup/queries/injections.scm"
+      ],
+      "injection-regex": "^ucode_markup$"
     }
   ],
   "metadata": {
