@@ -18,15 +18,9 @@
 ; alt header (before the : that ends the condition/header).  They are not
 ; injected — they are literal tokens visible in the ucode_markup parse tree.
 
-"if"       @keyword.control
-"elif"     @keyword.control
-"else"     @keyword.control
-"endif"    @keyword.control
-"for"      @keyword.control
-"endfor"   @keyword.control
-"while"    @keyword.control
-"endwhile" @keyword.control
-"in"       @keyword.operator
+["if" "elif" "else" "endif"]        @keyword.conditional
+["for" "endfor" "while" "endwhile"] @keyword.repeat
+"in"                                @keyword.operator
 
 ":"        @punctuation.delimiter
 

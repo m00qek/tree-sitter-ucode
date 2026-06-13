@@ -57,8 +57,9 @@ const secondIdx = Math.max(programIdx, markupIdx);
 // We need the SPANS of the two rules to swap them.
 
 function findNextRuleStart(text, from) {
-    // Look for the next "\n    <word>: $" pattern after `from`
-    const re = /\n    \w+: \$/g;
+    // Match "\n    <word>: $ =>" — the arrow function syntax uniquely identifies
+    // rule definitions vs. object properties at the same indentation level.
+    const re = /\n    \w+: \$ =>/g;
     re.lastIndex = from + 1;     // skip the current match
     const m = re.exec(text);
     return m ? m.index : text.length;

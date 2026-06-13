@@ -4,14 +4,14 @@
 'use strict';
 
 const path = require('path');
-const { execFileSync, execSync } = require('child_process');
+const { execFileSync } = require('child_process');
 
 const ext       = process.platform === 'win32' ? 'dll' : 'so';
-const lib       = `ucode.${ext}`;
+const lib       = path.resolve(`ucode.${ext}`);
 const markupLib = path.resolve(`ucode_markup.${ext}`);
 
 execFileSync('tree-sitter', ['build', '--output', lib, '.'], { stdio: 'inherit' });
-execSync(`tree-sitter test --lib-path ${lib} --lang-name ucode`, { stdio: 'inherit', shell: true });
+execFileSync('tree-sitter', ['test', '--lib-path', lib, '--lang-name', 'ucode'], { stdio: 'inherit' });
 
 execFileSync('tree-sitter', ['build', '--output', markupLib, './markup'], { stdio: 'inherit' });
-execSync(`tree-sitter test --lib-path ${markupLib} --lang-name ucode_markup -p markup`, { stdio: 'inherit', shell: true });
+execFileSync('tree-sitter', ['test', '--lib-path', markupLib, '--lang-name', 'ucode_markup', '-p', 'markup'], { stdio: 'inherit' });

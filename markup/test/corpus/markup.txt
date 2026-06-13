@@ -207,3 +207,52 @@ counting for alt-syntax
     body: (raw_text)
     end_open: (statement_tag_open)
     end_close: (statement_tag_close)))
+
+================================================================================
+nested if inside for-in body
+================================================================================
+{% for (let x in xs): %}{% if (x): %}yes{% endif %}{% endfor %}
+--------------------------------------------------------------------------------
+
+(markup
+  (for_in_alt_statement
+    open: (statement_tag_open)
+    left: (identifier)
+    right: (identifier)
+    close: (statement_tag_close)
+    body: (if_alt_statement
+      open: (statement_tag_open)
+      condition: (parenthesized_expression
+        (identifier))
+      close: (statement_tag_close)
+      (raw_text)
+      end_open: (statement_tag_open)
+      end_close: (statement_tag_close))
+    end_open: (statement_tag_open)
+    end_close: (statement_tag_close)))
+
+================================================================================
+nested for-in inside while body
+================================================================================
+{% while (go): %}{% for (let x in xs): %}{{ x }}{% endfor %}{% endwhile %}
+--------------------------------------------------------------------------------
+
+(markup
+  (while_alt_statement
+    open: (statement_tag_open)
+    condition: (parenthesized_expression
+      (identifier))
+    close: (statement_tag_close)
+    body: (for_in_alt_statement
+      open: (statement_tag_open)
+      left: (identifier)
+      right: (identifier)
+      close: (statement_tag_close)
+      body: (expression_tag
+        open: (expression_tag_open)
+        (identifier)
+        close: (expression_tag_close))
+      end_open: (statement_tag_open)
+      end_close: (statement_tag_close))
+    end_open: (statement_tag_open)
+    end_close: (statement_tag_close)))
