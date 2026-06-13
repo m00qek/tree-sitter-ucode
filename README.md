@@ -102,11 +102,11 @@ grammar       = "ucode_markup"
 
 [[grammar]]
 name   = "ucode"
-source = { git = "https://github.com/m00qek/tree-sitter-ucode", rev = "main" }
+source = { git = "https://github.com/m00qek/tree-sitter-ucode", rev = "v0.4.0" }
 
 [[grammar]]
 name   = "ucode_markup"
-source = { git = "https://github.com/m00qek/tree-sitter-ucode", rev = "main", subpath = "markup" }
+source = { git = "https://github.com/m00qek/tree-sitter-ucode", rev = "v0.4.0", subpath = "markup" }
 ```
 
 Helix does not support content-based filetype detection for shared extensions. For
