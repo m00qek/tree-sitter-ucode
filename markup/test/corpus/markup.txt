@@ -1,0 +1,209 @@
+================================================================================
+Raw text only
+================================================================================
+
+Hello, world!
+
+--------------------------------------------------------------------------------
+
+(markup
+  (raw_text))
+
+================================================================================
+Braces that are not tag openers become raw text
+================================================================================
+
+{ not a tag } and {another}
+
+--------------------------------------------------------------------------------
+
+(markup
+  (raw_text))
+
+================================================================================
+Expression tag
+================================================================================
+
+Hello, {{ name }}!
+
+--------------------------------------------------------------------------------
+
+(markup
+  (raw_text)
+  (expression_tag
+    open: (expression_tag_open)
+    (identifier)
+    close: (expression_tag_close))
+  (raw_text))
+
+================================================================================
+Expression tag with trim markers
+================================================================================
+{{- name -}}
+--------------------------------------------------------------------------------
+
+(markup
+  (expression_tag
+    open: (expression_tag_open)
+    (identifier)
+    close: (expression_tag_close)))
+
+================================================================================
+Statement tag
+================================================================================
+{% let x = 1; %}
+--------------------------------------------------------------------------------
+
+(markup
+  (statement_tag
+    open: (statement_tag_open)
+    (lexical_declaration
+      (variable_declarator
+        name: (identifier)
+        value: (number)))
+    close: (statement_tag_close)))
+
+================================================================================
+Empty statement tag
+================================================================================
+{%%}
+--------------------------------------------------------------------------------
+
+(markup
+  (statement_tag
+    open: (statement_tag_open)
+    close: (statement_tag_close)))
+
+================================================================================
+Empty expression tag
+================================================================================
+{{}}
+--------------------------------------------------------------------------------
+
+(markup
+  (expression_tag
+    open: (expression_tag_open)
+    close: (expression_tag_close)))
+
+================================================================================
+Statement tag with left-trim marker
+================================================================================
+
+  {%- let x = 1; -%}
+
+--------------------------------------------------------------------------------
+
+(markup
+  (raw_text)
+  (statement_tag
+    open: (statement_tag_open)
+    (lexical_declaration
+      (variable_declarator
+        name: (identifier)
+        value: (number)))
+    close: (statement_tag_close))
+  (raw_text))
+
+================================================================================
+Comment tag
+================================================================================
+{# this is a comment #}
+--------------------------------------------------------------------------------
+
+(markup
+  (comment_tag
+    content: (comment_content)))
+
+================================================================================
+Consecutive tags with no raw text between them
+================================================================================
+{% a = 1; %}{{ b }}
+--------------------------------------------------------------------------------
+
+(markup
+  (statement_tag
+    open: (statement_tag_open)
+    (expression_statement
+      (assignment_expression
+        left: (identifier)
+        right: (number)))
+    close: (statement_tag_close))
+  (expression_tag
+    open: (expression_tag_open)
+    (identifier)
+    close: (expression_tag_close)))
+
+================================================================================
+if alt-syntax
+================================================================================
+{% if (x): %}body{% endif %}
+--------------------------------------------------------------------------------
+
+(markup
+  (if_alt_statement
+    open: (statement_tag_open)
+    condition: (parenthesized_expression
+      (identifier))
+    close: (statement_tag_close)
+    (raw_text)
+    end_open: (statement_tag_open)
+    end_close: (statement_tag_close)))
+
+================================================================================
+for-in alt-syntax
+================================================================================
+{% for (let i in items): %}{{ items[i] }}{% endfor %}
+--------------------------------------------------------------------------------
+
+(markup
+  (for_in_alt_statement
+    open: (statement_tag_open)
+    left: (identifier)
+    right: (identifier)
+    close: (statement_tag_close)
+    body: (expression_tag
+      open: (expression_tag_open)
+      (subscript_expression
+        object: (identifier)
+        index: (identifier))
+      close: (expression_tag_close))
+    end_open: (statement_tag_open)
+    end_close: (statement_tag_close)))
+
+================================================================================
+while alt-syntax
+================================================================================
+{% while (cond): %}body{% endwhile %}
+--------------------------------------------------------------------------------
+
+(markup
+  (while_alt_statement
+    open: (statement_tag_open)
+    condition: (parenthesized_expression
+      (identifier))
+    close: (statement_tag_close)
+    body: (raw_text)
+    end_open: (statement_tag_open)
+    end_close: (statement_tag_close)))
+
+================================================================================
+counting for alt-syntax
+================================================================================
+{% for (i = 0; i < 3; i++): %}x{% endfor %}
+--------------------------------------------------------------------------------
+
+(markup
+  (for_alt_statement
+    open: (statement_tag_open)
+    initializer: (assignment_expression
+      left: (identifier)
+      right: (number))
+    condition: (binary_expression
+      left: (identifier)
+      right: (number))
+    increment: (update_expression
+      argument: (identifier))
+    close: (statement_tag_close)
+    body: (raw_text)
+    end_open: (statement_tag_open)
+    end_close: (statement_tag_close)))

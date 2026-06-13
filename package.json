@@ -24,9 +24,6 @@
     "bindings/node/*",
     "queries/*",
     "src/**",
-    "tmpl/grammar.js",
-    "tmpl/src/**",
-    "tmpl/queries/*",
     "markup/grammar.js",
     "markup/src/**",
     "markup/queries/*",
@@ -51,7 +48,7 @@
   },
   "scripts": {
     "install": "node-gyp-build",
-    "build": "node scripts/generate-markup-grammar.js && tree-sitter generate && tree-sitter generate tmpl/grammar.js --output tmpl/src && tree-sitter generate markup/grammar.js --output markup/src && node-gyp-build && tree-sitter build --output ucode.so . && tree-sitter build --output ucode_tmpl.so ./tmpl && tree-sitter build --output ucode_markup.so ./markup",
+    "build": "node scripts/generate-markup-grammar.js && tree-sitter generate && tree-sitter generate markup/grammar.js --output markup/src && node-gyp-build && tree-sitter build --output ucode.so . && tree-sitter build --output ucode_markup.so ./markup",
     "test": "node scripts/run-tests.js",
     "prestart": "tree-sitter build --wasm",
     "start": "tree-sitter playground"
