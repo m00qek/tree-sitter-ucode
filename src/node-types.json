@@ -737,6 +737,10 @@
           {
             "type": "statement_tag_close",
             "named": true
+          },
+          {
+            "type": "statement_tag_trim_close",
+            "named": true
           }
         ]
       },
@@ -755,7 +759,15 @@
         "required": true,
         "types": [
           {
+            "type": "statement_tag_lstrip_open",
+            "named": true
+          },
+          {
             "type": "statement_tag_open",
+            "named": true
+          },
+          {
+            "type": "statement_tag_trim_open",
             "named": true
           }
         ]
@@ -789,6 +801,10 @@
           {
             "type": "statement_tag_close",
             "named": true
+          },
+          {
+            "type": "statement_tag_trim_close",
+            "named": true
           }
         ]
       },
@@ -797,7 +813,15 @@
         "required": true,
         "types": [
           {
+            "type": "statement_tag_lstrip_open",
+            "named": true
+          },
+          {
             "type": "statement_tag_open",
+            "named": true
+          },
+          {
+            "type": "statement_tag_trim_open",
             "named": true
           }
         ]
@@ -947,6 +971,10 @@
           {
             "type": "expression_tag_close",
             "named": true
+          },
+          {
+            "type": "expression_tag_trim_close",
+            "named": true
           }
         ]
       },
@@ -956,6 +984,10 @@
         "types": [
           {
             "type": "expression_tag_open",
+            "named": true
+          },
+          {
+            "type": "expression_tag_trim_open",
             "named": true
           }
         ]
@@ -1013,6 +1045,10 @@
           {
             "type": "statement_tag_close",
             "named": true
+          },
+          {
+            "type": "statement_tag_trim_close",
+            "named": true
           }
         ]
       },
@@ -1045,6 +1081,10 @@
           {
             "type": "statement_tag_close",
             "named": true
+          },
+          {
+            "type": "statement_tag_trim_close",
+            "named": true
           }
         ]
       },
@@ -1053,7 +1093,15 @@
         "required": false,
         "types": [
           {
+            "type": "statement_tag_lstrip_open",
+            "named": true
+          },
+          {
             "type": "statement_tag_open",
+            "named": true
+          },
+          {
+            "type": "statement_tag_trim_open",
             "named": true
           }
         ]
@@ -1099,7 +1147,15 @@
         "required": false,
         "types": [
           {
+            "type": "statement_tag_lstrip_open",
+            "named": true
+          },
+          {
             "type": "statement_tag_open",
+            "named": true
+          },
+          {
+            "type": "statement_tag_trim_open",
             "named": true
           }
         ]
@@ -1143,6 +1199,10 @@
           {
             "type": "statement_tag_close",
             "named": true
+          },
+          {
+            "type": "statement_tag_trim_close",
+            "named": true
           }
         ]
       },
@@ -1153,6 +1213,10 @@
           {
             "type": "statement_tag_close",
             "named": true
+          },
+          {
+            "type": "statement_tag_trim_close",
+            "named": true
           }
         ]
       },
@@ -1161,7 +1225,15 @@
         "required": false,
         "types": [
           {
+            "type": "statement_tag_lstrip_open",
+            "named": true
+          },
+          {
             "type": "statement_tag_open",
+            "named": true
+          },
+          {
+            "type": "statement_tag_trim_open",
             "named": true
           }
         ]
@@ -1203,7 +1275,15 @@
         "required": false,
         "types": [
           {
+            "type": "statement_tag_lstrip_open",
+            "named": true
+          },
+          {
             "type": "statement_tag_open",
+            "named": true
+          },
+          {
+            "type": "statement_tag_trim_open",
             "named": true
           }
         ]
@@ -1500,6 +1580,10 @@
           {
             "type": "statement_tag_close",
             "named": true
+          },
+          {
+            "type": "statement_tag_trim_close",
+            "named": true
           }
         ]
       },
@@ -1540,6 +1624,10 @@
           {
             "type": "statement_tag_close",
             "named": true
+          },
+          {
+            "type": "statement_tag_trim_close",
+            "named": true
           }
         ]
       },
@@ -1548,7 +1636,15 @@
         "required": false,
         "types": [
           {
+            "type": "statement_tag_lstrip_open",
+            "named": true
+          },
+          {
             "type": "statement_tag_open",
+            "named": true
+          },
+          {
+            "type": "statement_tag_trim_open",
             "named": true
           }
         ]
@@ -1558,7 +1654,15 @@
         "required": false,
         "types": [
           {
+            "type": "statement_tag_lstrip_open",
+            "named": true
+          },
+          {
             "type": "statement_tag_open",
+            "named": true
+          },
+          {
+            "type": "statement_tag_trim_open",
             "named": true
           }
         ]
@@ -2068,6 +2172,10 @@
           {
             "type": "statement_tag_close",
             "named": true
+          },
+          {
+            "type": "statement_tag_trim_close",
+            "named": true
           }
         ]
       },
@@ -2076,7 +2184,15 @@
         "required": true,
         "types": [
           {
+            "type": "statement_tag_lstrip_open",
+            "named": true
+          },
+          {
             "type": "statement_tag_open",
+            "named": true
+          },
+          {
+            "type": "statement_tag_trim_open",
             "named": true
           }
         ]
@@ -2482,6 +2598,10 @@
           {
             "type": "statement_tag_close",
             "named": true
+          },
+          {
+            "type": "statement_tag_trim_close",
+            "named": true
           }
         ]
       },
@@ -2502,6 +2622,10 @@
           {
             "type": "statement_tag_close",
             "named": true
+          },
+          {
+            "type": "statement_tag_trim_close",
+            "named": true
           }
         ]
       },
@@ -2510,7 +2634,15 @@
         "required": false,
         "types": [
           {
+            "type": "statement_tag_lstrip_open",
+            "named": true
+          },
+          {
             "type": "statement_tag_open",
+            "named": true
+          },
+          {
+            "type": "statement_tag_trim_open",
             "named": true
           }
         ]
@@ -2520,7 +2652,15 @@
         "required": false,
         "types": [
           {
+            "type": "statement_tag_lstrip_open",
+            "named": true
+          },
+          {
             "type": "statement_tag_open",
+            "named": true
+          },
+          {
+            "type": "statement_tag_trim_open",
             "named": true
           }
         ]
@@ -2847,6 +2987,14 @@
     "named": true
   },
   {
+    "type": "expression_tag_trim_close",
+    "named": true
+  },
+  {
+    "type": "expression_tag_trim_open",
+    "named": true
+  },
+  {
     "type": "false",
     "named": true
   },
@@ -2939,7 +3087,19 @@
     "named": true
   },
   {
+    "type": "statement_tag_lstrip_open",
+    "named": true
+  },
+  {
     "type": "statement_tag_open",
+    "named": true
+  },
+  {
+    "type": "statement_tag_trim_close",
+    "named": true
+  },
+  {
+    "type": "statement_tag_trim_open",
     "named": true
   },
   {
