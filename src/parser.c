@@ -113775,7 +113775,7 @@ TS_PUBLIC const TSLanguage *tree_sitter_ucode(void) {
     .max_reserved_word_set_size = 28,
     .metadata = {
       .major_version = 0,
-      .minor_version = 3,
+      .minor_version = 4,
       .patch_version = 0,
     },
   };
