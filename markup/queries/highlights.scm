@@ -1,5 +1,5 @@
 ; Markup-mode highlights for ucode_markup grammar
-; (.utpl / .uc.tmpl files)
+; (.uc.tmpl files)
 
 ; ── Tag delimiters ────────────────────────────────────────────────────────────
 
@@ -27,7 +27,12 @@
 ["for" "endfor" "while" "endwhile"] @keyword.repeat
 "in"                                @keyword.operator
 
-":"        @punctuation.delimiter
+(if_alt_statement     ":" @punctuation.delimiter)
+(elif_clause_tag      ":" @punctuation.delimiter)
+(for_alt_statement    ":" @punctuation.delimiter)
+(for_in_alt_statement ":" @punctuation.delimiter)
+(while_alt_statement  ":" @punctuation.delimiter)
+(function_declaration ":" @punctuation.delimiter)
 
 ; ── Code tokens inside statement/expression tags are highlighted via injection ─
 ; (see markup/queries/injections.scm)
