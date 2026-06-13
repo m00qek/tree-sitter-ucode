@@ -44,8 +44,20 @@
   key: (property_identifier) @name
   value: [(function_expression) (arrow_function)]) @definition.function
 
-(call_expression
-  function: (identifier) @name) @reference.call
+(export_statement
+  (lexical_declaration
+    (variable_declarator
+      name: (identifier) @name
+      value: [
+        (number) (string) (true) (false) (null)
+        (identifier) (binary_expression) (call_expression)
+      ])) @definition.constant)
+
+(
+  (call_expression
+    function: (identifier) @name) @reference.call
+  (#not-match? @name "^(require|include|render)$")
+)
 
 (call_expression
   function: (member_expression

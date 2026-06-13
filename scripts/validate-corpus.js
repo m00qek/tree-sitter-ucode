@@ -30,7 +30,14 @@ const { spawnSync } = require('node:child_process');
 // ---------------------------------------------------------------------------
 
 const TS_ROOT = path.dirname(__dirname);
-const TS_TMPL = path.join(TS_ROOT, 'tmpl');
+
+function soExt() {
+  if (process.platform === 'win32')  return 'dll';
+  if (process.platform === 'darwin') return 'dylib';
+  return 'so';
+}
+const LIB_UCODE        = path.join(TS_ROOT, `ucode.${soExt()}`);
+const LIB_UCODE_MARKUP = path.join(TS_ROOT, `ucode_markup.${soExt()}`);
 
 // Prefer the devDependency binary so the script works without a global install.
 const _tsLocal  = path.join(TS_ROOT, 'node_modules', '.bin', 'tree-sitter');
@@ -43,8 +50,48 @@ const TREE_SITTER = fs.existsSync(_tsLocal) ? _tsLocal : 'tree-sitter';
 // ---------------------------------------------------------------------------
 
 const EXPECTED_INVALID = new Set([
+  // --- Modules (invalid syntax) ---
   '04_modules/07_import_default#4',       // `import { default }` without `as` — invalid
   '04_modules/09_import_wildcard#2',      // `import *` without `as ns` — invalid
+
+  // --- Object literals (invalid syntax) ---
+  '00_syntax/13_object_literals#4',       // `{ "foo" }` — bare string is not a valid property
+
+  // --- Function declarations (grammar gap: {% function f(): %}...{% endfunction %} alt-syntax) ---
+  '00_syntax/15_function_declarations#1',
+
+  // --- For loops (invalid forms that ucode rejects) ---
+  '00_syntax/16_for_loop#3',  // for (let x, y, z in {}) — three-variable for-in
+  '00_syntax/16_for_loop#4',  // for (let x = 1, y in {}) — mixed initializer + for-in
+  '00_syntax/16_for_loop#5',  // for (let x) — incomplete for
+  '00_syntax/16_for_loop#6',  // for (let x, y) — incomplete for
+
+  // --- Arrow functions (invalid parameter form) ---
+  '00_syntax/19_arrow_functions#3',  // `(a + 1) => {}` — expression as arrow param
+
+  // --- Regex literals ---
+  '00_syntax/21_regex_literals#3',   // /test/x — unsupported x flag
+  '00_syntax/21_regex_literals#6',   // /[/]/ etc — slash inside character class trips the scanner
+
+  // --- Forward declarations (grammar gap: `function foo;` not in grammar) ---
+  '00_syntax/29_function_forward_declarations#1',
+  '00_syntax/29_function_forward_declarations#2',
+  '00_syntax/29_function_forward_declarations#3',
+  '00_syntax/29_function_forward_declarations#4',
+  '00_syntax/29_function_forward_declarations#5',
+  '00_syntax/29_function_forward_declarations#6',
+  '00_syntax/29_function_forward_declarations#7',
+  '00_syntax/29_function_forward_declarations#8',
+  '00_syntax/29_function_forward_declarations#9',
+  '00_syntax/29_function_forward_declarations#10',
+  '00_syntax/29_function_forward_declarations#12',
+
+  // --- Bug regression tests (invalid/crashing inputs) ---
+  '99_bugs/14_incomplete_expression_at_eof#1',          // `{% 1+` — EOF mid-expression
+  '99_bugs/15_segfault_on_prefix_increment#1',          // `{% ++"` — invalid prefix operand
+  '99_bugs/18_hang_on_line_comments_at_eof#1',          // `{{ // }}` — comment consumes closing tag
+  '99_bugs/18_hang_on_line_comments_at_eof#2',          // `{{ /* }}` — block comment consumes closing tag
+  '99_bugs/32_compiler_switch_patchlist_corruption#2',  // `switch (*) {}` — invalid switch expression
   '99_bugs/35_vm_callframe_double_free#1', // "not reached" stub, test uses C API
   '99_bugs/37_compiler_unexpected_unary_op#1', // `1~1` — no binary ~ operator
 ]);
@@ -53,22 +100,32 @@ const EXPECTED_INVALID = new Set([
 // Helpers
 // ---------------------------------------------------------------------------
 
-function isTemplate(code) {
-  // Mirror tree-sitter.json content-regex: opener must be at start of line.
-  // An unanchored match would mis-route files with {%/{#/{{ inside string
-  // literals or comments to the ucode_tmpl parser.
+// corpus mode: match {%/{{/{# anywhere — jow-/ucode test cases embed
+// template output inline (e.g. "result = {{ expr }}") so the marker is
+// rarely at the start of a line.
+function isTemplateCorpus(code) {
+  return /\{[%{#]/.test(code);
+}
+
+// project mode: require opener at start of line, matching tree-sitter.json
+// content-regex so that format strings ("{%s}") in .uc code files don't
+// falsely route them to the markup parser.
+function isTemplateProject(code) {
   return /^[ \t]*\{[%{#]/m.test(code);
 }
 
 function parse(code, tmpl) {
-  const suffix     = tmpl ? '.utpl' : '.uc';
-  const grammarDir = tmpl ? TS_TMPL : TS_ROOT;
-  const tmpFile    = path.join(os.tmpdir(), `ucode-validate-${process.pid}-${Date.now()}${suffix}`);
+  const libPath  = tmpl ? LIB_UCODE_MARKUP : LIB_UCODE;
+  const langName = tmpl ? 'ucode_markup'   : 'ucode';
+  const suffix   = tmpl ? '.ucode'         : '.uc';
+  const tmpFile  = path.join(os.tmpdir(), `ucode-validate-${process.pid}-${Date.now()}${suffix}`);
   fs.writeFileSync(tmpFile, code, 'utf8');
   try {
-    const result = spawnSync(TREE_SITTER, ['parse', '--quiet', '-p', grammarDir, tmpFile], {
-      cwd: TS_ROOT, encoding: 'utf8',
-    });
+    const result = spawnSync(
+      TREE_SITTER,
+      ['parse', '--quiet', '--lib-path', libPath, '--lang-name', langName, tmpFile],
+      { cwd: TS_ROOT, encoding: 'utf8' },
+    );
     const output   = (result.stdout ?? '') + (result.stderr ?? '');
     const hasError = /\bERROR\b/.test(output);
     return { hasError, output: output.trim() };
@@ -127,7 +184,7 @@ function runCorpus(testsDir) {
 
     cases.forEach(([, code], i) => {
       const key   = `${rel}#${i + 1}`;
-      const tmpl  = isTemplate(code);
+      const tmpl  = isTemplateCorpus(code);
       const label = `${rel} #${i + 1} [${tmpl ? 'tmpl' : 'raw'}]`;
 
       if (EXPECTED_INVALID.has(key)) {
@@ -166,7 +223,7 @@ function runProject(projectDir) {
     catch { continue; }
 
     const rel   = path.relative(projectDir, file).replace(/\\/g, '/');
-    const tmpl  = isTemplate(code);
+    const tmpl  = isTemplateProject(code);
     const label = `${rel} [${tmpl ? 'tmpl' : 'raw'}]`;
 
     const { hasError, output } = parse(code, tmpl);

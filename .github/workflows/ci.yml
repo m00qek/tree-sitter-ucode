@@ -72,6 +72,11 @@ jobs:
           npx tree-sitter generate markup/grammar.js --output markup/src
           git diff --exit-code src/ markup/src/ markup/grammar.js
 
+      - name: Build parsers
+        run: |
+          npx tree-sitter build --output ucode.so .
+          npx tree-sitter build --output ucode_markup.so markup/
+
       - name: Checkout ucode language test suite
         uses: actions/checkout@v6
         with:
