@@ -411,8 +411,8 @@ Cross-tag default import
   (statement_tag
     open: (statement_tag_open)
     (import_statement
-      (import_clause
-        (identifier))
+      clause: (import_clause
+        default: (identifier))
       source: (string
         (string_fragment)))
     close: (statement_tag_close))
@@ -437,8 +437,8 @@ Cross-tag named import
   (statement_tag
     open: (statement_tag_open)
     (import_statement
-      (import_clause
-        (named_imports
+      clause: (import_clause
+        named: (named_imports
           (import_specifier
             name: (identifier))))
       source: (string

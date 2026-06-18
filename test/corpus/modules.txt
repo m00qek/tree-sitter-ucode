@@ -8,11 +8,14 @@ import { a, b } from "./mod.uc";
 
 (program
   (import_statement
-    (import_clause
-      (named_imports
-        (import_specifier name: (identifier))
-        (import_specifier name: (identifier))))
-    source: (string (string_fragment))))
+    clause: (import_clause
+      named: (named_imports
+        (import_specifier
+          name: (identifier))
+        (import_specifier
+          name: (identifier))))
+    source: (string
+      (string_fragment))))
 
 ================================================================================
 Default import
@@ -24,8 +27,10 @@ import def from "./mod.uc";
 
 (program
   (import_statement
-    (import_clause (identifier))
-    source: (string (string_fragment))))
+    clause: (import_clause
+      default: (identifier))
+    source: (string
+      (string_fragment))))
 
 ================================================================================
 Side-effect import
@@ -37,7 +42,8 @@ import "./mod.uc";
 
 (program
   (import_statement
-    source: (string (string_fragment))))
+    source: (string
+      (string_fragment))))
 
 ================================================================================
 Import with rename
@@ -49,12 +55,13 @@ import { a as x } from "./mod.uc";
 
 (program
   (import_statement
-    (import_clause
-      (named_imports
+    clause: (import_clause
+      named: (named_imports
         (import_specifier
           name: (identifier)
           alias: (identifier))))
-    source: (string (string_fragment))))
+    source: (string
+      (string_fragment))))
 
 ================================================================================
 Wildcard import
@@ -66,9 +73,11 @@ import * as ns from "./mod.uc";
 
 (program
   (import_statement
-    (import_clause
-      (namespace_import (identifier)))
-    source: (string (string_fragment))))
+    clause: (import_clause
+      namespace: (namespace_import
+        (identifier)))
+    source: (string
+      (string_fragment))))
 
 ================================================================================
 Dynamic import expression — not supported, produces ERROR
@@ -121,7 +130,8 @@ export function named() { return 1; }
       name: (identifier)
       parameters: (formal_parameters)
       body: (statement_block
-        (return_statement (number))))))
+        (return_statement
+          (number))))))
 
 ================================================================================
 Export default expression (requires trailing semicolon)
@@ -147,9 +157,11 @@ export { a, b };
 
 (program
   (export_statement
-    (export_clause
-      (export_specifier name: (identifier))
-      (export_specifier name: (identifier)))))
+    clause: (export_clause
+      (export_specifier
+        name: (identifier))
+      (export_specifier
+        name: (identifier)))))
 
 ================================================================================
 Default and named imports combined
@@ -161,11 +173,13 @@ import def, { a } from "./mod.uc";
 
 (program
   (import_statement
-    (import_clause
-      (identifier)
-      (named_imports
-        (import_specifier name: (identifier))))
-    source: (string (string_fragment))))
+    clause: (import_clause
+      default: (identifier)
+      named: (named_imports
+        (import_specifier
+          name: (identifier))))
+    source: (string
+      (string_fragment))))
 
 ================================================================================
 Export forward declaration — not supported, produces ERROR
@@ -193,7 +207,7 @@ export { a as b };
 
 (program
   (export_statement
-    (export_clause
+    clause: (export_clause
       (export_specifier
         name: (identifier)
         alias: (identifier)))))

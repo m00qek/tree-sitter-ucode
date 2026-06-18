@@ -205,7 +205,7 @@ module.exports = grammar({
     export_statement: $ => choice(
       seq(
         'export',
-        $.export_clause,
+        field('clause', $.export_clause),
         $._semicolon,
       ),
       seq(
@@ -257,22 +257,22 @@ module.exports = grammar({
     import_statement: $ => seq(
       'import',
       choice(
-        seq($.import_clause, 'from', field('source', $.string)),
+        seq(field('clause', $.import_clause), 'from', field('source', $.string)),
         field('source', $.string),
       ),
       $._semicolon,
     ),
 
     import_clause: $ => choice(
-      $.namespace_import,
-      $.named_imports,
+      field('namespace', $.namespace_import),
+      field('named', $.named_imports),
       seq(
-        $.identifier,
+        field('default', $.identifier),
         optional(seq(
           ',',
           choice(
-            $.namespace_import,
-            $.named_imports,
+            field('namespace', $.namespace_import),
+            field('named', $.named_imports),
           ),
         )),
       ),
