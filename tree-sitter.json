@@ -50,6 +50,19 @@
         "markup/queries/textobjects.scm"
       ],
       "injection-regex": "^ucode_markup$"
+    },
+    {
+      "name": "ucdocs",
+      "camelcase": "Ucdocs",
+      "path": "./ucdocs",
+      "file-types": null,
+      "highlights": [
+        "ucdocs/queries/highlights.scm"
+      ],
+      "tags": [
+        "ucdocs/queries/tags.scm"
+      ],
+      "injection-regex": "^ucdocs$"
     }
   ],
   "metadata": {
