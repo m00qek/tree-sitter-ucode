@@ -15,6 +15,11 @@
 (type_identifier) @type
 (primitive_type) @type.builtin
 (any_type) @type.builtin
+(module_type "module:" @module)
+(module_path) @module
 
 (identifier) @variable.parameter
+(default_value) @constant
 (description) @comment
+(inline_tag "{" @punctuation.bracket "}" @punctuation.bracket)
+(inline_tag (tag_name) @keyword)

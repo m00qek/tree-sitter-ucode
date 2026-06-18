@@ -20,7 +20,7 @@ module.exports = grammar({
   rules: {
     document: $ => seq(
       $._begin,
-      optional($.description),
+      optional(alias($._free_description, $.description)),
       repeat(choice(
         $.param_tag,
         $.returns_tag,
@@ -41,22 +41,75 @@ module.exports = grammar({
     _begin: _ => seq('/', repeat('*')),
     _end: _ => '/',
 
-    description: $ => prec.right(seq(
-      $._text,
-      repeat($._text),
+    // Used after a type_expression/rest_type_expression has already claimed `{` at
+    // this position (param_tag, returns_tag, throws_tag) — excludes _brace_text so
+    // it never competes with a legitimate {type} for the leading `{`.
+    _typed_description: $ => prec.right(seq(
+      choice($._text, $.inline_tag),
+      repeat(choice($._text, $.inline_tag)),
     )),
+
+    // Used wherever no type_expression can appear at the same position, so a bare
+    // `{` can only be an inline tag or arbitrary brace-text (e.g. @example code).
+    _free_description: $ => prec.right(seq(
+      choice($._text, $.inline_tag, $._brace_text),
+      repeat(choice($._text, $.inline_tag, $._brace_text)),
+    )),
+
+    // {@link target text} and similar inline JSDoc tags embedded in description text.
+    inline_tag: $ => seq(
+      '{',
+      $.tag_name,
+      optional(alias($._free_description, $.description)),
+      '}',
+    ),
+
+    // A `{` not immediately followed by `@tagname` is not an inline tag — e.g. an
+    // object literal or arrow-function block in an @example code block. Recursive
+    // so nested braces (object literals inside arrow functions, etc.) stay balanced
+    // instead of erroring out on the first inner `}`.
+    _brace_text: $ => seq(
+      '{',
+      optional(seq(
+        /[^{}@]/,
+        repeat(choice(
+          /[^{}]+/,
+          $._brace_text,
+        )),
+      )),
+      '}',
+    ),
 
     param_tag: $ => seq(
       '@param',
       optional(field('type', choice($.type_expression, $.rest_type_expression))),
-      optional(field('name', $.identifier)),
-      optional(field('description', $.description)),
+      optional(field('name', choice($.identifier, $.optional_param))),
+      optional(field('description', alias($._typed_description, $.description))),
     ),
+
+    // [name] or [name=default] — marks the parameter as optional, JSDoc-style.
+    optional_param: $ => seq(
+      '[',
+      field('name', $.param_path),
+      optional(seq('=', field('default', $.default_value))),
+      ']',
+    ),
+
+    // Dotted parameter paths, e.g. opts.precision for nested option fields.
+    param_path: $ => seq(
+      $.identifier,
+      repeat(seq('.', $.identifier)),
+    ),
+
+    default_value: _ => token(choice(
+      /-?\d+(\.\d+)?/,
+      /[a-zA-Z_$][a-zA-Z0-9_$]*/,
+    )),
 
     returns_tag: $ => seq(
       choice('@returns', '@return'),
       optional(field('type', $.type_expression)),
-      optional(field('description', $.description)),
+      optional(field('description', alias($._typed_description, $.description))),
     ),
 
     template_tag: $ => seq(
@@ -78,37 +131,37 @@ module.exports = grammar({
     throws_tag: $ => seq(
       choice('@throws', '@throw'),
       optional(field('type', $.type_expression)),
-      optional(field('description', $.description)),
+      optional(field('description', alias($._typed_description, $.description))),
     ),
 
     deprecated_tag: $ => seq(
       '@deprecated',
-      optional(field('description', $.description)),
+      optional(field('description', alias($._free_description, $.description))),
     ),
 
     since_tag: $ => seq(
       '@since',
-      optional(field('description', $.description)),
+      optional(field('description', alias($._free_description, $.description))),
     ),
 
     see_tag: $ => seq(
       '@see',
-      optional(field('description', $.description)),
+      optional(field('description', alias($._free_description, $.description))),
     ),
 
     example_tag: $ => seq(
       '@example',
-      optional(field('description', $.description)),
+      optional(field('description', alias($._free_description, $.description))),
     ),
 
     default_tag: $ => seq(
       '@default',
-      optional(field('description', $.description)),
+      optional(field('description', alias($._free_description, $.description))),
     ),
 
     unknown_tag: $ => seq(
       $.tag_name,
-      optional(field('description', $.description)),
+      optional(field('description', alias($._free_description, $.description))),
     ),
 
     tag_name: _ => /@[a-zA-Z_]+/,
@@ -126,6 +179,7 @@ module.exports = grammar({
       $.dict_type,
       $.record_type,
       $.named_type,
+      $.module_type,
       $.function_type,
       $.anon_function_type,
       $.union_type,
@@ -162,6 +216,14 @@ module.exports = grammar({
       ':',
       field('type', $._type),
     ),
+
+    // module:core.ParseConfig — cross-module type reference used by stdlib docs.
+    module_type: $ => seq(
+      'module:',
+      field('path', $.module_path),
+    ),
+
+    module_path: _ => /[a-zA-Z_$][a-zA-Z0-9_$]*(\.[a-zA-Z_$][a-zA-Z0-9_$]*)*/,
 
     // Covers bare TypeName and generic TypeName<T>, TypeName<T, U>, etc.
     named_type: $ => seq(
@@ -209,7 +271,7 @@ module.exports = grammar({
     // Lowercase-starting names: parameter names and function param names.
     identifier: _ => /[a-z_$][a-zA-Z_$0-9]*/,
 
-    _text: _ => token(prec(-1, /[^*{@\s][^*@\n]*/)),
+    _text: _ => token(prec(-1, /[^*{}@\s][^*{}@\n]*/)),
   },
 });
 

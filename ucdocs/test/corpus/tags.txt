@@ -312,6 +312,187 @@ default
     description: (description)))
 
 ================================================================================
+optional param with no default
+================================================================================
+
+/**
+ * @param {Object} [opts]
+ */
+
+--------------------------------------------------------------------------------
+
+(document
+  (param_tag
+    type: (type_expression
+      (named_type
+        name: (type_identifier)))
+    name: (optional_param
+      name: (param_path
+        (identifier)))))
+
+================================================================================
+optional param with dotted path
+================================================================================
+
+/**
+ * @param {int} [opts.len]
+ */
+
+--------------------------------------------------------------------------------
+
+(document
+  (param_tag
+    type: (type_expression
+      (primitive_type))
+    name: (optional_param
+      name: (param_path
+        (identifier)
+        (identifier)))))
+
+================================================================================
+optional param with numeric default
+================================================================================
+
+/**
+ * @param {int} [opts.precision=10000]
+ */
+
+--------------------------------------------------------------------------------
+
+(document
+  (param_tag
+    type: (type_expression
+      (primitive_type))
+    name: (optional_param
+      name: (param_path
+        (identifier)
+        (identifier))
+      default: (default_value))))
+
+================================================================================
+optional param with constant identifier default
+================================================================================
+
+/**
+ * @param {int} [level=O_RDONLY]
+ */
+
+--------------------------------------------------------------------------------
+
+(document
+  (param_tag
+    type: (type_expression
+      (primitive_type))
+    name: (optional_param
+      name: (param_path
+        (identifier))
+      default: (default_value))))
+
+================================================================================
+module type reference
+================================================================================
+
+/**
+ * @param {module:core.ParseConfig} options
+ */
+
+--------------------------------------------------------------------------------
+
+(document
+  (param_tag
+    type: (type_expression
+      (module_type
+        path: (module_path)))
+    name: (identifier)))
+
+================================================================================
+nullable module type reference
+================================================================================
+
+/**
+ * @returns {?module:debug.SourcePosition}
+ */
+
+--------------------------------------------------------------------------------
+
+(document
+  (returns_tag
+    type: (type_expression
+      (nullable_type
+        (module_type
+          path: (module_path))))))
+
+================================================================================
+union of module type references
+================================================================================
+
+/**
+ * @param {string|module:fs.file|module:fs.proc} file
+ */
+
+--------------------------------------------------------------------------------
+
+(document
+  (param_tag
+    type: (type_expression
+      (union_type
+        (union_type
+          (primitive_type)
+          (module_type
+            path: (module_path)))
+        (module_type
+          path: (module_path))))
+    name: (identifier)))
+
+================================================================================
+description with inline link tag (URL)
+================================================================================
+
+/**
+ * See {@link https://example.com/docs for details}.
+ */
+
+--------------------------------------------------------------------------------
+
+(document
+  (description
+    (inline_tag
+      (tag_name)
+      (description))))
+
+================================================================================
+description with inline link tag (module reference, no link text)
+================================================================================
+
+/**
+ * {@link module:math#rand}
+ */
+
+--------------------------------------------------------------------------------
+
+(document
+  (description
+    (inline_tag
+      (tag_name)
+      (description))))
+
+================================================================================
+description with inline tag followed by more text
+================================================================================
+
+/**
+ * See {@link module:log#ulog_open|ulog_open()} for details.
+ */
+
+--------------------------------------------------------------------------------
+
+(document
+  (description
+    (inline_tag
+      (tag_name)
+      (description))))
+
+================================================================================
 rest param with primitive type
 ================================================================================
 

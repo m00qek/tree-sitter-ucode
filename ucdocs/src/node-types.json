@@ -32,6 +32,10 @@
             "named": true
           },
           {
+            "type": "module_type",
+            "named": true
+          },
+          {
             "type": "named_type",
             "named": true
           },
@@ -75,6 +79,10 @@
           },
           {
             "type": "list_type",
+            "named": true
+          },
+          {
+            "type": "module_type",
             "named": true
           },
           {
@@ -141,7 +149,17 @@
   {
     "type": "description",
     "named": true,
-    "fields": {}
+    "fields": {},
+    "children": {
+      "multiple": true,
+      "required": false,
+      "types": [
+        {
+          "type": "inline_tag",
+          "named": true
+        }
+      ]
+    }
   },
   {
     "type": "dict_type",
@@ -169,6 +187,10 @@
           },
           {
             "type": "list_type",
+            "named": true
+          },
+          {
+            "type": "module_type",
             "named": true
           },
           {
@@ -314,6 +336,10 @@
             "named": true
           },
           {
+            "type": "module_type",
+            "named": true
+          },
+          {
             "type": "named_type",
             "named": true
           },
@@ -380,6 +406,10 @@
             "named": true
           },
           {
+            "type": "module_type",
+            "named": true
+          },
+          {
             "type": "named_type",
             "named": true
           },
@@ -401,6 +431,25 @@
           }
         ]
       }
+    }
+  },
+  {
+    "type": "inline_tag",
+    "named": true,
+    "fields": {},
+    "children": {
+      "multiple": true,
+      "required": true,
+      "types": [
+        {
+          "type": "description",
+          "named": true
+        },
+        {
+          "type": "tag_name",
+          "named": true
+        }
+      ]
     }
   },
   {
@@ -432,6 +481,10 @@
             "named": true
           },
           {
+            "type": "module_type",
+            "named": true
+          },
+          {
             "type": "named_type",
             "named": true
           },
@@ -449,6 +502,22 @@
           },
           {
             "type": "union_type",
+            "named": true
+          }
+        ]
+      }
+    }
+  },
+  {
+    "type": "module_type",
+    "named": true,
+    "fields": {
+      "path": {
+        "multiple": false,
+        "required": true,
+        "types": [
+          {
+            "type": "module_path",
             "named": true
           }
         ]
@@ -495,6 +564,10 @@
           },
           {
             "type": "list_type",
+            "named": true
+          },
+          {
+            "type": "module_type",
             "named": true
           },
           {
@@ -550,6 +623,10 @@
           "named": true
         },
         {
+          "type": "module_type",
+          "named": true
+        },
+        {
           "type": "named_type",
           "named": true
         },
@@ -567,6 +644,47 @@
         },
         {
           "type": "union_type",
+          "named": true
+        }
+      ]
+    }
+  },
+  {
+    "type": "optional_param",
+    "named": true,
+    "fields": {
+      "default": {
+        "multiple": false,
+        "required": false,
+        "types": [
+          {
+            "type": "default_value",
+            "named": true
+          }
+        ]
+      },
+      "name": {
+        "multiple": false,
+        "required": true,
+        "types": [
+          {
+            "type": "param_path",
+            "named": true
+          }
+        ]
+      }
+    }
+  },
+  {
+    "type": "param_path",
+    "named": true,
+    "fields": {},
+    "children": {
+      "multiple": true,
+      "required": true,
+      "types": [
+        {
+          "type": "identifier",
           "named": true
         }
       ]
@@ -592,6 +710,10 @@
         "types": [
           {
             "type": "identifier",
+            "named": true
+          },
+          {
+            "type": "optional_param",
             "named": true
           }
         ]
@@ -653,6 +775,10 @@
           },
           {
             "type": "list_type",
+            "named": true
+          },
+          {
+            "type": "module_type",
             "named": true
           },
           {
@@ -720,6 +846,10 @@
         },
         {
           "type": "list_type",
+          "named": true
+        },
+        {
+          "type": "module_type",
           "named": true
         },
         {
@@ -873,6 +1003,10 @@
           "named": true
         },
         {
+          "type": "module_type",
+          "named": true
+        },
+        {
           "type": "named_type",
           "named": true
         },
@@ -966,6 +1100,10 @@
           "named": true
         },
         {
+          "type": "module_type",
+          "named": true
+        },
+        {
           "type": "named_type",
           "named": true
         },
@@ -1031,6 +1169,10 @@
     "named": false
   },
   {
+    "type": ".",
+    "named": false
+  },
+  {
     "type": "...",
     "named": false
   },
@@ -1044,6 +1186,10 @@
   },
   {
     "type": "<",
+    "named": false
+  },
+  {
+    "type": "=",
     "named": false
   },
   {
@@ -1111,12 +1257,24 @@
     "named": false
   },
   {
+    "type": "[",
+    "named": false
+  },
+  {
+    "type": "]",
+    "named": false
+  },
+  {
     "type": "any",
     "named": false
   },
   {
     "type": "boolean",
     "named": false
+  },
+  {
+    "type": "default_value",
+    "named": true
   },
   {
     "type": "dict",
@@ -1141,6 +1299,14 @@
   {
     "type": "list",
     "named": false
+  },
+  {
+    "type": "module:",
+    "named": false
+  },
+  {
+    "type": "module_path",
+    "named": true
   },
   {
     "type": "null",

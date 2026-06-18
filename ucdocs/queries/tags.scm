@@ -2,8 +2,8 @@
   (type_param) @template.param)
 
 (param_tag
-  type: (_) @param.type
-  name: (identifier) @param.name
+  type: (_)? @param.type
+  name: (_)? @param.name
   description: (description)? @param.description)
 
 (returns_tag
