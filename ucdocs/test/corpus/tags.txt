@@ -493,6 +493,43 @@ description with inline tag followed by more text
       (description))))
 
 ================================================================================
+example with object literal containing braces
+================================================================================
+
+/**
+ * @example
+ * let x = { foo: true, bar: false, qrx: null };
+ */
+
+--------------------------------------------------------------------------------
+
+(document
+  (example_tag
+    description: (description)))
+
+================================================================================
+example with deeply nested braces (object literal containing arrow function containing object literal)
+================================================================================
+
+/**
+ * @example
+ * const obj = publish("my.service", {
+ *     "trigger": (req, msg) => {
+ *         if (obj.subscribed()) {
+ *             obj.notify("update", { data: "value" });
+ *         }
+ *         req.reply({ notified: obj.subscribed() });
+ *     }
+ * });
+ */
+
+--------------------------------------------------------------------------------
+
+(document
+  (example_tag
+    description: (description)))
+
+================================================================================
 rest param with primitive type
 ================================================================================
 
