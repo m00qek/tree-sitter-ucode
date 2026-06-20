@@ -186,6 +186,7 @@ module.exports = grammar({
       $.nullable_type,
       $.any_type,
       $.parenthesized_type,
+      $.array_type,
     ),
 
     primitive_type: _ => choice('int', 'float', 'string', 'boolean', 'null', 'void', 'function'),
@@ -263,6 +264,10 @@ module.exports = grammar({
     // Explicit grouping: (T|U) to override default union associativity or
     // for clarity in complex expressions like ?(T|U).
     parenthesized_type: $ => seq('(', $._type, ')'),
+
+    // T[] postfix array notation.  Precedence 3 > nullable (2) > union (1)
+    // so ?T[] == ?(T[]) and T[]|U[] == (T[])|(U[]).
+    array_type: $ => prec(3, seq($._type, token(seq('[', ']')))),
 
     // Left-associative so T | U | V parses as (T | U) | V.
     union_type: $ => prec.left(1, seq($._type, '|', $._type)),
