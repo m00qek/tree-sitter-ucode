@@ -690,10 +690,10 @@ module tag
 
 (document
   (module_tag
-    name: (identifier)))
+    name: (member_name)))
 
 ================================================================================
-module tag: uppercase name that fails identifier is an error
+module tag: uppercase name
 ================================================================================
 
 /**
@@ -703,8 +703,8 @@ module tag: uppercase name that fails identifier is an error
 --------------------------------------------------------------------------------
 
 (document
-  (ERROR
-    (type_identifier)))
+  (module_tag
+    name: (member_name)))
 
 ================================================================================
 unknown tag

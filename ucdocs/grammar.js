@@ -164,7 +164,7 @@ module.exports = grammar({
     // @module name — identifies the module this file documents.
     module_tag: $ => seq(
       '@module',
-      field('name', $.identifier),
+      field('name', $.member_name),
     ),
 
     // module:X.Y#Z — a namepath referencing a specific member within a module.

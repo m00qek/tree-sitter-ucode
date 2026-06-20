@@ -652,7 +652,7 @@
         "required": true,
         "types": [
           {
-            "type": "identifier",
+            "type": "member_name",
             "named": true
           }
         ]

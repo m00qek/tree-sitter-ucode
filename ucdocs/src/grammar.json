@@ -802,7 +802,7 @@
           "name": "name",
           "content": {
             "type": "SYMBOL",
-            "name": "identifier"
+            "name": "member_name"
           }
         }
       ]
