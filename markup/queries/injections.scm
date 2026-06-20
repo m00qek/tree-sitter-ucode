@@ -38,3 +38,8 @@
 (for_alt_statement open: (_) increment: (_) @injection.content (#set! injection.language "ucode"))
 
 (for_in_alt_statement open: (_) right: (_) @injection.content (#set! injection.language "ucode"))
+
+; Inject ucdocs into JSDoc block comments (/** ... */).
+((comment) @injection.content
+  (#match? @injection.content "^/\\*\\*")
+  (#set! injection.language "ucdocs"))
