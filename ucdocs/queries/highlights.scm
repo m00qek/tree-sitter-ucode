@@ -72,4 +72,13 @@
 
 ; ── Descriptions ─────────────────────────────────────────────────────────────
 
-(description) @comment @spell
+(description) @comment
+
+; @spell only on prose-bearing tags; @example descriptions contain code.
+(document          (description) @spell)
+(param_tag         description: (description) @spell)
+(returns_tag       description: (description) @spell)
+(throws_tag        description: (description) @spell)
+(deprecated_tag    description: (description) @spell)
+(since_tag         description: (description) @spell)
+(see_tag           description: (description) @spell)
