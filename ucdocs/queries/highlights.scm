@@ -69,10 +69,6 @@
 
 (rest_type_expression "..." @punctuation.special)
 
-; ── Inline tags ──────────────────────────────────────────────────────────────
-
-(inline_tag (tag_name) @keyword)
-
 ; ── Descriptions ─────────────────────────────────────────────────────────────
 
 (description) @comment @spell
