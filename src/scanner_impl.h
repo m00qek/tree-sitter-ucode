@@ -400,9 +400,7 @@ static bool scan_automatic_semicolon(TSLexer *lexer) {
 }
 
 static bool scan_ternary_qmark(TSLexer *lexer) {
-    while (lexer->lookahead != '\r' && lexer->lookahead != '\n' &&
-           lexer->lookahead != 0x2028 && lexer->lookahead != 0x2029 &&
-           iswspace(lexer->lookahead))
+    while (iswspace(lexer->lookahead))
         skip(lexer);
 
     if (lexer->lookahead != '?') return false;
