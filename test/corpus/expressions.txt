@@ -454,3 +454,36 @@ let x = {
                 (string
                   (string_fragment)))
               alternative: (array))))))))
+
+================================================================================
+Ternary with condition, line comment, and ? on separate lines
+================================================================================
+
+let x = {
+    key: (pat) => pat == 'test'
+                 // compare against test string
+                 ? ['a'] : []
+};
+
+--------------------------------------------------------------------------------
+
+(program
+  (lexical_declaration
+    (variable_declarator
+      name: (identifier)
+      value: (object
+        (pair
+          key: (property_identifier)
+          value: (arrow_function
+            parameters: (formal_parameters
+              (identifier))
+            body: (ternary_expression
+              condition: (binary_expression
+                left: (identifier)
+                right: (string
+                  (string_fragment)))
+              (comment)
+              consequence: (array
+                (string
+                  (string_fragment)))
+              alternative: (array))))))))
