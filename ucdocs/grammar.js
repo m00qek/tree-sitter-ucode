@@ -185,6 +185,7 @@ module.exports = grammar({
       $.union_type,
       $.nullable_type,
       $.any_type,
+      $.parenthesized_type,
     ),
 
     primitive_type: _ => choice('int', 'float', 'string', 'boolean', 'null', 'void', 'function'),
@@ -258,6 +259,10 @@ module.exports = grammar({
       ')',
       optional(seq(':', field('return', $._type))),
     ),
+
+    // Explicit grouping: (T|U) to override default union associativity or
+    // for clarity in complex expressions like ?(T|U).
+    parenthesized_type: $ => seq('(', $._type, ')'),
 
     // Left-associative so T | U | V parses as (T | U) | V.
     union_type: $ => prec.left(1, seq($._type, '|', $._type)),

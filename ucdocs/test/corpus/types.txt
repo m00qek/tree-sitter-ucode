@@ -610,6 +610,68 @@ Bare function primitive does not consume anon_function_type
         return: (primitive_type)))))
 
 ================================================================================
+Parenthesized union type
+================================================================================
+
+/**
+ * @type {(Array|string)}
+ */
+
+--------------------------------------------------------------------------------
+
+(document
+  (type_tag
+    type: (type_expression
+      (parenthesized_type
+        (union_type
+          (named_type
+            name: (type_identifier))
+          (primitive_type))))))
+
+================================================================================
+Nullable parenthesized union: ?(T|U)
+================================================================================
+
+/**
+ * @type {?(boolean|string)}
+ */
+
+--------------------------------------------------------------------------------
+
+(document
+  (type_tag
+    type: (type_expression
+      (nullable_type
+        (parenthesized_type
+          (union_type
+            (primitive_type)
+            (primitive_type)))))))
+
+================================================================================
+Parenthesized type with module reference
+================================================================================
+
+/**
+ * @type {?(Object<string, module:uci.cursor.SectionObject>|module:uci.cursor.SectionObject)}
+ */
+
+--------------------------------------------------------------------------------
+
+(document
+  (type_tag
+    type: (type_expression
+      (nullable_type
+        (parenthesized_type
+          (union_type
+            (named_type
+              name: (type_identifier)
+              params: (primitive_type)
+              params: (module_type
+                path: (module_path)))
+            (module_type
+              path: (module_path))))))))
+
+================================================================================
 List of named type
 ================================================================================
 
