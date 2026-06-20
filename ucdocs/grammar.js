@@ -40,8 +40,8 @@ module.exports = grammar({
       $._end,
     ),
 
-    _begin: _ => seq('/', repeat('*')),
-    _end: _ => '/',
+    _begin: _ => token(seq('/', /\*+/)),
+    _end: _ => token(seq(/\**/, '/')),
 
     // Used after a type_expression/rest_type_expression has already claimed `{` at
     // this position (param_tag, returns_tag, throws_tag) — excludes _brace_text so
