@@ -55,6 +55,7 @@
 (list_type "<" @punctuation.bracket ">" @punctuation.bracket)
 (dict_type "<" @punctuation.bracket ">" @punctuation.bracket)
 (optional_param "[" @punctuation.bracket "]" @punctuation.bracket)
+(array_type "[]" @punctuation.bracket)
 (inline_tag "{" @punctuation.bracket "}" @punctuation.bracket)
 
 ; ── Punctuation: delimiters ──────────────────────────────────────────────────

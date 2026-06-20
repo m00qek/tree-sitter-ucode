@@ -286,7 +286,7 @@ module.exports = grammar({
 
     // T[] postfix array notation.  Precedence 3 > nullable (2) > union (1)
     // so ?T[] == ?(T[]) and T[]|U[] == (T[])|(U[]).
-    array_type: $ => prec(3, seq($._type, token(seq('[', ']')))),
+    array_type: $ => prec(3, seq($._type, '[]')),
 
     // Left-associative so T | U | V parses as (T | U) | V.
     union_type: $ => prec.left(1, seq($._type, '|', $._type)),
