@@ -33,6 +33,8 @@ module.exports = grammar({
         $.see_tag,
         $.example_tag,
         $.default_tag,
+        $.function_tag,
+        $.module_tag,
         $.unknown_tag,
       )),
       $._end,
@@ -158,6 +160,29 @@ module.exports = grammar({
       '@default',
       optional(field('description', alias($._free_description, $.description))),
     ),
+
+    // @function module:X.Y#Z — identifies the qualified name of the documented function.
+    function_tag: $ => seq(
+      '@function',
+      field('namepath', $.namepath),
+    ),
+
+    // @module name — identifies the module this file documents.
+    module_tag: $ => seq(
+      '@module',
+      field('name', $.identifier),
+    ),
+
+    // module:X.Y#Z — a namepath referencing a specific member within a module.
+    // The #member suffix distinguishes instance methods from the module path itself.
+    namepath: $ => seq(
+      'module:',
+      field('path', $.module_path),
+      optional(seq('#', field('member', $.member_name))),
+    ),
+
+    // Member names cover lowercase (error), uppercase (ERR), and underscored (ulog_open).
+    member_name: _ => /[a-zA-Z_$][a-zA-Z0-9_$]*/,
 
     unknown_tag: $ => seq(
       $.tag_name,

@@ -330,6 +330,14 @@
           "named": true
         },
         {
+          "type": "function_tag",
+          "named": true
+        },
+        {
+          "type": "module_tag",
+          "named": true
+        },
+        {
           "type": "param_tag",
           "named": true
         },
@@ -452,6 +460,22 @@
           },
           {
             "type": "union_type",
+            "named": true
+          }
+        ]
+      }
+    }
+  },
+  {
+    "type": "function_tag",
+    "named": true,
+    "fields": {
+      "namepath": {
+        "multiple": false,
+        "required": true,
+        "types": [
+          {
+            "type": "namepath",
             "named": true
           }
         ]
@@ -620,6 +644,22 @@
     }
   },
   {
+    "type": "module_tag",
+    "named": true,
+    "fields": {
+      "name": {
+        "multiple": false,
+        "required": true,
+        "types": [
+          {
+            "type": "identifier",
+            "named": true
+          }
+        ]
+      }
+    }
+  },
+  {
     "type": "module_type",
     "named": true,
     "fields": {
@@ -707,6 +747,32 @@
           },
           {
             "type": "union_type",
+            "named": true
+          }
+        ]
+      }
+    }
+  },
+  {
+    "type": "namepath",
+    "named": true,
+    "fields": {
+      "member": {
+        "multiple": false,
+        "required": false,
+        "types": [
+          {
+            "type": "member_name",
+            "named": true
+          }
+        ]
+      },
+      "path": {
+        "multiple": false,
+        "required": true,
+        "types": [
+          {
+            "type": "module_path",
             "named": true
           }
         ]
@@ -1375,6 +1441,10 @@
     }
   },
   {
+    "type": "#",
+    "named": false
+  },
+  {
     "type": "(",
     "named": false
   },
@@ -1436,6 +1506,14 @@
   },
   {
     "type": "@example",
+    "named": false
+  },
+  {
+    "type": "@function",
+    "named": false
+  },
+  {
+    "type": "@module",
     "named": false
   },
   {
@@ -1521,6 +1599,10 @@
   {
     "type": "list",
     "named": false
+  },
+  {
+    "type": "member_name",
+    "named": true
   },
   {
     "type": "module:",

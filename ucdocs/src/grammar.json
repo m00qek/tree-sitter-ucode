@@ -77,6 +77,14 @@
               },
               {
                 "type": "SYMBOL",
+                "name": "function_tag"
+              },
+              {
+                "type": "SYMBOL",
+                "name": "module_tag"
+              },
+              {
+                "type": "SYMBOL",
                 "name": "unknown_tag"
               }
             ]
@@ -792,6 +800,86 @@
           ]
         }
       ]
+    },
+    "function_tag": {
+      "type": "SEQ",
+      "members": [
+        {
+          "type": "STRING",
+          "value": "@function"
+        },
+        {
+          "type": "FIELD",
+          "name": "namepath",
+          "content": {
+            "type": "SYMBOL",
+            "name": "namepath"
+          }
+        }
+      ]
+    },
+    "module_tag": {
+      "type": "SEQ",
+      "members": [
+        {
+          "type": "STRING",
+          "value": "@module"
+        },
+        {
+          "type": "FIELD",
+          "name": "name",
+          "content": {
+            "type": "SYMBOL",
+            "name": "identifier"
+          }
+        }
+      ]
+    },
+    "namepath": {
+      "type": "SEQ",
+      "members": [
+        {
+          "type": "STRING",
+          "value": "module:"
+        },
+        {
+          "type": "FIELD",
+          "name": "path",
+          "content": {
+            "type": "SYMBOL",
+            "name": "module_path"
+          }
+        },
+        {
+          "type": "CHOICE",
+          "members": [
+            {
+              "type": "SEQ",
+              "members": [
+                {
+                  "type": "STRING",
+                  "value": "#"
+                },
+                {
+                  "type": "FIELD",
+                  "name": "member",
+                  "content": {
+                    "type": "SYMBOL",
+                    "name": "member_name"
+                  }
+                }
+              ]
+            },
+            {
+              "type": "BLANK"
+            }
+          ]
+        }
+      ]
+    },
+    "member_name": {
+      "type": "PATTERN",
+      "value": "[a-zA-Z_$][a-zA-Z0-9_$]*"
     },
     "unknown_tag": {
       "type": "SEQ",
