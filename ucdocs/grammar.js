@@ -306,7 +306,7 @@ module.exports = grammar({
     // Lowercase-starting names: parameter names and function param names.
     identifier: _ => /[a-z_$][a-zA-Z_$0-9]*/,
 
-    _text: _ => token(prec(-1, /[^*{}@\s][^*{}@\n]*/)),
+    _text: _ => token(prec(-1, /[^*{}@\s][^*{}@\n\r]*/)),
   },
 });
 
