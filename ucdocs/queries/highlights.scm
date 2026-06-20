@@ -1,4 +1,7 @@
+; ── Tag keywords ──────────────────────────────────────────────────────────────
+
 (tag_name) @keyword
+
 (param_tag "@param" @keyword)
 (returns_tag ["@returns" "@return"] @keyword)
 (template_tag "@template" @keyword)
@@ -10,16 +13,66 @@
 (see_tag "@see" @keyword)
 (example_tag "@example" @keyword)
 (default_tag "@default" @keyword)
+(function_tag "@function" @keyword)
+(module_tag "@module" @keyword)
+
+; ── Names ──────────────────────────────────────────────────────────────────
 
 (type_param) @type.parameter
 (type_identifier) @type
 (primitive_type) @type.builtin
 (any_type) @type.builtin
-(module_type "module:" @module)
-(module_path) @module
 
 (identifier) @variable.parameter
+(record_field name: (identifier) @variable.member)
+(member_name) @variable.member
+
 (default_value) @constant
-(description) @comment
+
+; ── Module paths ────────────────────────────────────────────────────────────
+
+(module_type "module:" @module)
+(module_type path: (module_path) @module)
+(namepath "module:" @module)
+(namepath path: (module_path) @module)
+
+; ── Operators ───────────────────────────────────────────────────────────────
+
+(union_type "|" @operator)
+(nullable_type "?" @operator)
+(function_type "=>" @operator)
+(optional_param "=" @operator)
+
+; ── Punctuation: brackets ────────────────────────────────────────────────────
+
+(type_expression "{" @punctuation.bracket "}" @punctuation.bracket)
+(rest_type_expression "{" @punctuation.bracket "}" @punctuation.bracket)
+(record_type "{" @punctuation.bracket "}" @punctuation.bracket)
+(parenthesized_type "(" @punctuation.bracket ")" @punctuation.bracket)
+(function_type "(" @punctuation.bracket ")" @punctuation.bracket)
+(anon_function_type "(" @punctuation.bracket ")" @punctuation.bracket)
+(named_type "<" @punctuation.bracket ">" @punctuation.bracket)
+(list_type "<" @punctuation.bracket ">" @punctuation.bracket)
+(dict_type "<" @punctuation.bracket ">" @punctuation.bracket)
+(optional_param "[" @punctuation.bracket "]" @punctuation.bracket)
 (inline_tag "{" @punctuation.bracket "}" @punctuation.bracket)
+
+; ── Punctuation: delimiters ──────────────────────────────────────────────────
+
+(record_type "," @punctuation.delimiter)
+(record_field ":" @punctuation.delimiter)
+(function_param ":" @punctuation.delimiter)
+(anon_function_type ":" @punctuation.delimiter)
+(namepath "#" @punctuation.delimiter)
+
+; ── Punctuation: special ─────────────────────────────────────────────────────
+
+(rest_type_expression "..." @punctuation.special)
+
+; ── Inline tags ──────────────────────────────────────────────────────────────
+
 (inline_tag (tag_name) @keyword)
+
+; ── Descriptions ─────────────────────────────────────────────────────────────
+
+(description) @comment
