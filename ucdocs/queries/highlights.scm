@@ -75,4 +75,4 @@
 
 ; ── Descriptions ─────────────────────────────────────────────────────────────
 
-(description) @comment
+(description) @comment @spell
