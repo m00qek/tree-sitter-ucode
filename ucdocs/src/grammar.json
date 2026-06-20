@@ -821,12 +821,20 @@
           "value": "@function"
         },
         {
-          "type": "FIELD",
-          "name": "namepath",
-          "content": {
-            "type": "SYMBOL",
-            "name": "namepath"
-          }
+          "type": "CHOICE",
+          "members": [
+            {
+              "type": "FIELD",
+              "name": "namepath",
+              "content": {
+                "type": "SYMBOL",
+                "name": "namepath"
+              }
+            },
+            {
+              "type": "BLANK"
+            }
+          ]
         }
       ]
     },

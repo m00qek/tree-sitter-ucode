@@ -164,7 +164,7 @@ module.exports = grammar({
     // @function module:X.Y#Z — identifies the qualified name of the documented function.
     function_tag: $ => seq(
       '@function',
-      field('namepath', $.namepath),
+      optional(field('namepath', $.namepath)),
     ),
 
     // @module name — identifies the module this file documents.
