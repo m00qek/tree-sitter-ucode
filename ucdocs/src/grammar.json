@@ -129,85 +129,37 @@
       }
     },
     "_typed_description": {
-      "type": "PREC_RIGHT",
-      "value": 0,
+      "type": "REPEAT1",
       "content": {
-        "type": "SEQ",
+        "type": "CHOICE",
         "members": [
           {
-            "type": "CHOICE",
-            "members": [
-              {
-                "type": "SYMBOL",
-                "name": "_text"
-              },
-              {
-                "type": "SYMBOL",
-                "name": "inline_tag"
-              }
-            ]
+            "type": "SYMBOL",
+            "name": "_text"
           },
           {
-            "type": "REPEAT",
-            "content": {
-              "type": "CHOICE",
-              "members": [
-                {
-                  "type": "SYMBOL",
-                  "name": "_text"
-                },
-                {
-                  "type": "SYMBOL",
-                  "name": "inline_tag"
-                }
-              ]
-            }
+            "type": "SYMBOL",
+            "name": "inline_tag"
           }
         ]
       }
     },
     "_free_description": {
-      "type": "PREC_RIGHT",
-      "value": 0,
+      "type": "REPEAT1",
       "content": {
-        "type": "SEQ",
+        "type": "CHOICE",
         "members": [
           {
-            "type": "CHOICE",
-            "members": [
-              {
-                "type": "SYMBOL",
-                "name": "_text"
-              },
-              {
-                "type": "SYMBOL",
-                "name": "inline_tag"
-              },
-              {
-                "type": "SYMBOL",
-                "name": "_brace_text"
-              }
-            ]
+            "type": "SYMBOL",
+            "name": "_text"
           },
           {
-            "type": "REPEAT",
-            "content": {
-              "type": "CHOICE",
-              "members": [
-                {
-                  "type": "SYMBOL",
-                  "name": "_text"
-                },
-                {
-                  "type": "SYMBOL",
-                  "name": "inline_tag"
-                },
-                {
-                  "type": "SYMBOL",
-                  "name": "_brace_text"
-                }
-              ]
-            }
+            "type": "SYMBOL",
+            "name": "inline_tag"
+          },
+          {
+            "type": "SYMBOL",
+            "name": "_brace_text"
           }
         ]
       }

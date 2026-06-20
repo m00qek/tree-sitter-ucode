@@ -46,17 +46,11 @@ module.exports = grammar({
     // Used after a type_expression/rest_type_expression has already claimed `{` at
     // this position (param_tag, returns_tag, throws_tag) — excludes _brace_text so
     // it never competes with a legitimate {type} for the leading `{`.
-    _typed_description: $ => prec.right(seq(
-      choice($._text, $.inline_tag),
-      repeat(choice($._text, $.inline_tag)),
-    )),
+    _typed_description: $ => repeat1(choice($._text, $.inline_tag)),
 
     // Used wherever no type_expression can appear at the same position, so a bare
     // `{` can only be an inline tag or arbitrary brace-text (e.g. @example code).
-    _free_description: $ => prec.right(seq(
-      choice($._text, $.inline_tag, $._brace_text),
-      repeat(choice($._text, $.inline_tag, $._brace_text)),
-    )),
+    _free_description: $ => repeat1(choice($._text, $.inline_tag, $._brace_text)),
 
     // {@link target text} and similar inline JSDoc tags embedded in description text.
     inline_tag: $ => seq(
