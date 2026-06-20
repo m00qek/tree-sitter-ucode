@@ -187,7 +187,7 @@ module.exports = grammar({
       $.any_type,
     ),
 
-    primitive_type: _ => choice('int', 'float', 'string', 'boolean', 'null', 'void'),
+    primitive_type: _ => choice('int', 'float', 'string', 'boolean', 'null', 'void', 'function'),
 
     any_type: _ => choice('*', 'any'),
 
