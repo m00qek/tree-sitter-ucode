@@ -566,6 +566,44 @@ example with deeply nested braces (object literal containing arrow function cont
     description: (description)))
 
 ================================================================================
+bare slash in description does not close the document prematurely
+================================================================================
+
+/**
+ * See /etc/config for details.
+ * @param {string} path
+ */
+
+--------------------------------------------------------------------------------
+
+(document
+  (description)
+  (param_tag
+    type: (type_expression
+      (primitive_type))
+    name: (identifier)))
+
+================================================================================
+double slash in example body does not close the document prematurely
+================================================================================
+
+/**
+ * @example
+ * // inline comment
+ * @param {string} x
+ */
+
+--------------------------------------------------------------------------------
+
+(document
+  (example_tag
+    description: (description))
+  (param_tag
+    type: (type_expression
+      (primitive_type))
+    name: (identifier)))
+
+================================================================================
 rest param with primitive type
 ================================================================================
 

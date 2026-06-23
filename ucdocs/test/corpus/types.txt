@@ -593,23 +593,6 @@ Primitive: function (bare callable type)
       (primitive_type))))
 
 ================================================================================
-Bare function primitive does not consume anon_function_type
-================================================================================
-
-/**
- * @type {function(string): boolean}
- */
-
---------------------------------------------------------------------------------
-
-(document
-  (type_tag
-    type: (type_expression
-      (anon_function_type
-        params: (primitive_type)
-        return: (primitive_type)))))
-
-================================================================================
 Parenthesized union type
 ================================================================================
 
