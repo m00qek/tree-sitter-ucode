@@ -134501,8 +134501,8 @@ TS_PUBLIC const TSLanguage *tree_sitter_ucode_markup(void) {
     .max_reserved_word_set_size = 28,
     .metadata = {
       .major_version = 0,
-      .minor_version = 5,
-      .patch_version = 0,
+      .minor_version = 6,
+      .patch_version = 1,
     },
   };
   return &language;
