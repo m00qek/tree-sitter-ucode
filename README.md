@@ -2,17 +2,22 @@
 
 Tree-sitter grammar for [ucode](https://github.com/jow-/ucode), the ECMAScript-like scripting language used in OpenWrt.
 
-Two grammars are provided:
+Three grammars are provided:
 
-| Grammar | Scope | File types |
-|---------|-------|------------|
-| `ucode` | `source.uc` | `.uc`, `.ucode`, `.ut` |
-| `ucode_markup` | `source.ucode.markup` | `.uc`, `.ucode`, `.ut`, `.uc.tmpl` (template files — detected by content) |
+| Grammar | Scope | File types | Purpose |
+|---------|-------|------------|---------|
+| `ucode` | `source.uc` | `.uc`, `.ucode`, `.ut` | Plain ucode source files |
+| `ucode_markup` | `source.ucode.markup` | `.uc`, `.ucode`, `.ut` (template files — detected by content) | Ucode template files mixing raw text and code tags |
+| `ucdocs` | — | injected | JSDoc-style `/** */` doc comment blocks |
 
-Both grammars share the same file extensions. Template files are distinguished from plain
+`ucode` and `ucode_markup` share file extensions. Template files are distinguished from plain
 code files by content: any file whose first tag opener (`{%`, `{{`, or `{#`) appears at
 the start of a line is automatically parsed by `ucode_markup`. Plain code files fall back
 to `ucode`. See [File-type detection](#file-type-detection) below.
+
+`ucdocs` is not a standalone file grammar — it is automatically injected by the `ucode` and
+`ucode_markup` grammars into every `/** */` doc comment block. No additional editor
+configuration is needed.
 
 ## Ucode vs JavaScript
 
@@ -28,6 +33,34 @@ Ucode is an ECMAScript subset with OpenWrt-specific extensions. Key differences:
 | Added escape sequences | `\e` (ESC), `\a` (BEL), octal `\177` | Standard only |
 | Regex flags | `g`, `i`, `s` only | Full set |
 | Module system | Static `import`/`export` only; no `from` on re-exports | Full ES modules |
+
+## Doc comment grammar (ucdocs)
+
+`/** */` blocks are parsed by the `ucdocs` grammar and injected into the host parse tree.
+The grammar understands the following tags:
+
+| Tag | Syntax |
+|-----|--------|
+| `@param` | `@param {Type} name description` |
+| `@returns` / `@return` | `@returns {Type} description` |
+| `@throws` / `@throw` | `@throws {Type} description` |
+| `@type` | `@type {Type}` |
+| `@typedef` | `@typedef {Type} TypeName` |
+| `@template` | `@template T, U` |
+| `@function` | `@function module:path#member` |
+| `@module` | `@module name` |
+| `@deprecated` | `@deprecated description` |
+| `@since` | `@since version` |
+| `@see` | `@see reference` |
+| `@example` | `@example code` |
+| `@default` | `@default value` |
+
+Type expressions support: primitives (`int`, `float`, `string`, `boolean`, `null`, `void`,
+`function`), `*`/`any`, `list<T>`, `dict<T>`, record types (`{field: T}`), named types
+(`TypeName`, `TypeName<T, U>`), cross-module refs (`module:path.To.Type`), named function
+types `(name: T) => U`, anonymous function types `function(T): U`, union `T | U`, nullable
+`?T`, and array postfix `T[]`. Inline `{@link ...}` tags and optional params `[name=default]`
+are also supported.
 
 ## Requirements
 
@@ -50,12 +83,15 @@ npx tree-sitter generate
 # ucode_markup grammar (generated from grammar.js — do not edit markup/grammar.js directly)
 node scripts/generate-markup-grammar.js
 cd markup && npx tree-sitter generate
+
+# ucdocs grammar
+cd ucdocs && npx tree-sitter generate
 ```
 
 ## Test
 
 ```sh
-npm test             # runs tree-sitter test for ucode and ucode_markup
+npm test             # builds and tests all three grammars (ucode, ucode_markup, ucdocs)
 ```
 
 To filter by corpus file name:
@@ -63,11 +99,13 @@ To filter by corpus file name:
 ```sh
 npx tree-sitter test --file-name control_flow
 cd markup && npx tree-sitter test --file-name markup
+cd ucdocs && npx tree-sitter test --file-name tags
+cd ucdocs && npx tree-sitter test --file-name types
 ```
 
 ## File-type detection
 
-Both grammars claim the same file extensions. Tools that respect `content-regex` in
+Both `ucode` and `ucode_markup` claim the same file extensions. Tools that respect `content-regex` in
 `tree-sitter.json` (including the tree-sitter CLI ≥ 0.24) automatically route
 template files to `ucode_markup` when a tag opener appears at the start of a line.
 Editors that manage their own filetype dispatch (Neovim, Helix) need an explicit
@@ -102,11 +140,11 @@ grammar       = "ucode_markup"
 
 [[grammar]]
 name   = "ucode"
-source = { git = "https://github.com/m00qek/tree-sitter-ucode", rev = "v0.5.0" }
+source = { git = "https://github.com/m00qek/tree-sitter-ucode", rev = "v0.6.0" }
 
 [[grammar]]
 name   = "ucode_markup"
-source = { git = "https://github.com/m00qek/tree-sitter-ucode", rev = "v0.5.0", subpath = "markup" }
+source = { git = "https://github.com/m00qek/tree-sitter-ucode", rev = "v0.6.0", subpath = "markup" }
 ```
 
 Helix does not support content-based filetype detection for shared extensions. For
