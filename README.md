@@ -11,13 +11,15 @@ Three grammars are provided:
 | `ucdocs` | — | injected | JSDoc-style `/** */` doc comment blocks |
 
 `ucode` and `ucode_markup` share file extensions. Template files are distinguished from plain
-code files by content: any file whose first tag opener (`{%`, `{{`, or `{#`) appears at
-the start of a line is automatically parsed by `ucode_markup`. Plain code files fall back
-to `ucode`. See [File-type detection](#file-type-detection) below.
+code files by content: any file containing a tag opener (`{%`, `{{`, or `{#`) at the start
+of a line (with optional leading whitespace) is automatically parsed by `ucode_markup`. Plain
+code files fall back to `ucode`. See [File-type detection](#file-type-detection) below.
 
 `ucdocs` is not a standalone file grammar — it is automatically injected by the `ucode` and
-`ucode_markup` grammars into every `/** */` doc comment block. No additional editor
-configuration is needed.
+`ucode_markup` grammars into every `/** */` doc comment block. Tools that load grammars
+directly from `tree-sitter.json` (including the tree-sitter CLI) handle this automatically.
+Editor plugins may require registering the `ucdocs` grammar separately — see the editor
+sections below.
 
 ## Ucode vs JavaScript
 
@@ -71,10 +73,10 @@ are also supported.
 
 ```sh
 npm install
-npm run build        # generate + compile Node.js bindings
+npm run build        # generate + compile Node.js bindings (ucode and ucode_markup only)
 ```
 
-To regenerate parsers after editing a grammar file:
+To regenerate parsers after editing a grammar file (run from the repo root):
 
 ```sh
 # ucode grammar
@@ -82,10 +84,10 @@ npx tree-sitter generate
 
 # ucode_markup grammar (generated from grammar.js — do not edit markup/grammar.js directly)
 node scripts/generate-markup-grammar.js
-cd markup && npx tree-sitter generate
+npx tree-sitter generate markup/grammar.js --output markup/src
 
-# ucdocs grammar
-cd ucdocs && npx tree-sitter generate
+# ucdocs grammar (not included in npm run build — must be regenerated manually)
+npx tree-sitter generate ucdocs/grammar.js --output ucdocs/src
 ```
 
 ## Test
@@ -94,20 +96,21 @@ cd ucdocs && npx tree-sitter generate
 npm test             # builds and tests all three grammars (ucode, ucode_markup, ucdocs)
 ```
 
-To filter by corpus file name:
+To filter by corpus file name (run from the repo root):
 
 ```sh
 npx tree-sitter test --file-name control_flow
-cd markup && npx tree-sitter test --file-name markup
-cd ucdocs && npx tree-sitter test --file-name tags
-cd ucdocs && npx tree-sitter test --file-name types
+(cd markup && npx tree-sitter test --file-name markup)
+(cd ucdocs && npx tree-sitter test --file-name tags)
+(cd ucdocs && npx tree-sitter test --file-name types)
 ```
 
 ## File-type detection
 
 Both `ucode` and `ucode_markup` claim the same file extensions. Tools that respect `content-regex` in
 `tree-sitter.json` (including the tree-sitter CLI ≥ 0.24) automatically route
-template files to `ucode_markup` when a tag opener appears at the start of a line.
+template files to `ucode_markup` when a tag opener (`{%`, `{{`, or `{#`) appears at
+the start of a line (with optional leading whitespace).
 Editors that manage their own filetype dispatch (Neovim, Helix) need an explicit
 rule — see the editor sections below.
 
@@ -145,6 +148,10 @@ source = { git = "https://github.com/m00qek/tree-sitter-ucode", rev = "v0.6.0" }
 [[grammar]]
 name   = "ucode_markup"
 source = { git = "https://github.com/m00qek/tree-sitter-ucode", rev = "v0.6.0", subpath = "markup" }
+
+[[grammar]]
+name   = "ucdocs"
+source = { git = "https://github.com/m00qek/tree-sitter-ucode", rev = "v0.6.0", subpath = "ucdocs" }
 ```
 
 Helix does not support content-based filetype detection for shared extensions. For
