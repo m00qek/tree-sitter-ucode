@@ -78,7 +78,7 @@
     }
   ],
   "metadata": {
-    "version": "0.5.0",
+    "version": "0.6.1",
     "license": "MIT",
     "description": "Ucode grammar for tree-sitter",
     "links": {
