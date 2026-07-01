@@ -33,8 +33,16 @@ Ucode is an ECMAScript subset with OpenWrt-specific extensions. Key differences:
 | Removed features | Destructuring, `for...of`, `do-while`, generators, forward declarations, dynamic `import()` | All supported |
 | Added number literals | `0177` (C octal), `0x1.8` (hex float), `0B`/`0O` prefixes | Standard only |
 | Added escape sequences | `\e` (ESC), `\a` (BEL), octal `\177` | Standard only |
+| String unicode escapes | `\uXXXX` only (no `\u{…}`); no `\u` escapes in identifiers | `\uXXXX` and `\u{…}` |
 | Regex flags | `g`, `i`, `s` only | Full set |
 | Module system | Static `import`/`export` only; no `from` on re-exports | Full ES modules |
+
+The grammar tracks ucode's parser closely, with one deliberate exception: **automatic
+semicolon insertion is kept ECMAScript-style (more lenient than the compiler).** ucode
+only lets you drop a statement's `;` before `}`, end-of-file, a template tag close, or an
+alt-syntax end keyword (`endif`/`endfor`/`endwhile`/`endfunction`/`elif`/`else`), whereas
+the grammar also tolerates a bare newline between statements so that in-progress edits are
+not flagged as errors.
 
 ## Doc comment grammar (ucdocs)
 

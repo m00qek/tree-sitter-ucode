@@ -78,7 +78,6 @@ module.exports = grammar({
 
   inline: $ => [
     $._call_signature,
-    $._formal_parameter,
     $._expressions,
     $._semicolon,
     $._identifier,
@@ -126,7 +125,7 @@ module.exports = grammar({
     [$.primary_expression, $._for_header],
     [$.variable_declarator, $._for_header],
     [$.assignment_expression, $.pattern],
-    [$.labeled_statement, $._property_name],
+    [$.primary_expression, $.delete_expression],
   ],
 
   word: $ => $.identifier,
@@ -209,18 +208,22 @@ module.exports = grammar({
         field('clause', $.export_clause),
         $._semicolon,
       ),
+      // `export let/const …;` already carries its own terminating semicolon.
       seq(
         'export',
-        choice(
-          field('declaration', $.declaration),
-          seq(
-            'default',
-            seq(
-              field('value', $.expression),
-              ';',
-            ),
-          ),
-        ),
+        field('declaration', $.lexical_declaration),
+      ),
+      // `export function f() {}` requires an explicit trailing `;` in ucode.
+      seq(
+        'export',
+        field('declaration', $.function_declaration),
+        ';',
+      ),
+      seq(
+        'export',
+        'default',
+        field('value', $.expression),
+        ';',
       ),
     ),
 
@@ -323,7 +326,6 @@ module.exports = grammar({
       $.continue_statement,
       $.return_statement,
       $.empty_statement,
-      $.labeled_statement,
     ),
 
     expression_statement: $ => seq(
@@ -331,15 +333,29 @@ module.exports = grammar({
       $._semicolon,
     ),
 
-    lexical_declaration: $ => seq(
-      field('kind', choice('let', 'const')),
-      commaSep1($.variable_declarator),
-      $._semicolon,
+    // `let` declarators may omit the initializer; `const` requires one.
+    // ucode rejects `const a;` ("Expecting initializer expression").
+    lexical_declaration: $ => choice(
+      seq(
+        field('kind', 'let'),
+        commaSep1($.variable_declarator),
+        $._semicolon,
+      ),
+      seq(
+        field('kind', 'const'),
+        commaSep1(alias($._const_declarator, $.variable_declarator)),
+        $._semicolon,
+      ),
     ),
 
     variable_declarator: $ => seq(
       field('name', $.identifier),
       optional($._initializer),
+    ),
+
+    _const_declarator: $ => seq(
+      field('name', $.identifier),
+      $._initializer,
     ),
 
     statement_block: $ => prec.right(seq(
@@ -513,17 +529,19 @@ module.exports = grammar({
       ),
     ),
 
-    // Supports both `for (k in obj)` and `for (k, v in obj)` (ucode two-variable form)
+    // Supports both `for (k in obj)` and `for (k, v in obj)` (ucode two-variable form).
+    // The loop target must be a plain identifier: ucode rejects member/subscript
+    // targets (`for (a.x in o)`) and only `let` (never `const`) may declare it.
     _for_header: $ => seq(
       '(',
       choice(
         seq(
-          field('kind', choice('let', 'const')),
+          field('kind', 'let'),
           field('left', $.identifier),
           optional(seq(',', field('value', $.identifier))),
         ),
         seq(
-          field('left', $._lhs_expression),
+          field('left', $.identifier),
           optional(seq(',', field('value', $.identifier))),
         ),
       ),
@@ -566,15 +584,14 @@ module.exports = grammar({
       optional(field('handler', $.catch_clause)),
     ),
 
+    // ucode has no labeled statements, so `break`/`continue` take no label.
     break_statement: $ => seq(
       'break',
-      field('label', optional(alias($.identifier, $.statement_identifier))),
       $._semicolon,
     ),
 
     continue_statement: $ => seq(
       'continue',
-      field('label', optional(alias($.identifier, $.statement_identifier))),
       $._semicolon,
     ),
 
@@ -585,12 +602,6 @@ module.exports = grammar({
     ),
 
     empty_statement: _ => ';',
-
-    labeled_statement: $ => prec.dynamic(-1, seq(
-      field('label', alias(choice($.identifier, $._reserved_identifier), $.statement_identifier)),
-      ':',
-      field('body', $.statement),
-    )),
 
     //
     // Statement components
@@ -641,6 +652,7 @@ module.exports = grammar({
       $.assignment_expression,
       $.augmented_assignment_expression,
       $.unary_expression,
+      $.delete_expression,
       $.binary_expression,
       $.ternary_expression,
       $.update_expression,
@@ -667,25 +679,33 @@ module.exports = grammar({
       $.call_expression,
     ),
 
+    // ucode allows a trailing comma but NOT interior elision (`{a:1,,b:2}`).
     object: $ => prec('object', seq(
       '{',
-      commaSep(optional(choice(
-        $.pair,
-        $.spread_element,
-        alias(
-          choice($.identifier, $._reserved_identifier),
-          $.shorthand_property_identifier,
-        ),
-      ))),
+      optional(seq(
+        commaSep1(choice(
+          $.pair,
+          $.spread_element,
+          alias(
+            choice($.identifier, $._reserved_identifier),
+            $.shorthand_property_identifier,
+          ),
+        )),
+        optional(','),
+      )),
       '}',
     )),
 
+    // ucode allows a trailing comma but NOT interior elision (`[1,,2]`).
     array: $ => seq(
       '[',
-      commaSep(optional(choice(
-        $.expression,
-        $.spread_element,
-      ))),
+      optional(seq(
+        commaSep1(choice(
+          $.expression,
+          $.spread_element,
+        )),
+        optional(','),
+      )),
       ']',
     ),
 
@@ -796,8 +816,15 @@ module.exports = grammar({
     ),
 
     unary_expression: $ => prec.left('unary_void', seq(
-      field('operator', choice('!', '~', '-', '+', 'delete')),
+      field('operator', choice('!', '~', '-', '+')),
       field('argument', $.expression),
+    )),
+
+    // ucode's `delete` only accepts a property access (member or subscript)
+    // expression: `delete o.k` / `delete o["k"]`. `delete x` is a syntax error.
+    delete_expression: $ => prec.left('unary_void', seq(
+      field('operator', 'delete'),
+      field('argument', choice($.member_expression, $.subscript_expression)),
     )),
 
     update_expression: $ => prec.left(choice(
@@ -852,13 +879,16 @@ module.exports = grammar({
     ),
 
     _call_signature: $ => field('parameters', $.formal_parameters),
-    _formal_parameter: $ => choice($.identifier, $.rest_element),
 
+    // A rest element (`...name`) must be the final parameter, and there can be
+    // only one.  ucode rejects a rest param followed by anything — including a
+    // trailing comma.  A trailing comma is allowed only after plain parameters.
     formal_parameters: $ => seq(
       '(',
-      optional(seq(
-        commaSep1($._formal_parameter),
-        optional(','),
+      optional(choice(
+        $.rest_element,
+        seq(commaSep1($.identifier), ',', $.rest_element),
+        seq(commaSep1($.identifier), optional(',')),
       )),
       ')',
     ),
@@ -893,7 +923,8 @@ module.exports = grammar({
     unescaped_double_string_fragment: _ => token.immediate(prec(1, /[^"\\\r\n]+/)),
     unescaped_single_string_fragment: _ => token.immediate(prec(1, /[^'\\\r\n]+/)),
 
-    // Ucode extends JS escapes with \e (ESC), \a (BEL), and octal sequences
+    // Ucode extends JS escapes with \e (ESC), \a (BEL), and octal sequences.
+    // Unlike JS, ucode supports only the 4-hex `\uXXXX` form \u2014 not `\u{...}`.
     escape_sequence: _ => token.immediate(seq(
       '\\',
       choice(
@@ -901,7 +932,6 @@ module.exports = grammar({
         /[0-7]{1,3}/,
         /x[0-9a-fA-F]{2}/,
         /u[0-9a-fA-F]{4}/,
-        /u\{[0-9a-fA-F]+\}/,
         /\r[\n\u2028\u2029]/,
       ),
     )),
@@ -949,27 +979,30 @@ module.exports = grammar({
     // - C-style legacy octal: 0177
     // - Hex float: 0x1.8
     // - Uppercase prefixes: 0O, 0B (already in JS grammar)
+    //
+    // Unlike JS, ucode does NOT support:
+    // - numeric underscore separators (1_000)
+    // - leading-dot floats (.5) — a digit is required before the dot
     number: _ => {
-      const hexDigits = /[\da-fA-F](_?[\da-fA-F])*/;
+      const hexDigits = /[\da-fA-F]+/;
       const hexLiteral = seq(choice('0x', '0X'), hexDigits);
       const hexFloat = seq(choice('0x', '0X'), hexDigits, '.', optional(hexDigits));
 
-      const decimalDigits = /\d(_?\d)*/;
+      const decimalDigits = /\d+/;
       const signedInteger = seq(optional(choice('-', '+')), decimalDigits);
       const exponentPart = seq(choice('e', 'E'), signedInteger);
 
-      const binaryLiteral = seq(choice('0b', '0B'), /[0-1](_?[0-1])*/);
-      const octalLiteral = seq(choice('0o', '0O'), /[0-7](_?[0-7])*/);
+      const binaryLiteral = seq(choice('0b', '0B'), /[0-1]+/);
+      const octalLiteral = seq(choice('0o', '0O'), /[0-7]+/);
       const legacyOctalLiteral = seq('0', /[0-7]+/);
 
       const decimalIntegerLiteral = choice(
         '0',
-        seq(optional('0'), /[1-9]/, optional(seq(optional('_'), decimalDigits))),
+        seq(optional('0'), /[1-9]/, optional(decimalDigits)),
       );
 
       const decimalLiteral = choice(
         seq(decimalIntegerLiteral, '.', optional(decimalDigits), optional(exponentPart)),
-        seq('.', decimalDigits, optional(exponentPart)),
         seq(decimalIntegerLiteral, exponentPart),
         decimalDigits,
       );
@@ -986,9 +1019,12 @@ module.exports = grammar({
 
     _identifier: $ => $.identifier,
 
+    // ucode does NOT support unicode escape sequences in identifiers (unlike JS);
+    // a literal `\u...` is an "Unexpected character".  Non-ASCII letters are still
+    // allowed directly via the negated character class.
     identifier: _ => {
-      const alpha = /[^\x00-\x1F\s\p{Zs}0-9:;`"'@#.,|^&<=>+\-*/\\%?!~()\[\]{}\uFEFF\u2060\u200B\u2028\u2029]|\\u[0-9a-fA-F]{4}|\\u\{[0-9a-fA-F]+\}/;
-      const alphanumeric = /[^\x00-\x1F\s\p{Zs}:;`"'@#.,|^&<=>+\-*/\\%?!~()\[\]{}\uFEFF\u2060\u200B\u2028\u2029]|\\u[0-9a-fA-F]{4}|\\u\{[0-9a-fA-F]+\}/;
+      const alpha = /[^\x00-\x1F\s\p{Zs}0-9:;`"'@#.,|^&<=>+\-*/\\%?!~()\[\]{}\uFEFF\u2060\u200B\u2028\u2029]/;
+      const alphanumeric = /[^\x00-\x1F\s\p{Zs}:;`"'@#.,|^&<=>+\-*/\\%?!~()\[\]{}\uFEFF\u2060\u200B\u2028\u2029]/;
       return token(seq(alpha, repeat(alphanumeric)));
     },
 
@@ -997,9 +1033,11 @@ module.exports = grammar({
     false: _ => 'false',
     null: _ => 'null',
 
+    // Unlike arrays/objects, ucode call arguments allow neither interior
+    // elision (`f(1,,2)`) nor a trailing comma (`f(1,2,)`).
     arguments: $ => seq(
       '(',
-      commaSep(optional(choice($.expression, $.spread_element))),
+      commaSep(choice($.expression, $.spread_element)),
       ')',
     ),
 

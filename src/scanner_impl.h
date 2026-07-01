@@ -255,6 +255,14 @@ static bool lookahead_is_stmt_close(TSLexer *lexer) {
 /*
  * Automatic Semicolon Insertion (ECMA-262 §12.10).
  *
+ * NOTE: This is intentionally MORE lenient than the ucode compiler.  ucode only
+ * lets a statement omit its terminating ';' immediately before '}', EOF, a tag
+ * close (%} / -%}), or an alt-syntax end keyword (endif/endfor/endwhile/
+ * endfunction/elif/else); it rejects a bare newline between two statements
+ * (`x = 1\ny = 2`).  We keep full ECMAScript-style ASI here on purpose so that
+ * incomplete, mid-edit code is not aggressively flagged as an error in editors.
+ * See test/corpus and README for the (deliberate) divergence.
+ *
  * Extended to allow ASI immediately before %} and -%} so that the last
  * statement in a statement tag does not need an explicit trailing semicolon:
  *   {% let x = 1 %}      — works without a semicolon

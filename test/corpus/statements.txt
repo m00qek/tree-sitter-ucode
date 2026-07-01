@@ -226,13 +226,14 @@ delete obj[k];
 
 (program
   (expression_statement
-    (unary_expression
+    (delete_expression
       argument: (subscript_expression
         object: (identifier)
         index: (identifier)))))
 
 ================================================================================
-Labeled statement with break
+Labeled statement is rejected (ucode has no labels)
+:error
 ================================================================================
 
 loop: for (let i = 0; i < 3; i++) {
@@ -241,37 +242,14 @@ loop: for (let i = 0; i < 3; i++) {
 
 --------------------------------------------------------------------------------
 
-(program
-  (labeled_statement
-    label: (statement_identifier)
-    body: (for_statement
-      initializer: (lexical_declaration
-        (variable_declarator name: (identifier) value: (number)))
-      condition: (binary_expression left: (identifier) right: (number))
-      increment: (update_expression argument: (identifier))
-      body: (statement_block
-        (break_statement label: (statement_identifier))))))
-
 ================================================================================
-Labeled statement with continue
+Labeled break/continue is rejected (ucode has no labels)
+:error
 ================================================================================
 
-loop: for (let i = 0; i < 3; i++) {
-  continue loop;
+while (x) {
+  continue outer;
 }
-
---------------------------------------------------------------------------------
-
-(program
-  (labeled_statement
-    label: (statement_identifier)
-    body: (for_statement
-      initializer: (lexical_declaration
-        (variable_declarator name: (identifier) value: (number)))
-      condition: (binary_expression left: (identifier) right: (number))
-      increment: (update_expression argument: (identifier))
-      body: (statement_block
-        (continue_statement label: (statement_identifier))))))
 
 ================================================================================
 Single-line comment

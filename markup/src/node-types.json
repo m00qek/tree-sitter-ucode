@@ -30,6 +30,10 @@
         "named": true
       },
       {
+        "type": "delete_expression",
+        "named": true
+      },
+      {
         "type": "primary_expression",
         "named": true
       },
@@ -175,10 +179,6 @@
       },
       {
         "type": "import_statement",
-        "named": true
-      },
-      {
-        "type": "labeled_statement",
         "named": true
       },
       {
@@ -550,18 +550,7 @@
   {
     "type": "break_statement",
     "named": true,
-    "fields": {
-      "label": {
-        "multiple": false,
-        "required": false,
-        "types": [
-          {
-            "type": "statement_identifier",
-            "named": true
-          }
-        ]
-      }
-    }
+    "fields": {}
   },
   {
     "type": "call_expression",
@@ -687,14 +676,33 @@
   {
     "type": "continue_statement",
     "named": true,
+    "fields": {}
+  },
+  {
+    "type": "delete_expression",
+    "named": true,
     "fields": {
-      "label": {
+      "argument": {
         "multiple": false,
-        "required": false,
+        "required": true,
         "types": [
           {
-            "type": "statement_identifier",
+            "type": "member_expression",
             "named": true
+          },
+          {
+            "type": "subscript_expression",
+            "named": true
+          }
+        ]
+      },
+      "operator": {
+        "multiple": false,
+        "required": true,
+        "types": [
+          {
+            "type": "delete",
+            "named": false
           }
         ]
       }
@@ -924,7 +932,11 @@
         "required": false,
         "types": [
           {
-            "type": "declaration",
+            "type": "function_declaration",
+            "named": true
+          },
+          {
+            "type": "lexical_declaration",
             "named": true
           }
         ]
@@ -1253,10 +1265,6 @@
         "required": false,
         "types": [
           {
-            "type": "const",
-            "named": false
-          },
-          {
             "type": "let",
             "named": false
           }
@@ -1268,14 +1276,6 @@
         "types": [
           {
             "type": "identifier",
-            "named": true
-          },
-          {
-            "type": "member_expression",
-            "named": true
-          },
-          {
-            "type": "subscript_expression",
             "named": true
           }
         ]
@@ -1353,10 +1353,6 @@
         "required": false,
         "types": [
           {
-            "type": "const",
-            "named": false
-          },
-          {
             "type": "let",
             "named": false
           }
@@ -1368,14 +1364,6 @@
         "types": [
           {
             "type": "identifier",
-            "named": true
-          },
-          {
-            "type": "member_expression",
-            "named": true
-          },
-          {
-            "type": "subscript_expression",
             "named": true
           }
         ]
@@ -1849,32 +1837,6 @@
         "types": [
           {
             "type": "string",
-            "named": true
-          }
-        ]
-      }
-    }
-  },
-  {
-    "type": "labeled_statement",
-    "named": true,
-    "fields": {
-      "body": {
-        "multiple": false,
-        "required": true,
-        "types": [
-          {
-            "type": "statement",
-            "named": true
-          }
-        ]
-      },
-      "label": {
-        "multiple": false,
-        "required": true,
-        "types": [
-          {
-            "type": "statement_identifier",
             "named": true
           }
         ]
@@ -2543,10 +2505,6 @@
             "named": false
           },
           {
-            "type": "delete",
-            "named": false
-          },
-          {
             "type": "~",
             "named": false
           }
@@ -3135,10 +3093,6 @@
   },
   {
     "type": "shorthand_property_identifier",
-    "named": true
-  },
-  {
-    "type": "statement_identifier",
     "named": true
   },
   {

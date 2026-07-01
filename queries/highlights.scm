@@ -8,7 +8,6 @@
 (identifier) @variable
 (property_identifier) @variable.member
 (shorthand_property_identifier) @variable.member
-(statement_identifier) @label
 
 ; -------------------------------------------------------------------------
 ; Built-in / special values

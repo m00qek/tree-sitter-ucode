@@ -134,7 +134,7 @@ delete obj.key;
 
 (program
   (expression_statement
-    (unary_expression
+    (delete_expression
       argument: (member_expression
         object: (identifier)
         property: (property_identifier)))))
@@ -487,3 +487,36 @@ let x = {
                 (string
                   (string_fragment)))
               alternative: (array))))))))
+
+================================================================================
+Array literal with trailing comma (allowed, unlike elision)
+================================================================================
+
+let arr = [1, 2,];
+
+--------------------------------------------------------------------------------
+
+(program
+  (lexical_declaration
+    (variable_declarator
+      name: (identifier)
+      value: (array
+        (number)
+        (number)))))
+
+================================================================================
+Object literal with trailing comma (allowed, unlike elision)
+================================================================================
+
+let obj = { a: 1, };
+
+--------------------------------------------------------------------------------
+
+(program
+  (lexical_declaration
+    (variable_declarator
+      name: (identifier)
+      value: (object
+        (pair
+          key: (property_identifier)
+          value: (number))))))

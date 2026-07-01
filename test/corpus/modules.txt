@@ -117,10 +117,10 @@ export let x = 1;
         value: (number)))))
 
 ================================================================================
-Export named function
+Export named function (requires trailing semicolon)
 ================================================================================
 
-export function named() { return 1; }
+export function named() { return 1; };
 
 --------------------------------------------------------------------------------
 
