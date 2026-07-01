@@ -59,6 +59,8 @@ const EXPECTED_INVALID = new Set([
 
   // --- Function declarations (grammar gap: {% function f(): %}...{% endfunction %} alt-syntax) ---
   '00_syntax/15_function_declarations#1',
+  '00_syntax/15_function_declarations#4',  // function f(...args, ...args2) — multiple rest params
+  '00_syntax/15_function_declarations#5',  // function f(...args, a, b) — rest param not last
 
   // --- For loops (invalid forms that ucode rejects) ---
   '00_syntax/16_for_loop#3',  // for (let x, y, z in {}) — three-variable for-in
