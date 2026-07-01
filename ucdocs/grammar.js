@@ -116,7 +116,7 @@ module.exports = grammar({
     typedef_tag: $ => seq(
       '@typedef',
       optional(field('type', $.type_expression)),
-      field('name', $.type_identifier),
+      field('name', choice($.type_identifier, $.identifier)),
     ),
 
     type_tag: $ => seq(
@@ -246,9 +246,10 @@ module.exports = grammar({
 
     module_path: _ => /[a-zA-Z_$][a-zA-Z0-9_$]*(\.[a-zA-Z_$][a-zA-Z0-9_$]*)*/,
 
-    // Covers bare TypeName and generic TypeName<T>, TypeName<T, U>, etc.
+    // Covers bare names and generic TypeName<T>, TypeName<T, U>, etc.
+    // Accepts both PascalCase (type_identifier) and lowercase (identifier) names.
     named_type: $ => seq(
-      field('name', $.type_identifier),
+      field('name', choice($.type_identifier, $.identifier)),
       optional(seq(
         '<',
         field('params', commaSep1($._type)),
@@ -294,8 +295,8 @@ module.exports = grammar({
     // ?T is sugar for T | null; higher precedence than union so ?T | U == (?T) | U.
     nullable_type: $ => prec(2, seq('?', $._type)),
 
-    // PascalCase names: typedef references and type parameters.
-    type_identifier: _ => /[A-Z][a-zA-Z0-9]*/,
+    // Uppercase-starting names: PascalCase typedef references and type parameters.
+    type_identifier: _ => /[A-Z][a-zA-Z0-9_$]*/,
 
     // Lowercase-starting names: parameter names and function param names.
     identifier: _ => /[a-z_$][a-zA-Z_$0-9]*/,
