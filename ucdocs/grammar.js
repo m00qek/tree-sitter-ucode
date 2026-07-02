@@ -6,6 +6,13 @@
 /// <reference types="tree-sitter-cli/dsl" />
 // @ts-check
 
+// Shared identifier alphabet (JS-style), written once so the character
+// classes can't drift between the rules that use them. ID_START is the set
+// of first characters; ID_CONT the set of subsequent characters.
+const ID_START = 'a-zA-Z_$';
+const ID_CONT = 'a-zA-Z0-9_$';
+const IDENT = `[${ID_START}][${ID_CONT}]*`;
+
 module.exports = grammar({
   name: 'ucdocs',
 
@@ -102,7 +109,7 @@ module.exports = grammar({
 
     default_value: _ => token(choice(
       /-?\d+(\.\d+)?/,
-      /[a-zA-Z_$][a-zA-Z0-9_$]*/,
+      new RegExp(IDENT),
     )),
 
     returns_tag: $ => seq(
@@ -179,7 +186,7 @@ module.exports = grammar({
     ),
 
     // Member names cover lowercase (error), uppercase (ERR), and underscored (ulog_open).
-    member_name: _ => /[a-zA-Z_$][a-zA-Z0-9_$]*/,
+    member_name: _ => new RegExp(IDENT),
 
     unknown_tag: $ => seq(
       $.tag_name,
@@ -247,7 +254,7 @@ module.exports = grammar({
       field('path', $.module_path),
     ),
 
-    module_path: _ => /[a-zA-Z_$][a-zA-Z0-9_$]*(\.[a-zA-Z_$][a-zA-Z0-9_$]*)*/,
+    module_path: _ => new RegExp(`${IDENT}(\\.${IDENT})*`),
 
     // Covers bare names and generic TypeName<T>, TypeName<T, U>, etc.
     // Accepts both PascalCase (type_identifier) and lowercase (identifier) names.
@@ -299,10 +306,10 @@ module.exports = grammar({
     nullable_type: $ => prec(2, seq('?', $._type)),
 
     // Uppercase-starting names: PascalCase typedef references and type parameters.
-    type_identifier: _ => /[A-Z][a-zA-Z0-9_$]*/,
+    type_identifier: _ => new RegExp(`[A-Z][${ID_CONT}]*`),
 
     // Lowercase-starting names: parameter names and function param names.
-    identifier: _ => /[a-z_$][a-zA-Z_$0-9]*/,
+    identifier: _ => new RegExp(`[a-z_$][${ID_CONT}]*`),
 
     // Description prose. A literal `*` (multiplication, markdown **bold**, a
     // glob) is allowed mid-text: it is consumed only as a star-run followed by
