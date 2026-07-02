@@ -27,6 +27,7 @@ module.exports = grammar({
     $.expression_tag_trim_open,    // 10  {{-
     $.expression_tag_close,        // 11  }}
     $.expression_tag_trim_close,   // 12  -}}
+    $.comment_content,             // 13  {# ... #} body (scans up to #}/-#})
   ],
 
   extras: $ => [
@@ -189,8 +190,10 @@ module.exports = grammar({
       field('close',   choice('-#}', '#}')),
     ),
 
-    // Matches everything up to but not including #} or -#}
-    comment_content: _ => /([^#-]|#[^}]|-(?:[^#]|#[^}]))+/,
+    // comment_content is an external token (see src/scanner_impl.h): it scans
+    // everything up to but not including the first #} or -#}. A regex cannot do
+    // this — maximal munch would consume the '#' of the terminator (e.g. the
+    // second '#' of `{# x##}`), and tree-sitter regexes have no lookahead.
 
     hash_bang_line: _ => /#!.*/,
 

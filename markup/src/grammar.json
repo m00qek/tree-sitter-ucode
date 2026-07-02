@@ -204,10 +204,6 @@
         }
       ]
     },
-    "comment_content": {
-      "type": "PATTERN",
-      "value": "([^#-]|#[^}]|-(?:[^#]|#[^}]))+"
-    },
     "hash_bang_line": {
       "type": "PATTERN",
       "value": "#!.*"
@@ -5600,6 +5596,10 @@
     {
       "type": "SYMBOL",
       "name": "expression_tag_trim_close"
+    },
+    {
+      "type": "SYMBOL",
+      "name": "comment_content"
     }
   ],
   "inline": [

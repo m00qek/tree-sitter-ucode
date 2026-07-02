@@ -19,6 +19,7 @@
  *  10  EXPRESSION_TAG_TRIM_OPEN   $.expression_tag_trim_open   {{-
  *  11  EXPRESSION_TAG_CLOSE       $.expression_tag_close       }}
  *  12  EXPRESSION_TAG_TRIM_CLOSE  $.expression_tag_trim_close  -}}
+ *  13  COMMENT_CHARS              $.comment_content            {# ... #} body
  */
 
 #ifndef UCODE_SCANNER_IMPL_H_
@@ -41,6 +42,7 @@ enum TokenType {
     EXPRESSION_TAG_TRIM_OPEN,
     EXPRESSION_TAG_CLOSE,
     EXPRESSION_TAG_TRIM_CLOSE,
+    COMMENT_CHARS,
 };
 
 static inline void advance(TSLexer *lexer) { lexer->advance(lexer, false); }
@@ -229,6 +231,49 @@ static TagCloseResult scan_expression_tag_close(TSLexer *lexer) {
         return TAG_CLOSE_MATCHED;
     }
     return TAG_CLOSE_ABSENT;
+}
+
+/*
+ * Scan the body of a {# ... #} comment: everything up to, but not including,
+ * the first #} or -#} close marker.  A regex cannot express this — maximal
+ * munch would consume the '#' that begins the terminator (e.g. the second '#'
+ * of `{# x##}`), and tree-sitter regexes have no look-ahead — so the boundary
+ * is found here by look-ahead.
+ *
+ * mark_end() is set at the start of each iteration, so when a close marker is
+ * detected the characters already advanced past ('#' or '-#') fall outside the
+ * token; the lexer resumes at mark_end and the internal lexer matches #}/-#}.
+ * Returns false on an empty body (immediate close), leaving comment_content
+ * unmatched (it is optional in the grammar).
+ */
+static bool scan_comment_chars(TSLexer *lexer) {
+    lexer->result_symbol = COMMENT_CHARS;
+    bool has_content = false;
+    for (;;) {
+        lexer->mark_end(lexer);
+        if (lexer->lookahead == 0) return has_content; /* EOF: close is missing */
+
+        if (lexer->lookahead == '#') {
+            advance(lexer);
+            if (lexer->lookahead == '}') return has_content; /* #} ahead */
+            has_content = true;                              /* '#' was content */
+            continue;
+        }
+        if (lexer->lookahead == '-') {
+            advance(lexer);
+            if (lexer->lookahead == '#') {
+                advance(lexer);
+                if (lexer->lookahead == '}') return has_content; /* -#} ahead */
+                has_content = true;                              /* '-#' was content */
+                continue;
+            }
+            has_content = true;                                  /* '-' was content */
+            continue;
+        }
+
+        advance(lexer);
+        has_content = true;
+    }
 }
 
 /* -------------------------------------------------------------------------
@@ -480,6 +525,13 @@ static bool ucode_scanner_scan(
      */
     if (valid_symbols[TEMPLATE_CHARS] && !valid_symbols[AUTOMATIC_SEMICOLON])
         return scan_template_chars(lexer);
+
+    /*
+     * Comment body: only valid inside {# ... #}, where no other external token
+     * competes.  Scans up to the #}/-#} close marker.
+     */
+    if (valid_symbols[COMMENT_CHARS])
+        return scan_comment_chars(lexer);
 
     /*
      * Markup-mode tokens.
