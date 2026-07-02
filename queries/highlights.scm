@@ -84,7 +84,13 @@
 ; -------------------------------------------------------------------------
 
 ["if" "elif" "else" "endif"] @keyword.conditional
-["switch" "case" "default"] @keyword.conditional
+["switch" "case"] @keyword.conditional
+; `default` is context-scoped (not in the list above) so it never overlaps with
+; the export patterns below. That keeps highlighting correct under both
+; first-match-wins engines (Helix / tree-sitter-highlight) and last-match-wins
+; engines (nvim-treesitter): every `default` token is matched by exactly one
+; pattern, so match order is irrelevant.
+(switch_default "default" @keyword.conditional)
 
 ; -------------------------------------------------------------------------
 ; Keywords — loops
@@ -118,9 +124,9 @@
 ["import" "export"] @keyword.import
 ["as" "from"] @keyword.import
 
-; 'default' in export context is a module keyword, not a conditional.
-; These patterns are more specific than the generic ["switch" "case" "default"]
-; above, so they take priority for 'default' tokens inside export constructs.
+; 'default' in export context is a module keyword, not a conditional. The
+; switch `default` is captured separately above, so these are the only patterns
+; that match a `default` inside export constructs — no priority/order reliance.
 (export_statement "default" @keyword.import)
 (export_specifier "default" @keyword.import)
 
