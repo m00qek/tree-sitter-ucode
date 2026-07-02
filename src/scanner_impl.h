@@ -87,7 +87,9 @@ static bool scan_raw_text_from(TSLexer *lexer, bool has_content) {
     lexer->result_symbol = RAW_TEXT;
     while (true) {
         lexer->mark_end(lexer);
-        if (lexer->lookahead == '\0') return has_content;
+        /* Real end-of-input ends the token; a literal NUL byte in the file is
+           ordinary content (ucode accepts NUL in raw template text). */
+        if (lexer->eof(lexer)) return has_content;
         if (lexer->lookahead == '{') {
             advance(lexer);
             if (lexer->lookahead == '%' ||
@@ -251,7 +253,8 @@ static bool scan_comment_chars(TSLexer *lexer) {
     bool has_content = false;
     for (;;) {
         lexer->mark_end(lexer);
-        if (lexer->lookahead == 0) return has_content; /* EOF: close is missing */
+        if (lexer->eof(lexer)) return has_content; /* EOF: close is missing */
+        /* A literal NUL is ordinary comment content (ucode accepts it). */
 
         if (lexer->lookahead == '#') {
             advance(lexer);
@@ -284,9 +287,12 @@ static bool scan_template_chars(TSLexer *lexer) {
     lexer->result_symbol = TEMPLATE_CHARS;
     for (bool has_content = false;; has_content = true) {
         lexer->mark_end(lexer);
+        /* Real end-of-input leaves the template unterminated (discard, matching
+           tree-sitter-javascript). A literal NUL byte is ordinary content —
+           ucode accepts NUL inside a template string. */
+        if (lexer->eof(lexer)) return false;
         switch (lexer->lookahead) {
             case '`': return has_content;
-            case '\0': return false;
             case '$':
                 advance(lexer);
                 if (lexer->lookahead == '{') return has_content;
