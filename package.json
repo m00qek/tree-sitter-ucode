@@ -27,11 +27,16 @@
     "markup/grammar.js",
     "markup/src/**",
     "markup/queries/*",
+    "markup/test/corpus/**",
     "scripts/generate-markup-grammar.js",
     "scripts/generate-markup-queries.js",
+    "scripts/run-tests.js",
+    "scripts/validate-corpus.js",
     "ucdocs/grammar.js",
     "ucdocs/src/**",
     "ucdocs/queries/*",
+    "ucdocs/test/corpus/**",
+    "test/corpus/**",
     "*.wasm"
   ],
   "dependencies": {
