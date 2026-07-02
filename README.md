@@ -81,7 +81,7 @@ are also supported.
 
 ```sh
 npm install
-npm run build        # regenerate all three parsers; compile Node.js bindings (ucode and ucode_markup only)
+npm run build        # regenerate all three parsers; compile the Node.js binding (ucode only)
 ```
 
 To regenerate parsers after editing a grammar file (run from the repo root):

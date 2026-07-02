@@ -33,12 +33,16 @@ markup/
 ucdocs/
   grammar.js            ucdocs (JSDoc) grammar — standalone, edit directly
   src/                  Generated parser for the ucdocs grammar
-queries/                Highlight, locals, and tags queries for ucode
+  queries/              Queries for ucdocs (edit directly)
+  test/corpus/          Corpus tests for ucdocs
+queries/                Queries for ucode: highlights, locals, tags, folds,
+                        indents, textobjects, injections
 test/corpus/            Corpus tests for the ucode grammar
 markup/test/corpus/     Corpus tests for ucode_markup
 scripts/
   generate-markup-grammar.js  Derives markup/grammar.js from grammar.js
   generate-markup-queries.js  Derives the shared markup/queries/*.scm from queries/
+  run-tests.js                Builds and tests all three grammars (npm test)
   validate-corpus.js          Validates the grammar against real ucode projects
 ```
 
@@ -71,7 +75,7 @@ The external lexer is hand-written and handles features that context-free gramma
 
 ## Adding corpus tests
 
-Corpus tests live in `test/corpus/*.txt` (ucode) and `markup/test/corpus/*.txt` (ucode_markup). Each test case follows this format:
+Corpus tests live in `test/corpus/*.txt` (ucode), `markup/test/corpus/*.txt` (ucode_markup), and `ucdocs/test/corpus/*.txt` (ucdocs). Each test case follows this format:
 
 ```
 ================================================================================
@@ -96,6 +100,11 @@ npx tree-sitter parse /tmp/test.uc
 npx tree-sitter build --output ucode_markup.so ./markup
 echo '<code>' > /tmp/test.uc.tmpl
 npx tree-sitter parse --lib-path ucode_markup.so --lang-name ucode_markup /tmp/test.uc.tmpl
+
+# ucdocs
+npx tree-sitter build --output ucdocs.so ./ucdocs
+echo '/** @param {int} n */' > /tmp/test.uc
+npx tree-sitter parse --lib-path ucdocs.so --lang-name ucdocs /tmp/test.uc
 ```
 
 Add the test to an existing file whose category matches (e.g. `expressions.txt`, `control_flow.txt`), or create a new file if no suitable one exists. Every new syntactic feature or deliberate removal should have at least one corpus test.
@@ -103,11 +112,12 @@ Add the test to an existing file whose category matches (e.g. `expressions.txt`,
 ## Running tests
 
 ```sh
-npm test                               # both grammars (recommended)
+npm test                               # all three grammars (recommended)
 
 # Individual grammars:
 npx tree-sitter test                                      # ucode only
 cd markup && npx tree-sitter test                         # ucode_markup only
+cd ucdocs && npx tree-sitter test                         # ucdocs only
 
 # Filter by corpus file name (the .txt extension is required):
 npx tree-sitter test --file-name control_flow.txt
