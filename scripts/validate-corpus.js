@@ -173,6 +173,18 @@ function parse(code, tmpl) {
     if (/Failed to load language|dlopen/i.test(output)) {
       fatal(`could not load ${langName} grammar from ${libPath}:\n${output.trim()}`);
     }
+    // A real parse either succeeds (exit 0, empty output under --quiet) or
+    // reports an ERROR/MISSING tree (exit 1, output naming the node). A crash
+    // signal, or a non-zero exit that produced no output at all, is neither —
+    // without this a scanner segfault (SIGSEGV → empty output) would be
+    // silently counted as a clean parse. Surface it as a per-file failure so
+    // the run names the offending input and keeps looking for others.
+    if (result.signal || (result.status !== 0 && output.trim() === '')) {
+      const how = result.signal
+        ? `killed by signal ${result.signal}`
+        : `exited with status ${result.status} and no output`;
+      return { hasError: true, output: `tree-sitter ${how}` };
+    }
     const hasError = /\bERROR\b/.test(output);
     return { hasError, output: output.trim() };
   } finally {
