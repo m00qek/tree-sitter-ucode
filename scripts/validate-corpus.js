@@ -18,6 +18,8 @@
  *
  * Exits 0 when every file/testcase parses without ERROR nodes.
  * MISSING nodes (unclosed template blocks, which ucode supports at EOF) are tolerated.
+ * Exits 2 on a setup error (missing tree-sitter binary or unbuilt grammar
+ * library) so a broken environment cannot masquerade as a clean run.
  */
 
 const fs   = require('node:fs');
@@ -31,10 +33,11 @@ const { spawnSync } = require('node:child_process');
 
 const TS_ROOT = path.dirname(__dirname);
 
+// Match what `npm run build` / scripts/run-tests.js actually emit: .dll on
+// Windows, .so everywhere else. tree-sitter build does not produce .dylib on
+// macOS, so returning 'dylib' there pointed at a file that never exists.
 function soExt() {
-  if (process.platform === 'win32')  return 'dll';
-  if (process.platform === 'darwin') return 'dylib';
-  return 'so';
+  return process.platform === 'win32' ? 'dll' : 'so';
 }
 const LIB_UCODE        = path.join(TS_ROOT, `ucode.${soExt()}`);
 const LIB_UCODE_MARKUP = path.join(TS_ROOT, `ucode_markup.${soExt()}`);
@@ -102,6 +105,28 @@ const EXPECTED_INVALID = new Set([
 // Helpers
 // ---------------------------------------------------------------------------
 
+// Abort the whole run with a clear message. Used for setup problems (missing
+// binary / grammar library) that are not per-file parse results — without
+// this the run would "pass" every file having actually parsed nothing.
+function fatal(msg) {
+  process.stderr.write(`\nvalidate-corpus: ${msg}\n`);
+  process.exit(2);
+}
+
+// Both grammars are built together (npm run build), and corpus mode needs
+// both; fail early with an actionable message rather than reporting every
+// file as a spurious pass or failure.
+function assertLibsExist() {
+  const missing = [LIB_UCODE, LIB_UCODE_MARKUP].filter((p) => !fs.existsSync(p));
+  if (missing.length) {
+    fatal(
+      'grammar library not found:\n' +
+      missing.map((p) => `  ${p}`).join('\n') +
+      '\nBuild the parsers first: `npm run build` (or `npm test`).',
+    );
+  }
+}
+
 // corpus mode: match {%/{{/{# anywhere — jow-/ucode test cases embed
 // template output inline (e.g. "result = {{ expr }}") so the marker is
 // rarely at the start of a line.
@@ -136,7 +161,18 @@ function parse(code, tmpl) {
       ['parse', '--quiet', '--lib-path', libPath, '--lang-name', langName, tmpFile],
       { cwd: TS_ROOT, encoding: 'utf8' },
     );
-    const output   = (result.stdout ?? '') + (result.stderr ?? '');
+    // The tree-sitter binary itself could not be spawned (e.g. not installed).
+    if (result.error) {
+      fatal(`could not run tree-sitter (${TREE_SITTER}): ${result.error.message}`);
+    }
+    const output = (result.stdout ?? '') + (result.stderr ?? '');
+    // The grammar library could not be loaded (missing/incompatible .so). This
+    // is not a parse result: without this guard the ERROR grep below sees no
+    // "ERROR" token and every file counts as a pass, so the run exits 0 having
+    // parsed nothing.
+    if (/Failed to load language|dlopen/i.test(output)) {
+      fatal(`could not load ${langName} grammar from ${libPath}:\n${output.trim()}`);
+    }
     const hasError = /\bERROR\b/.test(output);
     return { hasError, output: output.trim() };
   } finally {
@@ -269,5 +305,7 @@ if (!target || !['corpus', 'project'].includes(mode)) {
   );
   process.exit(2);
 }
+
+assertLibsExist();
 
 process.exit(mode === 'corpus' ? runCorpus(target) : runProject(target));
