@@ -53,10 +53,13 @@ module.exports = grammar({
     _begin: _ => token('/**'),
     _end: _ => token(seq(/\*+/, '/')),
 
-    // Used after a type_expression/rest_type_expression has already claimed `{` at
-    // this position (param_tag, returns_tag, throws_tag) — excludes _brace_text so
-    // it never competes with a legitimate {type} for the leading `{`.
-    _typed_description: $ => repeat1(choice($._text, $.inline_tag)),
+    // Description after an optional {type} (param_tag, returns_tag, throws_tag).
+    // Includes _brace_text so ordinary braces in prose — `{2,5}`, an object
+    // example — don't hard-error. When a leading `{...}` could be read as either
+    // the type or the start of a brace-text description, the higher prec.dynamic
+    // on type_expression/rest_type_expression wins, so `@param {int} n` still
+    // parses `{int}` as the type. See the `conflicts` entries below.
+    _typed_description: $ => repeat1(choice($._text, $.inline_tag, $._brace_text)),
 
     // Used wherever no type_expression can appear at the same position, so a bare
     // `{` can only be an inline tag or arbitrary brace-text (e.g. @example code).
@@ -197,10 +200,13 @@ module.exports = grammar({
 
     // ── Type expressions ────────────────────────────────────────────────────
 
-    type_expression: $ => seq('{', $._type, '}'),
+    // prec.dynamic biases the leading `{...}` toward the type when its contents
+    // also parse as brace-text description (e.g. `@param {int} n`); a `{...}`
+    // that is not a valid type (e.g. `{2,5}`) has only the brace-text parse.
+    type_expression: $ => prec.dynamic(1, seq('{', $._type, '}')),
 
     // {..Type} — only valid on @param, signals a rest/variadic parameter.
-    rest_type_expression: $ => seq('{', '...', $._type, '}'),
+    rest_type_expression: $ => prec.dynamic(1, seq('{', '...', $._type, '}')),
 
     _type: $ => choice(
       $.primitive_type,

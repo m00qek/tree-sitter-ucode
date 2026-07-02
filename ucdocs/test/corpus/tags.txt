@@ -112,6 +112,50 @@ param with type, name and description
     description: (description)))
 
 ================================================================================
+param description may contain braces (regex quantifier, object example)
+================================================================================
+
+/** @param {int} n count like {2,5} */
+
+--------------------------------------------------------------------------------
+
+(document
+  (param_tag
+    type: (type_expression
+      (primitive_type))
+    name: (identifier)
+    description: (description)))
+
+================================================================================
+param description starting with a brace still keeps {type} as the type
+================================================================================
+
+/** @param {int} n {2,5} */
+
+--------------------------------------------------------------------------------
+
+(document
+  (param_tag
+    type: (type_expression
+      (primitive_type))
+    name: (identifier)
+    description: (description)))
+
+================================================================================
+returns description may contain braces
+================================================================================
+
+/** @returns {int} in range {0,9} */
+
+--------------------------------------------------------------------------------
+
+(document
+  (returns_tag
+    type: (type_expression
+      (primitive_type))
+    description: (description)))
+
+================================================================================
 param without type
 ================================================================================
 
