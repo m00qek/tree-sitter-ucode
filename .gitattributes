@@ -2,6 +2,10 @@ src/parser.c        linguist-generated=true
 src/grammar.json    linguist-generated=true
 src/node-types.json linguist-generated=true
 
-tmpl/src/parser.c        linguist-generated=true
-tmpl/src/grammar.json    linguist-generated=true
-tmpl/src/node-types.json linguist-generated=true
+markup/src/parser.c        linguist-generated=true
+markup/src/grammar.json    linguist-generated=true
+markup/src/node-types.json linguist-generated=true
+
+ucdocs/src/parser.c        linguist-generated=true
+ucdocs/src/grammar.json    linguist-generated=true
+ucdocs/src/node-types.json linguist-generated=true
