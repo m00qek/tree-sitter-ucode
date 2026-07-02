@@ -29,6 +29,7 @@ module.exports = grammar({
     $.expression_tag_close,        // 11  }}
     $.expression_tag_trim_close,   // 12  -}}
     $.comment_content,             // 13  {# ... #} body (scans up to #}/-#})
+    $.comment,                     // 14  // line and /* */ block comments
   ],
 
   extras: $ => [
@@ -993,10 +994,11 @@ module.exports = grammar({
       ),
     )),
 
-    comment: _ => token(choice(
-      seq("//", /[^\r\n\u2028\u2029]*/),
-      seq('/*', /[^*]*\*+([^/*][^*]*\*+)*/, '/'),
-    )),
+    // `comment` is an external token (see externals / scanner_impl.h). A `//`
+    // line comment normally runs to the end of the line, but inside a markup
+    // statement tag it also stops before a `%}` / `-%}` close so that
+    // `{% x = 1; // note %}` matches ucode (which ends the comment at the tag).
+    // Block comments `/* */` end at `*/` as usual.
 
     template_string: $ => seq(
       '`',

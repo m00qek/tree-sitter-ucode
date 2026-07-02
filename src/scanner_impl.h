@@ -20,6 +20,7 @@
  *  11  EXPRESSION_TAG_CLOSE       $.expression_tag_close       }}
  *  12  EXPRESSION_TAG_TRIM_CLOSE  $.expression_tag_trim_close  -}}
  *  13  COMMENT_CHARS              $.comment_content            {# ... #} body
+ *  14  COMMENT                    $.comment                    line and block
  */
 
 #ifndef UCODE_SCANNER_IMPL_H_
@@ -43,6 +44,7 @@ enum TokenType {
     EXPRESSION_TAG_CLOSE,
     EXPRESSION_TAG_TRIM_CLOSE,
     COMMENT_CHARS,
+    COMMENT,
 };
 
 static inline void advance(TSLexer *lexer) { lexer->advance(lexer, false); }
@@ -504,6 +506,97 @@ static bool scan_ternary_qmark(TSLexer *lexer) {
     return true;
 }
 
+/*
+ * Line comments (slash-slash) and block comments (slash-star ... star-slash).
+ *
+ * Line comments run to the end of the line, EXCEPT inside a markup statement
+ * tag: there they also stop before a `%}` / `-%}` close marker, so
+ * `{% x = 1; // note %}` ends the comment at the tag (matching ucode) instead
+ * of swallowing the close. That extra stop is gated on a statement-tag-close
+ * being a valid symbol, so pure-ucode `//` comments (where those tokens are
+ * never valid) and comments containing a literal `%}` are unaffected.
+ *
+ * The return distinguishes three outcomes because the '/' is ambiguous and the
+ * scanner cannot un-consume it once advanced past:
+ *   CMT_FOUND  — a comment was scanned; emit the COMMENT token.
+ *   CMT_ABORT  — a '/' was consumed but it starts a division / regex, not a
+ *                comment.  The dispatcher must return false from the WHOLE
+ *                scanner so tree-sitter discards the consumed '/' and re-lexes
+ *                it from the original position (as division or a regex).  This
+ *                mirrors ASI's own division-slash DECLINE and is what keeps
+ *                `a /? b : c` an ERROR rather than a swallowed ternary.
+ *   CMT_NONE   — no '/' here (only whitespace was skipped); the dispatcher may
+ *                safely fall through to the tag-close / ASI / ternary scanners,
+ *                which re-skip leading whitespace harmlessly.
+ */
+typedef enum { CMT_NONE, CMT_FOUND, CMT_ABORT } CommentResult;
+
+static CommentResult scan_comment(TSLexer *lexer, const bool *valid_symbols) {
+    /* Skip leading whitespace: tree-sitter calls the scanner at the whitespace
+       before the comment and will not re-invoke it after lexing that whitespace
+       internally, so a comment reached only across whitespace would otherwise be
+       lexed as division or a regex. Newlines are skipped too (the comment is an
+       extra, so ASI still fires at the statement boundary after it). skip()
+       leaves the whitespace out of the token. */
+    while (lexer->lookahead == ' '  || lexer->lookahead == '\t' ||
+           lexer->lookahead == '\r' || lexer->lookahead == '\n' ||
+           lexer->lookahead == 0x2028 || lexer->lookahead == 0x2029)
+        skip(lexer);
+    if (lexer->lookahead != '/') return CMT_NONE;
+    advance(lexer);
+
+    if (lexer->lookahead == '/') {
+        advance(lexer);
+        lexer->result_symbol = COMMENT;
+        const bool stop_at_close = valid_symbols[STATEMENT_TAG_CLOSE] ||
+                                   valid_symbols[STATEMENT_TAG_TRIM_CLOSE];
+        for (;;) {
+            lexer->mark_end(lexer);
+            if (lexer->eof(lexer) ||
+                lexer->lookahead == '\n' || lexer->lookahead == '\r' ||
+                lexer->lookahead == 0x2028 || lexer->lookahead == 0x2029)
+                return CMT_FOUND;
+
+            /* End the comment before a statement-tag close marker. mark_end is
+               still at the char before '%'/'-', so the close is left to re-lex. */
+            if (stop_at_close && lexer->lookahead == '%') {
+                advance(lexer);
+                if (lexer->lookahead == '}') return CMT_FOUND;  /* %} ahead */
+                continue;                                       /* '%' was content */
+            }
+            if (stop_at_close && lexer->lookahead == '-') {
+                advance(lexer);
+                if (lexer->lookahead == '%') {
+                    advance(lexer);
+                    if (lexer->lookahead == '}') return CMT_FOUND;  /* -%} ahead */
+                }
+                continue;                                           /* '-' (…) was content */
+            }
+            advance(lexer);
+        }
+    }
+
+    if (lexer->lookahead == '*') {
+        advance(lexer);
+        lexer->result_symbol = COMMENT;
+        for (;;) {
+            if (lexer->eof(lexer)) { lexer->mark_end(lexer); return CMT_FOUND; }
+            if (lexer->lookahead == '*') {
+                advance(lexer);
+                if (lexer->lookahead == '/') {
+                    advance(lexer);
+                    lexer->mark_end(lexer);
+                    return CMT_FOUND;
+                }
+            } else {
+                advance(lexer);
+            }
+        }
+    }
+
+    return CMT_ABORT;  /* consumed a lone '/': division or regex, re-lex it */
+}
+
 /* -------------------------------------------------------------------------
  * Main dispatch
  * ---------------------------------------------------------------------- */
@@ -554,6 +647,23 @@ static bool ucode_scanner_scan(
         valid_symbols[EXPRESSION_TAG_OPEN] ||
         valid_symbols[EXPRESSION_TAG_TRIM_OPEN]) {
         if (scan_markup(lexer, valid_symbols)) return true;
+    }
+
+    /*
+     * Comments.  Run before the tag-close / ASI / ternary scanners so a comment
+     * is emitted as its own token instead of being silently skipped by those
+     * scanners' comment-skipping (e.g. a `//` line comment sitting between a
+     * ternary condition and its `?`).  Run after the markup block so a `//` in
+     * raw template text stays raw_text (COMMENT is not valid there anyway).
+     * CMT_ABORT means a '/' was consumed that is really division/regex: return
+     * false so tree-sitter re-lexes it from the original position.
+     */
+    if (valid_symbols[COMMENT]) {
+        switch (scan_comment(lexer, valid_symbols)) {
+            case CMT_FOUND: return true;
+            case CMT_ABORT: return false;
+            case CMT_NONE:  break;
+        }
     }
 
     /*
