@@ -5,6 +5,7 @@ on:
     branches: [main]
     paths:
       - src/scanner.c
+      - src/scanner_impl.h
       - markup/src/scanner.c
 
 jobs:
