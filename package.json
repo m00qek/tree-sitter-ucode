@@ -28,6 +28,7 @@
     "markup/src/**",
     "markup/queries/*",
     "scripts/generate-markup-grammar.js",
+    "scripts/generate-markup-queries.js",
     "ucdocs/grammar.js",
     "ucdocs/src/**",
     "ucdocs/queries/*",
@@ -51,7 +52,7 @@
   },
   "scripts": {
     "install": "node-gyp-build",
-    "build": "node scripts/generate-markup-grammar.js && tree-sitter generate && tree-sitter generate markup/grammar.js --output markup/src && node-gyp-build && tree-sitter build --output ucode.so . && tree-sitter build --output ucode_markup.so ./markup",
+    "build": "node scripts/generate-markup-grammar.js && node scripts/generate-markup-queries.js && tree-sitter generate && tree-sitter generate markup/grammar.js --output markup/src && node-gyp-build && tree-sitter build --output ucode.so . && tree-sitter build --output ucode_markup.so ./markup",
     "test": "node scripts/run-tests.js",
     "prestart": "tree-sitter build --wasm",
     "start": "tree-sitter playground"
