@@ -125,7 +125,6 @@ module.exports = grammar({
     [$.primary_expression, $.formal_parameters],
     [$.primary_expression, $._for_header],
     [$.variable_declarator, $._for_header],
-    [$.assignment_expression, $.pattern],
     [$.primary_expression, $.delete_expression],
     [$.primary_expression, $.update_expression],
   ],
@@ -953,8 +952,6 @@ module.exports = grammar({
     ),
 
     rest_element: $ => seq('...', $.identifier),
-
-    pattern: $ => prec.dynamic(-1, $._lhs_expression),
 
     //
     // Primitives

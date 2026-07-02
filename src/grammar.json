@@ -4577,14 +4577,6 @@
         }
       ]
     },
-    "pattern": {
-      "type": "PREC_DYNAMIC",
-      "value": -1,
-      "content": {
-        "type": "SYMBOL",
-        "name": "_lhs_expression"
-      }
-    },
     "string": {
       "type": "CHOICE",
       "members": [
@@ -5563,10 +5555,6 @@
     [
       "variable_declarator",
       "_for_header"
-    ],
-    [
-      "assignment_expression",
-      "pattern"
     ],
     [
       "primary_expression",
