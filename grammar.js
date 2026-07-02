@@ -95,7 +95,7 @@ module.exports = grammar({
     [
       'member',
       'call',
-      $.update_expression,
+      'update',
       'unary_void',
       'binary_exp',
       'binary_times',
@@ -126,6 +126,7 @@ module.exports = grammar({
     [$.variable_declarator, $._for_header],
     [$.assignment_expression, $.pattern],
     [$.primary_expression, $.delete_expression],
+    [$.primary_expression, $.update_expression],
   ],
 
   word: $ => $.identifier,
@@ -368,13 +369,43 @@ module.exports = grammar({
       optional($._automatic_semicolon),
     )),
 
-    else_clause: $ => seq('else', $.statement),
+    // An unbraced control-flow body accepts any statement except a lexical
+    // declaration: ucode rejects `if (x) let y = 1;` / `while (c) const z = 1;`
+    // ("Expecting expression") but accepts expression statements, `function`
+    // declarations and blocks. (The `:`…`endif` alt-syntax body, which is
+    // block-like, still allows `let`/`const` and uses `statement` directly.)
+    // Mirror `statement` minus `lexical_declaration`.
+    _unbraced_statement: $ => choice(
+      $.export_statement,
+      $.import_statement,
+      $.expression_statement,
+      $.function_declaration,
+      $.statement_block,
+
+      $.if_statement,
+      $.if_alt_statement,
+      $.switch_statement,
+      $.for_statement,
+      $.for_alt_statement,
+      $.for_in_statement,
+      $.for_in_alt_statement,
+      $.while_statement,
+      $.while_alt_statement,
+      $.try_statement,
+
+      $.break_statement,
+      $.continue_statement,
+      $.return_statement,
+      $.empty_statement,
+    ),
+
+    else_clause: $ => seq('else', $._unbraced_statement),
 
     // Standard brace-based if
     if_statement: $ => prec.right(seq(
       'if',
       field('condition', $.parenthesized_expression),
-      field('consequence', $.statement),
+      field('consequence', $._unbraced_statement),
       optional(field('alternative', $.else_clause)),
     )),
 
@@ -465,7 +496,7 @@ module.exports = grammar({
 
     for_statement: $ => seq(
       forHeader($),
-      field('body', $.statement),
+      field('body', $._unbraced_statement),
     ),
 
     for_alt_statement: $ => choice(
@@ -491,7 +522,7 @@ module.exports = grammar({
     for_in_statement: $ => seq(
       'for',
       $._for_header,
-      field('body', $.statement),
+      field('body', $._unbraced_statement),
     ),
 
     for_in_alt_statement: $ => choice(
@@ -556,7 +587,7 @@ module.exports = grammar({
     while_statement: $ => seq(
       'while',
       field('condition', $.parenthesized_expression),
-      field('body', $.statement),
+      field('body', $._unbraced_statement),
     ),
 
     while_alt_statement: $ => choice(
@@ -755,6 +786,11 @@ module.exports = grammar({
       '[', field('index', $._expressions), ']',
     )),
 
+    // Assignment targets. ucode rejects a parenthesized whole target
+    // (`(a) = 1` is "Unexpected token"), so the left-hand side is a plain
+    // reference. (An optional chain anywhere in the target — `a?.b = 1` — is
+    // also rejected by ucode, but that is a semantic lval check the grammar
+    // does not attempt; member/subscript here still permit `?.`.)
     _lhs_expression: $ => choice(
       $.member_expression,
       $.subscript_expression,
@@ -763,21 +799,13 @@ module.exports = grammar({
     ),
 
     assignment_expression: $ => prec.right('assign', seq(
-      field('left', choice($.parenthesized_expression, $._lhs_expression)),
+      field('left', $._lhs_expression),
       '=',
       field('right', $.expression),
     )),
 
-    _augmented_assignment_lhs: $ => choice(
-      $.member_expression,
-      $.subscript_expression,
-      alias($._reserved_identifier, $.identifier),
-      $.identifier,
-      $.parenthesized_expression,
-    ),
-
     augmented_assignment_expression: $ => prec.right('assign', seq(
-      field('left', $._augmented_assignment_lhs),
+      field('left', $._lhs_expression),
       field('operator', choice(
         '+=', '-=', '*=', '/=', '%=', '**=',
         '^=', '&=', '|=', '>>=', '<<=',
@@ -840,21 +868,31 @@ module.exports = grammar({
       field('argument', $.expression),
     )),
 
-    // ucode's `delete` only accepts a property access (member or subscript)
-    // expression: `delete o.k` / `delete o["k"]`. `delete x` is a syntax error.
+    // ucode's `delete` accepts a property access (member or subscript), or a
+    // parenthesized one: `delete o.k`, `delete o["k"]`, `delete (o.k)`. Unlike
+    // an assignment/update target, an optional chain IS allowed (`delete a?.b`).
+    // `delete x` and `delete (5)` are rejected by ucode at compile time, but
+    // the parenthesized-non-property case is a semantic lval check the grammar
+    // does not attempt (mirroring how tree-sitter-javascript treats `delete`).
     delete_expression: $ => prec.left('unary_void', seq(
       field('operator', 'delete'),
-      field('argument', choice($.member_expression, $.subscript_expression)),
+      field('argument', choice(
+        $.member_expression,
+        $.subscript_expression,
+        $.parenthesized_expression,
+      )),
     )),
 
-    update_expression: $ => prec.left(choice(
+    // The operand of ++/-- must be an assignable reference: `++5` and `5++`
+    // are "Invalid increment/decrement operand" in ucode.
+    update_expression: $ => prec.left('update', choice(
       seq(
-        field('argument', $.expression),
+        field('argument', $._lhs_expression),
         field('operator', choice('++', '--')),
       ),
       seq(
         field('operator', choice('++', '--')),
-        field('argument', $.expression),
+        field('argument', $._lhs_expression),
       ),
     )),
 
