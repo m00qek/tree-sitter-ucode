@@ -11,7 +11,8 @@
  *      appears first (tree-sitter uses the first rule as the start rule)
  *
  * The generated file is checked in and rebuilt whenever grammar.js changes.
- * Run via `npm run generate-markup` or as part of `npm run build`.
+ * Run directly (`node scripts/generate-markup-grammar.js`) or as part of
+ * `npm run build`.
  */
 
 'use strict';
@@ -24,8 +25,16 @@ const dstPath = path.resolve(__dirname, '..', 'markup', 'grammar.js');
 
 let src = fs.readFileSync(srcPath, 'utf8');
 
-// 1. Rename the grammar
-src = src.replace(/name:\s*'ucode'/, "name: 'ucode_markup'");
+// 1. Rename the grammar. Fail loudly if the expected literal ever changes
+//    (e.g. to double quotes): a silent no-op here would emit a markup grammar
+//    still named 'ucode', giving it a duplicate name and the wrong export
+//    symbols — exactly the kind of drift `tree-sitter generate` may not catch.
+const renamed = src.replace(/name:\s*'ucode'/, "name: 'ucode_markup'");
+if (renamed === src) {
+    console.error("Could not find `name: 'ucode'` in grammar.js to rename");
+    process.exit(1);
+}
+src = renamed;
 
 // 2. Locate the `program` and `markup` rule definitions inside `rules: { ... }`.
 //    Each top-level rule starts with "\n    <ident>: $ =>".
