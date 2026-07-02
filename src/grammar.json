@@ -85,6 +85,10 @@
         {
           "type": "SYMBOL",
           "name": "while_alt_statement"
+        },
+        {
+          "type": "SYMBOL",
+          "name": "function_alt_declaration"
         }
       ]
     },
@@ -2200,6 +2204,78 @@
               }
             }
           ]
+        }
+      ]
+    },
+    "function_alt_declaration": {
+      "type": "SEQ",
+      "members": [
+        {
+          "type": "FIELD",
+          "name": "open",
+          "content": {
+            "type": "SYMBOL",
+            "name": "_stmt_open"
+          }
+        },
+        {
+          "type": "STRING",
+          "value": "function"
+        },
+        {
+          "type": "FIELD",
+          "name": "name",
+          "content": {
+            "type": "SYMBOL",
+            "name": "identifier"
+          }
+        },
+        {
+          "type": "SYMBOL",
+          "name": "_call_signature"
+        },
+        {
+          "type": "STRING",
+          "value": ":"
+        },
+        {
+          "type": "FIELD",
+          "name": "close",
+          "content": {
+            "type": "SYMBOL",
+            "name": "_stmt_close"
+          }
+        },
+        {
+          "type": "FIELD",
+          "name": "body",
+          "content": {
+            "type": "REPEAT",
+            "content": {
+              "type": "SYMBOL",
+              "name": "_markup_node"
+            }
+          }
+        },
+        {
+          "type": "FIELD",
+          "name": "end_open",
+          "content": {
+            "type": "SYMBOL",
+            "name": "_stmt_open"
+          }
+        },
+        {
+          "type": "STRING",
+          "value": "endfunction"
+        },
+        {
+          "type": "FIELD",
+          "name": "end_close",
+          "content": {
+            "type": "SYMBOL",
+            "name": "_stmt_close"
+          }
         }
       ]
     },
@@ -4754,6 +4830,57 @@
                     "content": {
                       "type": "CHOICE",
                       "members": [
+                        {
+                          "type": "SEQ",
+                          "members": [
+                            {
+                              "type": "STRING",
+                              "value": "[:"
+                            },
+                            {
+                              "type": "PATTERN",
+                              "value": "[^:\\n\\]]*"
+                            },
+                            {
+                              "type": "STRING",
+                              "value": ":]"
+                            }
+                          ]
+                        },
+                        {
+                          "type": "SEQ",
+                          "members": [
+                            {
+                              "type": "STRING",
+                              "value": "[."
+                            },
+                            {
+                              "type": "PATTERN",
+                              "value": "[^.\\n\\]]*"
+                            },
+                            {
+                              "type": "STRING",
+                              "value": ".]"
+                            }
+                          ]
+                        },
+                        {
+                          "type": "SEQ",
+                          "members": [
+                            {
+                              "type": "STRING",
+                              "value": "[="
+                            },
+                            {
+                              "type": "PATTERN",
+                              "value": "[^=\\n\\]]*"
+                            },
+                            {
+                              "type": "STRING",
+                              "value": "=]"
+                            }
+                          ]
+                        },
                         {
                           "type": "SEQ",
                           "members": [

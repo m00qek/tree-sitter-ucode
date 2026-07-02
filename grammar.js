@@ -163,6 +163,7 @@ module.exports = grammar({
       $.for_alt_statement,
       $.for_in_alt_statement,
       $.while_alt_statement,
+      $.function_alt_declaration,
     ),
 
     // -----------------------------------------------------------------------
@@ -580,6 +581,23 @@ module.exports = grammar({
       ),
     ),
 
+    // Spanning function alt-syntax: a function whose body is markup between
+    // two tags, e.g.  {% function f(a): %} raw {{ a }} {% endfunction %}
+    // (the within-tag form `function f(): stmts endfunction` is handled by
+    // function_declaration's body).
+    function_alt_declaration: $ => seq(
+      field('open',      $._stmt_open),
+      'function',
+      field('name',      $.identifier),
+      $._call_signature,
+      ':',
+      field('close',     $._stmt_close),
+      field('body',      repeat($._markup_node)),
+      field('end_open',  $._stmt_open),
+      'endfunction',
+      field('end_close', $._stmt_close),
+    ),
+
     try_statement: $ => seq(
       'try',
       field('body', $.statement_block),
@@ -968,7 +986,15 @@ module.exports = grammar({
 
     regex_pattern: _ => token.immediate(prec(-1,
       repeat1(choice(
-        seq('[', repeat(choice(seq('\\', /./), /[^\]\n\\]/)), ']'),
+        seq('[', repeat(choice(
+          // POSIX bracket sub-expressions: [:class:] [.coll.] [=equiv=].
+          // Their inner ']' must not close the enclosing character class.
+          seq('[:', /[^:\n\]]*/, ':]'),
+          seq('[.', /[^.\n\]]*/, '.]'),
+          seq('[=', /[^=\n\]]*/, '=]'),
+          seq('\\', /./),
+          /[^\]\n\\]/,
+        )), ']'),
         seq('\\', /./),
         /[^/\\\[\n]/,
       )),

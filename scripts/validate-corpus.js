@@ -60,8 +60,7 @@ const EXPECTED_INVALID = new Set([
   // --- Object literals (invalid syntax) ---
   '00_syntax/13_object_literals#4',       // `{ "foo" }` — bare string is not a valid property
 
-  // --- Function declarations (grammar gap: {% function f(): %}...{% endfunction %} alt-syntax) ---
-  '00_syntax/15_function_declarations#1',
+  // --- Function declarations (invalid parameter forms that ucode rejects) ---
   '00_syntax/15_function_declarations#4',  // function f(...args, ...args2) — multiple rest params
   '00_syntax/15_function_declarations#5',  // function f(...args, a, b) — rest param not last
 
@@ -76,9 +75,10 @@ const EXPECTED_INVALID = new Set([
 
   // --- Regex literals ---
   '00_syntax/21_regex_literals#3',   // /test/x — unsupported x flag
-  '00_syntax/21_regex_literals#6',   // /[/]/ etc — slash inside character class trips the scanner
 
-  // --- Forward declarations (grammar gap: `function foo;` not in grammar) ---
+  // --- Forward declarations (`function foo;`): a newer-ucode feature that the
+  //     targeted 25.12.x release rejects ("Unexpected token"), so the grammar
+  //     correctly rejects it too. These corpus cases come from a newer ucode. ---
   '00_syntax/29_function_forward_declarations#1',
   '00_syntax/29_function_forward_declarations#2',
   '00_syntax/29_function_forward_declarations#3',

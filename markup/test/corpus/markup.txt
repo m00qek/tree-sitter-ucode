@@ -198,6 +198,28 @@ while alt-syntax
     end_close: (statement_tag_close)))
 
 ================================================================================
+function alt-syntax (spanning tags)
+================================================================================
+{% function f(a, b): %}hi {{ a }}{% endfunction %}
+--------------------------------------------------------------------------------
+
+(markup
+  (function_alt_declaration
+    open: (statement_tag_open)
+    name: (identifier)
+    parameters: (formal_parameters
+      (identifier)
+      (identifier))
+    close: (statement_tag_close)
+    body: (raw_text)
+    body: (expression_tag
+      open: (expression_tag_open)
+      (identifier)
+      close: (expression_tag_close))
+    end_open: (statement_tag_open)
+    end_close: (statement_tag_close)))
+
+================================================================================
 counting for alt-syntax
 ================================================================================
 {% for (i = 0; i < 3; i++): %}x{% endfor %}
