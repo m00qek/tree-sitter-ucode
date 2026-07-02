@@ -12,10 +12,13 @@ on:
       - test/**
       - queries/**
       - markup/**
+      - ucdocs/**
       - bindings/**
       - binding.gyp
       - package.json
       - scripts/**
+      - tree-sitter.json
+      - .github/workflows/**
 
 env:
   FORCE_JAVASCRIPT_ACTIONS_TO_NODE24: true
@@ -68,9 +71,11 @@ jobs:
       - name: Verify generated files are up to date
         run: |
           node scripts/generate-markup-grammar.js
+          node scripts/generate-markup-queries.js
           npx tree-sitter generate
           npx tree-sitter generate markup/grammar.js --output markup/src
-          git diff --exit-code src/ markup/src/ markup/grammar.js
+          npx tree-sitter generate ucdocs/grammar.js --output ucdocs/src
+          git diff --exit-code src/ markup/src/ markup/grammar.js markup/queries/ ucdocs/src/
 
       - name: Build parsers
         run: |
