@@ -196,6 +196,23 @@ Hello, {{ name }}!
 {% endfor %}
 ```
 
+### Nesting alt-syntax blocks
+
+Give each alt-syntax block its own tag pair — this nests to any depth:
+
+```
+{% for (x in xs): %}
+  {% for (y in ys): %}{{ x }}{{ y }}{% endfor %}
+{% endfor %}
+```
+
+ucode also allows a *compact* form that packs several openers into one tag
+and their closers into another (`{% for (x in xs): for (y in ys): %} … {% endfor; endfor %}`).
+The grammar supports the compact form **only for two nested `for`-in loops**.
+Compact triple (or deeper) nesting and compact mixed blocks
+(`{% if (c): for (…): %} … {% endfor; endif %}`) parse as errors — use the
+one-block-per-tag form above for those instead.
+
 ## License
 
 MIT

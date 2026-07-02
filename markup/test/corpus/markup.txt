@@ -508,3 +508,37 @@ For-in alt-syntax with raw text in body
     body: (raw_text)
     end_open: (statement_tag_open)
     end_close: (statement_tag_close)))
+
+================================================================================
+Compact double for-in nesting (both loops in one tag pair)
+================================================================================
+{% for (x in [1]): for (y in [2]): %}a{% endfor; endfor %}
+--------------------------------------------------------------------------------
+
+(markup
+  (for_in_alt_statement
+    open: (statement_tag_open)
+    left: (identifier)
+    right: (array
+      (number))
+    left: (identifier)
+    right: (array
+      (number))
+    close: (statement_tag_close)
+    body: (raw_text)
+    end_open: (statement_tag_open)
+    end_close: (statement_tag_close)))
+
+================================================================================
+Compact triple for-in nesting is not supported — produces ERROR
+:error
+================================================================================
+{% for (x in [1]): for (y in [2]): for (z in [3]): %}a{% endfor; endfor; endfor %}
+--------------------------------------------------------------------------------
+
+================================================================================
+Compact mixed if/for nesting is not supported — produces ERROR
+:error
+================================================================================
+{% if (1): for (y in [2]): %}a{% endfor; endif %}
+--------------------------------------------------------------------------------
