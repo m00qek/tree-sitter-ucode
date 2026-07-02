@@ -312,3 +312,20 @@ let r = /\d+/g;
       value: (regex
         pattern: (regex_pattern)
         flags: (regex_flags)))))
+
+================================================================================
+Lone dollar sign in template string (not a substitution)
+================================================================================
+
+let s = `cost $5 ${x}`;
+
+--------------------------------------------------------------------------------
+
+(program
+  (lexical_declaration
+    (variable_declarator
+      name: (identifier)
+      value: (template_string
+        (string_fragment)
+        (template_substitution
+          (identifier))))))

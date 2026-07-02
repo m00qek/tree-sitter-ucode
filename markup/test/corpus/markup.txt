@@ -542,3 +542,29 @@ Compact mixed if/for nesting is not supported — produces ERROR
 ================================================================================
 {% if (1): for (y in [2]): %}a{% endfor; endif %}
 --------------------------------------------------------------------------------
+
+================================================================================
+Markup if / elif / else spanning tags
+================================================================================
+{% if (a): %}x{% elif (b): %}y{% else %}z{% endif %}
+--------------------------------------------------------------------------------
+
+(markup
+  (if_alt_statement
+    open: (statement_tag_open)
+    condition: (parenthesized_expression
+      (identifier))
+    close: (statement_tag_close)
+    (raw_text)
+    (elif_clause_tag
+      open: (statement_tag_open)
+      condition: (parenthesized_expression
+        (identifier))
+      close: (statement_tag_close))
+    (raw_text)
+    (else_alt_clause_tag
+      open: (statement_tag_open)
+      close: (statement_tag_close))
+    (raw_text)
+    end_open: (statement_tag_open)
+    end_close: (statement_tag_close)))
