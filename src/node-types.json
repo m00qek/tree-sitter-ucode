@@ -853,10 +853,6 @@
           "named": true
         },
         {
-          "type": "export_statement",
-          "named": true
-        },
-        {
           "type": "expression_statement",
           "named": true
         },
@@ -886,10 +882,6 @@
         },
         {
           "type": "if_statement",
-          "named": true
-        },
-        {
-          "type": "import_statement",
           "named": true
         },
         {
@@ -1431,10 +1423,6 @@
             "named": true
           },
           {
-            "type": "export_statement",
-            "named": true
-          },
-          {
             "type": "expression_statement",
             "named": true
           },
@@ -1464,10 +1452,6 @@
           },
           {
             "type": "if_statement",
-            "named": true
-          },
-          {
-            "type": "import_statement",
             "named": true
           },
           {
@@ -1563,10 +1547,6 @@
             "named": true
           },
           {
-            "type": "export_statement",
-            "named": true
-          },
-          {
             "type": "expression_statement",
             "named": true
           },
@@ -1596,10 +1576,6 @@
           },
           {
             "type": "if_statement",
-            "named": true
-          },
-          {
-            "type": "import_statement",
             "named": true
           },
           {
@@ -2108,10 +2084,6 @@
             "named": true
           },
           {
-            "type": "export_statement",
-            "named": true
-          },
-          {
             "type": "expression_statement",
             "named": true
           },
@@ -2141,10 +2113,6 @@
           },
           {
             "type": "if_statement",
-            "named": true
-          },
-          {
-            "type": "import_statement",
             "named": true
           },
           {
@@ -3117,10 +3085,6 @@
             "named": true
           },
           {
-            "type": "export_statement",
-            "named": true
-          },
-          {
             "type": "expression_statement",
             "named": true
           },
@@ -3150,10 +3114,6 @@
           },
           {
             "type": "if_statement",
-            "named": true
-          },
-          {
-            "type": "import_statement",
             "named": true
           },
           {

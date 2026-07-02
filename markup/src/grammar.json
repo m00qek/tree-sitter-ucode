@@ -342,18 +342,6 @@
           ]
         },
         {
-          "type": "CHOICE",
-          "members": [
-            {
-              "type": "STRING",
-              "value": ","
-            },
-            {
-              "type": "BLANK"
-            }
-          ]
-        },
-        {
           "type": "STRING",
           "value": "}"
         }
@@ -601,18 +589,6 @@
                   }
                 }
               ]
-            },
-            {
-              "type": "BLANK"
-            }
-          ]
-        },
-        {
-          "type": "CHOICE",
-          "members": [
-            {
-              "type": "STRING",
-              "value": ","
             },
             {
               "type": "BLANK"
@@ -937,14 +913,6 @@
     "_unbraced_statement": {
       "type": "CHOICE",
       "members": [
-        {
-          "type": "SYMBOL",
-          "name": "export_statement"
-        },
-        {
-          "type": "SYMBOL",
-          "name": "import_statement"
-        },
         {
           "type": "SYMBOL",
           "name": "expression_statement"

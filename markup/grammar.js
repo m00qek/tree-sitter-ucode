@@ -234,7 +234,6 @@ module.exports = grammar({
     export_clause: $ => seq(
       '{',
       commaSep($.export_specifier),
-      optional(','),
       '}',
     ),
 
@@ -291,7 +290,6 @@ module.exports = grammar({
     named_imports: $ => seq(
       '{',
       commaSep($.import_specifier),
-      optional(','),
       '}',
     ),
 
@@ -374,10 +372,10 @@ module.exports = grammar({
     // ("Expecting expression") but accepts expression statements, `function`
     // declarations and blocks. (The `:`…`endif` alt-syntax body, which is
     // block-like, still allows `let`/`const` and uses `statement` directly.)
-    // Mirror `statement` minus `lexical_declaration`.
+    // Mirror `statement` minus `lexical_declaration` — and minus import/export,
+    // which ucode allows only at a module's top level (`if (1) import "m";`
+    // also errors with "Expecting expression").
     _unbraced_statement: $ => choice(
-      $.export_statement,
-      $.import_statement,
       $.expression_statement,
       $.function_declaration,
       $.statement_block,
