@@ -419,7 +419,7 @@ let obj = { ...a, b: 2 };
           value: (number))))))
 
 ================================================================================
-Method shorthand in object literal
+Function-valued properties in object literal
 ================================================================================
 
 let obj = { foo: function() {}, bar: () => 1 };
@@ -441,6 +441,15 @@ let obj = { foo: function() {}, bar: () => 1 };
           value: (arrow_function
             parameters: (formal_parameters)
             body: (number)))))))
+
+================================================================================
+Method shorthand is not supported — produces ERROR
+:error
+================================================================================
+
+let obj = { foo() {} };
+
+--------------------------------------------------------------------------------
 
 ================================================================================
 Ternary with condition and ? on separate lines
