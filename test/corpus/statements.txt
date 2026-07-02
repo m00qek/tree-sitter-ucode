@@ -278,7 +278,8 @@ x = 1; /* a comment */ y = 2;
     (assignment_expression left: (identifier) right: (number))))
 
 ================================================================================
-Try without catch
+Try without catch is not supported — produces ERROR
+:error
 ================================================================================
 
 try {
@@ -286,14 +287,6 @@ try {
 }
 
 --------------------------------------------------------------------------------
-
-(program
-  (try_statement
-    body: (statement_block
-      (expression_statement
-        (call_expression
-          function: (identifier)
-          arguments: (arguments))))))
 
 ================================================================================
 Return without value

@@ -627,10 +627,13 @@ module.exports = grammar({
       field('end_close', $._stmt_close),
     ),
 
+    // ucode requires the catch clause (`try {}` alone errors with "Unexpected
+    // token"); the catch parameter parens stay optional (`try {} catch {}` is
+    // valid). Unlike ECMAScript there is no `finally`.
     try_statement: $ => seq(
       'try',
       field('body', $.statement_block),
-      optional(field('handler', $.catch_clause)),
+      field('handler', $.catch_clause),
     ),
 
     // ucode has no labeled statements, so `break`/`continue` take no label.

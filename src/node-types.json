@@ -2832,7 +2832,7 @@
       },
       "handler": {
         "multiple": false,
-        "required": false,
+        "required": true,
         "types": [
           {
             "type": "catch_clause",
