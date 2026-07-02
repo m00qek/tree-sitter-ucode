@@ -1083,14 +1083,13 @@ module.exports = grammar({
 
     _identifier: $ => $.identifier,
 
-    // ucode does NOT support unicode escape sequences in identifiers (unlike JS);
-    // a literal `\u...` is an "Unexpected character".  Non-ASCII letters are still
-    // allowed directly via the negated character class.
-    identifier: _ => {
-      const alpha = /[^\x00-\x1F\s\p{Zs}0-9:;`"'@#.,|^&<=>+\-*/\\%?!~()\[\]{}\uFEFF\u2060\u200B\u2028\u2029]/;
-      const alphanumeric = /[^\x00-\x1F\s\p{Zs}:;`"'@#.,|^&<=>+\-*/\\%?!~()\[\]{}\uFEFF\u2060\u200B\u2028\u2029]/;
-      return token(seq(alpha, repeat(alphanumeric)));
-    },
+    // ucode identifiers are ASCII only: a leading letter or underscore, then
+    // letters, digits, or underscores. Unlike JS there is no `$`, no unicode
+    // escape sequences (`\u...` is an "Unexpected character"), and no non-ASCII
+    // letters \u2014 real ucode rejects `$x`, `a$b`, and `caf\u00E9` all as "Unexpected
+    // character". (property_identifier and shorthand_property_identifier alias
+    // this rule, so they inherit the same alphabet.)
+    identifier: _ => /[A-Za-z_][A-Za-z0-9_]*/,
 
     this: _ => 'this',
     true: _ => 'true',
