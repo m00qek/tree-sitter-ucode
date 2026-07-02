@@ -61,5 +61,4 @@
 
 (call_expression
   function: (member_expression
-    property: (property_identifier) @name)
-  arguments: (_) @reference.call)
+    property: (property_identifier) @name)) @reference.call

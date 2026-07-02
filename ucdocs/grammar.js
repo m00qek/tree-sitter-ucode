@@ -40,7 +40,10 @@ module.exports = grammar({
       $._end,
     ),
 
-    _begin: _ => token(seq('/', /\*+/)),
+    // Exactly `/**`: a greedy `/\*+/` would swallow the closing stars of an
+    // (almost) empty comment like `/***/`, leaving a lone `/` that `_end`
+    // cannot match. Extra opening stars fall through to the body / `_end`.
+    _begin: _ => token('/**'),
     _end: _ => token(seq(/\*+/, '/')),
 
     // Used after a type_expression/rest_type_expression has already claimed `{` at
@@ -301,7 +304,15 @@ module.exports = grammar({
     // Lowercase-starting names: parameter names and function param names.
     identifier: _ => /[a-z_$][a-zA-Z_$0-9]*/,
 
-    _text: _ => token(prec(-1, /[^*{}@\s][^*{}@\n\r]*/)),
+    // Description prose. A literal `*` (multiplication, markdown **bold**, a
+    // glob) is allowed mid-text: it is consumed only as a star-run followed by
+    // a non-`*`/non-`/` character, so it can never eat into a `*/` terminator
+    // (a star-run before the terminator is always `\*+/`, which this refuses,
+    // leaving it for `_end`).
+    _text: _ => token(prec(-1, seq(
+      choice(/[^*{}@\s]/, /\*+[^*/{}@\s]/),
+      repeat(choice(/[^*{}@\n\r]/, /\*+[^*/{}@\n\r]/)),
+    ))),
   },
 });
 

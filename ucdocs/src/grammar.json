@@ -99,17 +99,8 @@
     "_begin": {
       "type": "TOKEN",
       "content": {
-        "type": "SEQ",
-        "members": [
-          {
-            "type": "STRING",
-            "value": "/"
-          },
-          {
-            "type": "PATTERN",
-            "value": "\\*+"
-          }
-        ]
+        "type": "STRING",
+        "value": "/**"
       }
     },
     "_end": {
@@ -1503,8 +1494,38 @@
         "type": "PREC",
         "value": -1,
         "content": {
-          "type": "PATTERN",
-          "value": "[^*{}@\\s][^*{}@\\n\\r]*"
+          "type": "SEQ",
+          "members": [
+            {
+              "type": "CHOICE",
+              "members": [
+                {
+                  "type": "PATTERN",
+                  "value": "[^*{}@\\s]"
+                },
+                {
+                  "type": "PATTERN",
+                  "value": "\\*+[^*/{}@\\s]"
+                }
+              ]
+            },
+            {
+              "type": "REPEAT",
+              "content": {
+                "type": "CHOICE",
+                "members": [
+                  {
+                    "type": "PATTERN",
+                    "value": "[^*{}@\\n\\r]"
+                  },
+                  {
+                    "type": "PATTERN",
+                    "value": "\\*+[^*/{}@\\n\\r]"
+                  }
+                ]
+              }
+            }
+          ]
         }
       }
     }
