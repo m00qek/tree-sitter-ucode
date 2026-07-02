@@ -52,7 +52,7 @@
   },
   "scripts": {
     "install": "node-gyp-build",
-    "build": "node scripts/generate-markup-grammar.js && node scripts/generate-markup-queries.js && tree-sitter generate && tree-sitter generate markup/grammar.js --output markup/src && node-gyp-build && tree-sitter build --output ucode.so . && tree-sitter build --output ucode_markup.so ./markup",
+    "build": "node scripts/generate-markup-grammar.js && node scripts/generate-markup-queries.js && tree-sitter generate && tree-sitter generate markup/grammar.js --output markup/src && tree-sitter generate ucdocs/grammar.js --output ucdocs/src && node-gyp-build && tree-sitter build --output ucode.so . && tree-sitter build --output ucode_markup.so ./markup && tree-sitter build --output ucdocs.so ./ucdocs",
     "test": "node scripts/run-tests.js",
     "prestart": "tree-sitter build --wasm",
     "start": "tree-sitter playground"
