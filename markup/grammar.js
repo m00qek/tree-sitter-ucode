@@ -1048,6 +1048,17 @@ module.exports = grammar({
     // Unlike JS, ucode does NOT support:
     // - numeric underscore separators (1_000)
     // - leading-dot floats (.5) — a digit is required before the dot
+    //
+    // Leading-zero handling matches ucode exactly (verified against the
+    // interpreter). After a leading `0` (not 0x/0b/0o):
+    //   - `.`/`e` follows      -> decimal float/exp, the 0 is a lone zero (0.5, 0e2)
+    //   - a [0-7] digit follows -> legacy octal; ALL further digits must be
+    //                              [0-7] and no `.`/`e` is allowed (0177 ok;
+    //                              017.5, 0177e2, 019 rejected)
+    //   - an [89] digit follows -> decimal (08, 09, 089, 0812, 08.5e2)
+    // Invalid forms (019, 0189, 0177e2, 0123.5, 00.5) are not matched by any
+    // alternative; they split into adjacent tokens and surface as parse errors,
+    // matching ucode's "Invalid number literal".
     number: _ => {
       const hexDigits = /[\da-fA-F]+/;
       const hexLiteral = seq(choice('0x', '0X'), hexDigits);
@@ -1056,20 +1067,21 @@ module.exports = grammar({
       const decimalDigits = /\d+/;
       const signedInteger = seq(optional(choice('-', '+')), decimalDigits);
       const exponentPart = seq(choice('e', 'E'), signedInteger);
+      const fraction = seq('.', optional(decimalDigits));
 
       const binaryLiteral = seq(choice('0b', '0B'), /[0-1]+/);
       const octalLiteral = seq(choice('0o', '0O'), /[0-7]+/);
+
+      // Legacy C octal: `0` then octal digits only, no fraction/exponent.
       const legacyOctalLiteral = seq('0', /[0-7]+/);
 
-      const decimalIntegerLiteral = choice(
-        '0',
-        seq(optional('0'), /[1-9]/, optional(decimalDigits)),
-      );
-
       const decimalLiteral = choice(
-        seq(decimalIntegerLiteral, '.', optional(decimalDigits), optional(exponentPart)),
-        seq(decimalIntegerLiteral, exponentPart),
-        decimalDigits,
+        // No leading zero: 1-9 then optional digits/fraction/exponent.
+        seq(/[1-9]/, optional(decimalDigits), optional(fraction), optional(exponentPart)),
+        // Leading zero followed by 8 or 9: legacy non-octal decimal.
+        seq('0', /[89]/, optional(decimalDigits), optional(fraction), optional(exponentPart)),
+        // A lone zero, optionally with a fraction and/or exponent.
+        seq('0', optional(choice(seq(fraction, optional(exponentPart)), exponentPart))),
       );
 
       return token(choice(

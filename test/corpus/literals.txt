@@ -95,6 +95,20 @@ let x = 0177;
     (variable_declarator name: (identifier) value: (number))))
 
 ================================================================================
+Leading-zero decimal fallback (0 then 8/9 is decimal, may have fraction)
+================================================================================
+
+let x = 08.5;
+
+--------------------------------------------------------------------------------
+
+(program
+  (lexical_declaration
+    (variable_declarator
+      name: (identifier)
+      value: (number))))
+
+================================================================================
 Hex float literal (ucode extension over JS)
 ================================================================================
 
