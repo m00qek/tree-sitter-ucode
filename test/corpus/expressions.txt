@@ -156,6 +156,24 @@ let x = 2 ** 10;
         right: (number)))))
 
 ================================================================================
+Exponentiation is left-associative (ucode, unlike JS/Python)
+================================================================================
+
+let x = 4 ** 3 ** 2;
+
+--------------------------------------------------------------------------------
+
+(program
+  (lexical_declaration
+    (variable_declarator
+      name: (identifier)
+      value: (binary_expression
+        left: (binary_expression
+          left: (number)
+          right: (number))
+        right: (number)))))
+
+================================================================================
 Optional call expression
 ================================================================================
 

@@ -794,7 +794,7 @@ module.exports = grammar({
         ['*', 'binary_times'],
         ['/', 'binary_times'],
         ['%', 'binary_times'],
-        ['**', 'binary_exp', 'right'],
+        ['**', 'binary_exp'],  // left-associative in ucode: 4**3**2 == (4**3)**2
         ['<', 'binary_relation'],
         ['<=', 'binary_relation'],
         ['==', 'binary_equality'],
