@@ -46,6 +46,26 @@ enum TokenType {
 static inline void advance(TSLexer *lexer) { lexer->advance(lexer, false); }
 static inline void skip(TSLexer *lexer)    { lexer->advance(lexer, true);  }
 
+/* Result of attempting to scan a tag-close marker (%} -%} }} -}}). */
+typedef enum {
+    TAG_CLOSE_MATCHED,   /* full marker consumed; result_symbol set */
+    TAG_CLOSE_ABSENT,    /* not a close marker; only whitespace was skipped */
+    TAG_CLOSE_PARTIAL,   /* a leading '-'/'%'/'}' was consumed, then rejected */
+} TagCloseResult;
+
+/*
+ * Result of automatic-semicolon scanning.  Distinguishes the two "no
+ * semicolon" outcomes so the dispatcher knows whether scanning a ternary '?'
+ * next is safe: after an operator was consumed the lexer is skewed past it and
+ * a following ternary token would swallow it (turning invalid `a -? b : c`
+ * into a clean ternary).
+ */
+typedef enum {
+    ASI_INSERT,       /* emit a zero-length semicolon */
+    ASI_TRY_TERNARY,  /* no semicolon; only whitespace skipped, ternary is safe */
+    ASI_DECLINE,      /* no semicolon; an operator ('-' '%' '/') was consumed */
+} AsiResult;
+
 /* -------------------------------------------------------------------------
  * Markup-mode tokens
  * ---------------------------------------------------------------------- */
@@ -155,60 +175,60 @@ static bool scan_markup(TSLexer *lexer, const bool *valid_symbols) {
  * Skip leading whitespace — the scanner is responsible for consuming optional
  * spaces/tabs between the last code token and the close marker.
  */
-static bool scan_statement_tag_close(TSLexer *lexer) {
+static TagCloseResult scan_statement_tag_close(TSLexer *lexer) {
     while (lexer->lookahead == ' ' || lexer->lookahead == '\t' ||
            lexer->lookahead == '\r' || lexer->lookahead == '\n')
         skip(lexer);
 
     if (lexer->lookahead == '-') {
         advance(lexer);
-        if (lexer->lookahead != '%') return false;
+        if (lexer->lookahead != '%') return TAG_CLOSE_PARTIAL;
         advance(lexer);
-        if (lexer->lookahead != '}') return false;
+        if (lexer->lookahead != '}') return TAG_CLOSE_PARTIAL;
         advance(lexer);
         lexer->mark_end(lexer);
         lexer->result_symbol = STATEMENT_TAG_TRIM_CLOSE;
-        return true;
+        return TAG_CLOSE_MATCHED;
     }
     if (lexer->lookahead == '%') {
         advance(lexer);
-        if (lexer->lookahead != '}') return false;
+        if (lexer->lookahead != '}') return TAG_CLOSE_PARTIAL;
         advance(lexer);
         lexer->mark_end(lexer);
         lexer->result_symbol = STATEMENT_TAG_CLOSE;
-        return true;
+        return TAG_CLOSE_MATCHED;
     }
-    return false;
+    return TAG_CLOSE_ABSENT;
 }
 
 /*
  * Scan expression tag close: }}  -}}
  * Skip leading whitespace — spaces between the expression and }} are ignored.
  */
-static bool scan_expression_tag_close(TSLexer *lexer) {
+static TagCloseResult scan_expression_tag_close(TSLexer *lexer) {
     while (lexer->lookahead == ' ' || lexer->lookahead == '\t' ||
            lexer->lookahead == '\r' || lexer->lookahead == '\n')
         skip(lexer);
 
     if (lexer->lookahead == '-') {
         advance(lexer);
-        if (lexer->lookahead != '}') return false;
+        if (lexer->lookahead != '}') return TAG_CLOSE_PARTIAL;
         advance(lexer);
-        if (lexer->lookahead != '}') return false;
+        if (lexer->lookahead != '}') return TAG_CLOSE_PARTIAL;
         advance(lexer);
         lexer->mark_end(lexer);
         lexer->result_symbol = EXPRESSION_TAG_TRIM_CLOSE;
-        return true;
+        return TAG_CLOSE_MATCHED;
     }
     if (lexer->lookahead == '}') {
         advance(lexer);
-        if (lexer->lookahead != '}') return false;
+        if (lexer->lookahead != '}') return TAG_CLOSE_PARTIAL;
         advance(lexer);
         lexer->mark_end(lexer);
         lexer->result_symbol = EXPRESSION_TAG_CLOSE;
-        return true;
+        return TAG_CLOSE_MATCHED;
     }
-    return false;
+    return TAG_CLOSE_ABSENT;
 }
 
 /* -------------------------------------------------------------------------
@@ -272,22 +292,23 @@ static bool lookahead_is_stmt_close(TSLexer *lexer) {
  * so the zero-length semicolon token is emitted and the scanner is called
  * again immediately at the same position for STATEMENT_TAG_CLOSE.
  */
-static bool scan_automatic_semicolon(TSLexer *lexer) {
+static AsiResult scan_automatic_semicolon(TSLexer *lexer) {
     lexer->result_symbol = AUTOMATIC_SEMICOLON;
     lexer->mark_end(lexer);
 
     /* ECMAScript rule 1: '}' → insert */
-    if (lexer->lookahead == '}') return true;
+    if (lexer->lookahead == '}') return ASI_INSERT;
     /* ECMAScript rule 3: EOF → insert */
-    if (lexer->lookahead == 0) return true;
+    if (lexer->lookahead == 0) return ASI_INSERT;
 
     /* Ucode extension: %} or -%} at end of statement tag → insert */
     if (lexer->lookahead == '%' || lexer->lookahead == '-') {
-        if (lookahead_is_stmt_close(lexer)) return true;
-        /* lookahead_is_stmt_close advanced but mark_end is still at 0,
-           so the peek is harmless — return false to suppress ASI for
-           regular '-' or '%' continuations. */
-        return false;
+        if (lookahead_is_stmt_close(lexer)) return ASI_INSERT;
+        /* Not a tag close: the '-'/'%' is a binary operator continuing the
+           expression.  lookahead_is_stmt_close consumed it, so report DECLINE
+           — the dispatcher must not try a ternary here or it would swallow the
+           operator (e.g. `a -? b : c`, which ucode rejects). */
+        return ASI_DECLINE;
     }
 
     /*
@@ -296,8 +317,8 @@ static bool scan_automatic_semicolon(TSLexer *lexer) {
      * same line.
      */
     for (;;) {
-        if (lexer->lookahead == 0) return true;
-        if (lexer->lookahead == '}') return true;
+        if (lexer->lookahead == 0) return ASI_INSERT;
+        if (lexer->lookahead == '}') return ASI_INSERT;
 
         if (lexer->lookahead == '\r' || lexer->lookahead == '\n' ||
             lexer->lookahead == 0x2028 || lexer->lookahead == 0x2029) {
@@ -336,18 +357,20 @@ static bool scan_automatic_semicolon(TSLexer *lexer) {
                 if (has_newline) break;
                 continue;
             }
-            /* Division slash — not a comment, no ASI */
-            return false;
+            /* Division slash — not a comment, no ASI.  The '/' was consumed,
+               so DECLINE (do not let a ternary swallow it, e.g. `a /? b`). */
+            return ASI_DECLINE;
         }
 
         /* %} / -%} on the same line as the expression: still allow ASI */
         if (lexer->lookahead == '%' || lexer->lookahead == '-') {
-            if (lookahead_is_stmt_close(lexer)) return true;
-            return false;
+            if (lookahead_is_stmt_close(lexer)) return ASI_INSERT;
+            return ASI_DECLINE; /* consumed '-'/'%' operator */
         }
 
-        /* Any other non-whitespace on the same line → no ASI */
-        return false;
+        /* Any other non-whitespace on the same line: no ASI, but nothing was
+           consumed, so a ternary '?' here is safe (the `a ? b : c` case). */
+        return ASI_TRY_TERNARY;
     }
 
     /*
@@ -355,7 +378,7 @@ static bool scan_automatic_semicolon(TSLexer *lexer) {
      * then check whether the next real token would suppress ASI.
      */
     for (;;) {
-        if (lexer->lookahead == 0) return true;
+        if (lexer->lookahead == 0) return ASI_INSERT;
 
         if (iswspace(lexer->lookahead)) { skip(lexer); continue; }
 
@@ -381,7 +404,8 @@ static bool scan_automatic_semicolon(TSLexer *lexer) {
                 }
                 continue;
             }
-            return false; /* division slash after newline → no ASI */
+            /* division slash after newline: consumed '/', DECLINE */
+            return ASI_DECLINE;
         }
         break;
     }
@@ -397,13 +421,15 @@ static bool scan_automatic_semicolon(TSLexer *lexer) {
         case '+': case '*':
         case '=': case '<': case '>': case '!': case '~':
         case '&': case '|': case '^': case '?':
-            return false;
+            /* Continuation token; nothing consumed, so a ternary '?' here is
+               safe (e.g. `a\n? b : c`, which ucode accepts). */
+            return ASI_TRY_TERNARY;
         case '-':
         case '%':
-            if (lookahead_is_stmt_close(lexer)) return true;
-            return false;
+            if (lookahead_is_stmt_close(lexer)) return ASI_INSERT;
+            return ASI_DECLINE; /* consumed '-'/'%' operator */
         default:
-            return true;
+            return ASI_INSERT;
     }
 }
 
@@ -475,20 +501,38 @@ static bool ucode_scanner_scan(
     /*
      * Tag close tokens.  Checked before ASI so that %} / -%} / }} / -}}
      * are preferred over a zero-length semicolon when both are valid.
-     * When neither matches, fall through to ASI.
+     *
+     * TAG_CLOSE_PARTIAL means a leading '-'/'%'/'}' was consumed and then
+     * rejected (it is really an operator).  We must NOT fall through to the
+     * ternary scan afterwards: the lexer is skewed past that operator and a
+     * TERNARY_QMARK token would swallow it (turning invalid `{{ a -? b : c }}`
+     * into a clean ternary).  Returning false lets tree-sitter re-lex the
+     * operator from the original position with the internal lexer.
      */
     if (valid_symbols[STATEMENT_TAG_CLOSE] || valid_symbols[STATEMENT_TAG_TRIM_CLOSE]) {
-        if (scan_statement_tag_close(lexer)) return true;
+        switch (scan_statement_tag_close(lexer)) {
+            case TAG_CLOSE_MATCHED: return true;
+            case TAG_CLOSE_PARTIAL: return false;
+            case TAG_CLOSE_ABSENT:  break;
+        }
     }
     if (valid_symbols[EXPRESSION_TAG_CLOSE] || valid_symbols[EXPRESSION_TAG_TRIM_CLOSE]) {
-        if (scan_expression_tag_close(lexer)) return true;
+        switch (scan_expression_tag_close(lexer)) {
+            case TAG_CLOSE_MATCHED: return true;
+            case TAG_CLOSE_PARTIAL: return false;
+            case TAG_CLOSE_ABSENT:  break;
+        }
     }
 
-    /* ASI and ternary */
+    /* ASI and ternary.  Only attempt the ternary when ASI consumed nothing but
+     * whitespace (ASI_TRY_TERNARY); ASI_DECLINE means an operator was consumed
+     * and a ternary token would swallow it. */
     if (valid_symbols[AUTOMATIC_SEMICOLON]) {
-        if (scan_automatic_semicolon(lexer)) return true;
-        if (valid_symbols[TERNARY_QMARK]) return scan_ternary_qmark(lexer);
-        return false;
+        switch (scan_automatic_semicolon(lexer)) {
+            case ASI_INSERT:      return true;
+            case ASI_TRY_TERNARY: return valid_symbols[TERNARY_QMARK] && scan_ternary_qmark(lexer);
+            case ASI_DECLINE:     return false;
+        }
     }
 
     if (valid_symbols[TERNARY_QMARK])
