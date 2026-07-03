@@ -658,7 +658,15 @@ static CommentResult scan_comment(TSLexer *lexer, const bool *valid_symbols,
         advance(lexer);
         lexer->result_symbol = COMMENT;
         for (;;) {
-            if (lexer->eof(lexer)) { lexer->mark_end(lexer); return CMT_FOUND; }
+            /* EOF before a closing star-slash: ucode rejects an unterminated
+               block comment ("Unterminated comment").  Abort so the whole
+               scanner returns false and the parser reports an ERROR rather than
+               accepting the run as a valid comment.  (If the unterminated run
+               contains a '/', tree-sitter may re-lex the leading '/' as a regex
+               and still accept it — a lenient-regex artifact present since the
+               comment was an internal token; the common `/* note<EOF>` case
+               errors as ucode does.) */
+            if (lexer->eof(lexer)) return CMT_ABORT;
             if (lexer->lookahead == '*') {
                 advance(lexer);
                 if (lexer->lookahead == '/') {
