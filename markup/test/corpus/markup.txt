@@ -144,26 +144,35 @@ Line comment inside a statement tag
     close: (statement_tag_close)))
 
 ================================================================================
-Line comment ends at the tag close on the same line
+Line comment swallows a same-line tag close — unterminated tag is an ERROR
+:error
 ================================================================================
 {% x = 1; // note %}
 --------------------------------------------------------------------------------
 
-; DIVERGENCE FROM UCODE (deliberate, editor-friendly). In ucode a `//` line
-; comment runs to the end of the line and SWALLOWS a same-line `%}`, leaving the
-; tag open until EOF. Here the comment instead stops before `%}` so the close is
-; recognised — what a user typing this single line almost always intends. The
-; common multi-line style (comment on its own line, `%}` on the next) is
-; unaffected and matches ucode exactly.
+; FAITHFUL TO UCODE. A `//` line comment runs to end-of-line and swallows the
+; same-line `%}` as comment content, so the statement tag is never closed on
+; this line. With nothing after it the tag is unterminated — an ERROR — exactly
+; the (footgun) situation ucode's lexer creates. Put the comment on its own line
+; with `%}` on the next line, or use `/* */`, to close on the same line.
+
+================================================================================
+Line comment %} in a multi-line tag is content; following code stays code
+================================================================================
+{%
+// note: %} still comment
+x = 1;
+%}
+--------------------------------------------------------------------------------
 
 (markup
   (statement_tag
     open: (statement_tag_open)
+    (comment)
     (expression_statement
       (assignment_expression
         left: (identifier)
         right: (number)))
-    (comment)
     close: (statement_tag_close)))
 
 ================================================================================

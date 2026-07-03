@@ -569,12 +569,12 @@ static bool scan_ternary_qmark(TSLexer *lexer) {
 /*
  * Line comments (slash-slash) and block comments (slash-star ... star-slash).
  *
- * Line comments run to the end of the line, EXCEPT inside a markup statement
- * tag: there they also stop before a `%}` / `-%}` close marker, so
- * `{% x = 1; // note %}` ends the comment at the tag (matching ucode) instead
- * of swallowing the close. That extra stop is gated on a statement-tag-close
- * being a valid symbol, so pure-ucode `//` comments (where those tokens are
- * never valid) and comments containing a literal `%}` are unaffected.
+ * Line comments run to the end of the line (or EOF), matching ucode's lexer
+ * exactly — including inside a markup statement tag, where a same-line `%}` is
+ * swallowed as comment content rather than closing the tag.  So
+ * `{% x = 1; // note %}` on one line leaves the tag unterminated (an ERROR),
+ * just as ucode swallows the `%}`; the common multi-line style (comment on its
+ * own line, `%}` on the next) is unaffected.
  *
  * The return distinguishes three outcomes because the '/' is ambiguous and the
  * scanner cannot un-consume it once advanced past:
@@ -626,30 +626,20 @@ static CommentResult scan_comment(TSLexer *lexer, const bool *valid_symbols,
     if (lexer->lookahead == '/') {
         advance(lexer);
         lexer->result_symbol = COMMENT;
-        const bool stop_at_close = valid_symbols[STATEMENT_TAG_CLOSE] ||
-                                   valid_symbols[STATEMENT_TAG_TRIM_CLOSE];
+        /* A line comment runs to the end of the line (or EOF), exactly like
+           ucode's lexer.  It does NOT stop at a `%}` / `-%}` tag close: ucode
+           swallows a same-line close into the comment, so the statement tag
+           stays open until a later `%}` (or EOF).  Modelling that faithfully
+           means a lone single-line `{% … // c %}` is an unterminated tag (an
+           ERROR) rather than silently pretending the swallowed `%}` closed it,
+           and a `%}` sitting in the text of a `//` line inside a multi-line tag
+           is comment content — the code after it still parses as code. */
         for (;;) {
             lexer->mark_end(lexer);
             if (lexer->eof(lexer) ||
                 lexer->lookahead == '\n' || lexer->lookahead == '\r' ||
                 lexer->lookahead == 0x2028 || lexer->lookahead == 0x2029)
                 return CMT_FOUND;
-
-            /* End the comment before a statement-tag close marker. mark_end is
-               still at the char before '%'/'-', so the close is left to re-lex. */
-            if (stop_at_close && lexer->lookahead == '%') {
-                advance(lexer);
-                if (lexer->lookahead == '}') return CMT_FOUND;  /* %} ahead */
-                continue;                                       /* '%' was content */
-            }
-            if (stop_at_close && lexer->lookahead == '-') {
-                advance(lexer);
-                if (lexer->lookahead == '%') {
-                    advance(lexer);
-                    if (lexer->lookahead == '}') return CMT_FOUND;  /* -%} ahead */
-                }
-                continue;                                           /* '-' (…) was content */
-            }
             advance(lexer);
         }
     }

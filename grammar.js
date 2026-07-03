@@ -1037,10 +1037,11 @@ module.exports = grammar({
     )),
 
     // `comment` is an external token (see externals / scanner_impl.h). A `//`
-    // line comment normally runs to the end of the line, but inside a markup
-    // statement tag it also stops before a `%}` / `-%}` close so that
-    // `{% x = 1; // note %}` matches ucode (which ends the comment at the tag).
-    // Block comments `/* */` end at `*/` as usual.
+    // line comment runs to the end of the line (or EOF), matching ucode — a
+    // same-line `%}` inside a statement tag is swallowed as comment content, so
+    // `{% x = 1; // note %}` on one line is an unterminated tag (ucode swallows
+    // the `%}` too). Block comments `/* */` end at `*/`, and an unterminated
+    // block comment at EOF is an ERROR (ucode "Unterminated comment").
 
     template_string: $ => seq(
       '`',
