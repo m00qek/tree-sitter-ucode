@@ -431,12 +431,15 @@ module.exports = grammar({
     //   code form:   if (cond): stmts … endif        (used in program / statement_tag)
     //   markup form: {% if (cond): %} … {% endif %}   (spans tag boundaries in markup)
     //
-    // The markup form uses a flat content repeat (_if_markup_node) rather than
-    // nested elif/else bodies.  elif_clause_tag and else_alt_clause_tag are pure
-    // header tags that appear as regular items inside that repeat.  This avoids
-    // the shift/reduce conflict that arises when a nested repeat($._markup_node)
-    // can't decide whether statement_tag_open starts another body node or the
-    // enclosing end tag.
+    // The markup form uses an ordered clause structure — if-body, then zero or
+    // more elif clauses each followed by their body, then an optional single
+    // else clause and body — so `else` before `elif`, a duplicate `else`, and
+    // an `elif` after `else` are all ERRORs (matching ucode).  Each body is a
+    // flat run of sibling $._markup_node (not a nested body node), and the
+    // elif_clause_tag / else_alt_clause_tag are bare header tags.  Because a
+    // body node and the next clause both start with statement_tag_open, this
+    // needs the declared `[$.if_alt_statement]` conflict (see conflicts array):
+    // GLR decides body-node vs next-clause by the keyword after the tag open.
     if_alt_statement: $ => choice(
       seq(
         'if',
@@ -454,13 +457,9 @@ module.exports = grammar({
         ':',
         repeat($.statement),
         field('close',   $._stmt_close),
-        // Ordered clause structure (matches ucode): the if-body, then zero or
-        // more elif clauses each with their own body, then an optional single
-        // else clause with its body.  This makes `else` before `elif`, a
-        // duplicate `else`, and an `elif` after `else` all ERRORs, unlike a
-        // flat `repeat(choice(node, elif, else))`.  Bodies stay flat (sibling
-        // markup nodes); the elif/else header tags now also carry
-        // `elif_clause` / `else_body` fields.
+        // Ordered clauses (see the header comment above): if-body, then elif
+        // clauses with their bodies, then an optional else clause and body.
+        // The elif/else header tags carry `elif_clause` / `else_body` fields.
         repeat($._markup_node),
         repeat(seq(field('elif_clause', $.elif_clause_tag), repeat($._markup_node))),
         optional(seq(field('else_body', $.else_alt_clause_tag), repeat($._markup_node))),
@@ -485,7 +484,8 @@ module.exports = grammar({
       field('body', repeat($.statement)),
     ),
 
-    // Markup form of elif: just the header tag; body is sibling _if_markup_nodes
+    // Markup form of elif: just the header tag; its body is the sibling
+    // $._markup_nodes that follow it in if_alt_statement (see that rule).
     elif_clause_tag: $ => seq(
       field('open',      $._stmt_open),
       'elif',
@@ -499,7 +499,8 @@ module.exports = grammar({
       field('body', repeat($.statement)),
     ),
 
-    // Markup form of else: just the header tag; body is sibling _if_markup_nodes
+    // Markup form of else: just the header tag; its body is the sibling
+    // $._markup_nodes that follow it in if_alt_statement (see that rule).
     else_alt_clause_tag: $ => seq(
       field('open',  $._stmt_open),
       'else',
