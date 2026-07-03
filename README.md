@@ -34,6 +34,7 @@ Ucode is an ECMAScript subset with OpenWrt-specific extensions. Key differences:
 | Added number literals | `0177` (C octal), `0x1.8` (hex float), `0B`/`0O` prefixes | Standard only |
 | Added escape sequences | `\e` (ESC), `\a` (BEL), octal `\177` | Standard only |
 | String unicode escapes | `\uXXXX` only (no `\u{…}`); no `\u` escapes in identifiers | `\uXXXX` and `\u{…}` |
+| Raw newlines in strings | Allowed — `'…'` and `"…"` may span raw line terminators | SyntaxError (unterminated string) |
 | Regex flags | `g`, `i`, `s` only | Full set |
 | Module system | Static `import`/`export` only; no `from` on re-exports | Full ES modules |
 

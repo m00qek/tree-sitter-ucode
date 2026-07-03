@@ -257,6 +257,38 @@ y = "a\t/*b";
         (string_fragment)))))
 
 ================================================================================
+String literals may span raw newlines (ucode, unlike JavaScript)
+================================================================================
+
+x = 'a
+b';
+y = "c
+d";
+
+--------------------------------------------------------------------------------
+
+(program
+  (expression_statement
+    (assignment_expression
+      left: (identifier)
+      right: (string
+        (string_fragment))))
+  (expression_statement
+    (assignment_expression
+      left: (identifier)
+      right: (string
+        (string_fragment)))))
+
+================================================================================
+Unterminated string is rejected — produces ERROR
+:error
+================================================================================
+
+x = 'oops
+
+--------------------------------------------------------------------------------
+
+================================================================================
 Template literal with substitution
 ================================================================================
 

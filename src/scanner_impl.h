@@ -323,23 +323,28 @@ static bool scan_template_chars(TSLexer *lexer) {
 }
 
 /*
- * Body of a single- or double-quoted string, up to the closing quote, a
- * backslash (start of an escape_sequence), or an unescaped line terminator
- * (ucode strings, like the old `[^'\\\r\n]+` fragment, do not span raw
- * newlines). This mirrors the `token.immediate` fragment it replaces but as an
- * external token so it is dispatched BEFORE the COMMENT scanner: a string
- * starting with `/*` or `//` (e.g. the glob `'/*.uc'`) is then kept as string
- * content instead of being swallowed as a comment. A literal NUL is ordinary
- * content (ucode allows it in strings); only real EOF ends the run.
+ * Body of a single- or double-quoted string, up to the closing quote or a
+ * backslash (start of an escape_sequence).  Unlike JavaScript, ucode strings
+ * MAY span raw line terminators: lexer.c parse_string has no newline handling,
+ * so a bare LF/CR is ordinary content and only EOF (a missing closing quote)
+ * makes a string unterminated.  We therefore keep '\r'/'\n' as content and,
+ * mirroring scan_template_chars, return false at EOF: discarding the token on a
+ * missing quote lets the parser recover statement-by-statement instead of
+ * swallowing the rest of the file into one string.
+ *
+ * Dispatched as an external token BEFORE the COMMENT scanner so a string
+ * starting with `/*` or `//` (e.g. the glob `'/*.uc'`) is kept as string
+ * content instead of being lexed as a comment.  A literal NUL is ordinary
+ * content (ucode allows it in strings).
  */
 static bool scan_string_chars(TSLexer *lexer, int32_t quote, enum TokenType sym) {
     lexer->result_symbol = sym;
     bool has_content = false;
     for (;;) {
         lexer->mark_end(lexer);
-        if (lexer->eof(lexer)) return has_content;
+        if (lexer->eof(lexer)) return false;
         int32_t c = lexer->lookahead;
-        if (c == quote || c == '\\' || c == '\r' || c == '\n')
+        if (c == quote || c == '\\')
             return has_content;
         advance(lexer);
         has_content = true;
