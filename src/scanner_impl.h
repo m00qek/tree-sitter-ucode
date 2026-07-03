@@ -21,6 +21,8 @@
  *  12  EXPRESSION_TAG_TRIM_CLOSE  $.expression_tag_trim_close  -}}
  *  13  COMMENT_CHARS              $.comment_content            {# ... #} body
  *  14  COMMENT                    $.comment                    line and block
+ *  15  SINGLE_QUOTE_STRING_CONTENT $._single_quote_string_content  '...' body
+ *  16  DOUBLE_QUOTE_STRING_CONTENT $._double_quote_string_content  "..." body
  */
 
 #ifndef UCODE_SCANNER_IMPL_H_
@@ -45,6 +47,8 @@ enum TokenType {
     EXPRESSION_TAG_TRIM_CLOSE,
     COMMENT_CHARS,
     COMMENT,
+    SINGLE_QUOTE_STRING_CONTENT,
+    DOUBLE_QUOTE_STRING_CONTENT,
 };
 
 static inline void advance(TSLexer *lexer) { lexer->advance(lexer, false); }
@@ -302,6 +306,30 @@ static bool scan_template_chars(TSLexer *lexer) {
             case '\\': return has_content;
             default: advance(lexer);
         }
+    }
+}
+
+/*
+ * Body of a single- or double-quoted string, up to the closing quote, a
+ * backslash (start of an escape_sequence), or an unescaped line terminator
+ * (ucode strings, like the old `[^'\\\r\n]+` fragment, do not span raw
+ * newlines). This mirrors the `token.immediate` fragment it replaces but as an
+ * external token so it is dispatched BEFORE the COMMENT scanner: a string
+ * starting with `/*` or `//` (e.g. the glob `'/*.uc'`) is then kept as string
+ * content instead of being swallowed as a comment. A literal NUL is ordinary
+ * content (ucode allows it in strings); only real EOF ends the run.
+ */
+static bool scan_string_chars(TSLexer *lexer, int32_t quote, enum TokenType sym) {
+    lexer->result_symbol = sym;
+    bool has_content = false;
+    for (;;) {
+        lexer->mark_end(lexer);
+        if (lexer->eof(lexer)) return has_content;
+        int32_t c = lexer->lookahead;
+        if (c == quote || c == '\\' || c == '\r' || c == '\n')
+            return has_content;
+        advance(lexer);
+        has_content = true;
     }
 }
 
@@ -674,6 +702,19 @@ static bool ucode_scanner_scan(
      */
     if (valid_symbols[TEMPLATE_CHARS] && !valid_symbols[AUTOMATIC_SEMICOLON])
         return scan_template_chars(lexer);
+
+    /*
+     * Quoted-string body: only inside a '...' / "..." literal. Dispatched here,
+     * ahead of COMMENT, so that a `/*` or `//` at the start of the string (or
+     * right after an escape) is kept as content instead of being lexed as a
+     * comment (the `comment` extra is otherwise offered even inside strings).
+     * The !AUTOMATIC_SEMICOLON guard mirrors template chars and keeps these
+     * from firing in the error-recovery state where every token is valid.
+     */
+    if (valid_symbols[SINGLE_QUOTE_STRING_CONTENT] && !valid_symbols[AUTOMATIC_SEMICOLON])
+        return scan_string_chars(lexer, '\'', SINGLE_QUOTE_STRING_CONTENT);
+    if (valid_symbols[DOUBLE_QUOTE_STRING_CONTENT] && !valid_symbols[AUTOMATIC_SEMICOLON])
+        return scan_string_chars(lexer, '"', DOUBLE_QUOTE_STRING_CONTENT);
 
     /*
      * Comment body: only valid inside {# ... #}, where no other external token

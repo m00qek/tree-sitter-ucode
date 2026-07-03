@@ -30,6 +30,8 @@ module.exports = grammar({
     $.expression_tag_trim_close,   // 12  -}}
     $.comment_content,             // 13  {# ... #} body (scans up to #}/-#})
     $.comment,                     // 14  // line and /* */ block comments
+    $._single_quote_string_content, // 15  '...' body (scans up to ' / \ / newline)
+    $._double_quote_string_content, // 16  "..." body (scans up to " / \ / newline)
   ],
 
   extras: $ => [
@@ -980,11 +982,19 @@ module.exports = grammar({
     // Primitives
     //
 
+    // The string body is scanned by the external scanner (see scanner_impl.h),
+    // exactly like template_string's `_template_chars`. A regular internal
+    // `token.immediate` fragment would lose to the external `comment` token,
+    // which is a global `extra` and is offered by tree-sitter even inside a
+    // string: a string starting with `/*` or `//` (e.g. the glob `'/*.uc'`)
+    // was then mis-lexed as a block/line comment. Because the content token is
+    // dispatched before COMMENT in the scanner, it shadows the comment inside
+    // the string while still leaving escape sequences as their own nodes.
     string: $ => choice(
       seq(
         '"',
         repeat(choice(
-          alias($.unescaped_double_string_fragment, $.string_fragment),
+          alias($._double_quote_string_content, $.string_fragment),
           $.escape_sequence,
         )),
         '"',
@@ -992,15 +1002,12 @@ module.exports = grammar({
       seq(
         '\'',
         repeat(choice(
-          alias($.unescaped_single_string_fragment, $.string_fragment),
+          alias($._single_quote_string_content, $.string_fragment),
           $.escape_sequence,
         )),
         '\'',
       ),
     ),
-
-    unescaped_double_string_fragment: _ => token.immediate(prec(1, /[^"\\\r\n]+/)),
-    unescaped_single_string_fragment: _ => token.immediate(prec(1, /[^'\\\r\n]+/)),
 
     // Ucode extends JS escapes with \e (ESC), \a (BEL), and octal sequences.
     // Unlike JS, ucode supports only the 4-hex `\uXXXX` form \u2014 not `\u{...}`.

@@ -4666,7 +4666,7 @@
                     "type": "ALIAS",
                     "content": {
                       "type": "SYMBOL",
-                      "name": "unescaped_double_string_fragment"
+                      "name": "_double_quote_string_content"
                     },
                     "named": true,
                     "value": "string_fragment"
@@ -4700,7 +4700,7 @@
                     "type": "ALIAS",
                     "content": {
                       "type": "SYMBOL",
-                      "name": "unescaped_single_string_fragment"
+                      "name": "_single_quote_string_content"
                     },
                     "named": true,
                     "value": "string_fragment"
@@ -4719,28 +4719,6 @@
           ]
         }
       ]
-    },
-    "unescaped_double_string_fragment": {
-      "type": "IMMEDIATE_TOKEN",
-      "content": {
-        "type": "PREC",
-        "value": 1,
-        "content": {
-          "type": "PATTERN",
-          "value": "[^\"\\\\\\r\\n]+"
-        }
-      }
-    },
-    "unescaped_single_string_fragment": {
-      "type": "IMMEDIATE_TOKEN",
-      "content": {
-        "type": "PREC",
-        "value": 1,
-        "content": {
-          "type": "PATTERN",
-          "value": "[^'\\\\\\r\\n]+"
-        }
-      }
     },
     "escape_sequence": {
       "type": "IMMEDIATE_TOKEN",
@@ -5939,6 +5917,14 @@
     {
       "type": "SYMBOL",
       "name": "comment"
+    },
+    {
+      "type": "SYMBOL",
+      "name": "_single_quote_string_content"
+    },
+    {
+      "type": "SYMBOL",
+      "name": "_double_quote_string_content"
     }
   ],
   "inline": [
