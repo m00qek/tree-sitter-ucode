@@ -124,11 +124,15 @@
 ["import" "export"] @keyword.import
 ["as" "from"] @keyword.import
 
-; 'default' in export context is a module keyword, not a conditional. The
-; switch `default` is captured separately above, so these are the only patterns
-; that match a `default` inside export constructs — no priority/order reliance.
+; 'default' in a module context (export or import) is a module keyword, not a
+; conditional. The switch `default` is captured separately above, so together
+; with these the every-`default`-matched-exactly-once invariant holds:
+; `export default`, `export { x as default }`, and `import { default as x }`
+; (whose name goes through _module_export_name) each match one pattern here —
+; no priority/order reliance.
 (export_statement "default" @keyword.import)
 (export_specifier "default" @keyword.import)
+(import_specifier "default" @keyword.import)
 
 ; -------------------------------------------------------------------------
 ; Keywords — storage / operators
