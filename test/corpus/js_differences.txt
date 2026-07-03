@@ -605,3 +605,28 @@ Re-export with from is not supported — produces ERROR
 export { a } from "./m.uc";
 
 --------------------------------------------------------------------------------
+
+================================================================================
+No ASI for the initializer in a C-style for-header — produces ERROR
+:error
+================================================================================
+
+; ucode (like ECMAScript) never inserts a semicolon inside a for-header; the
+; `;` after the initializer is mandatory. A bare newline is an error.
+
+for (let i = 0
+i < 3; i++) {}
+
+--------------------------------------------------------------------------------
+
+================================================================================
+const is not allowed in a C-style for-header initializer — produces ERROR
+:error
+================================================================================
+
+; ucode accepts only `let` (or a bare expression) as a for-header initializer;
+; `const` is rejected ("Expecting expression"), same as for the for-in target.
+
+for (const c = 0; c < 3; ) {}
+
+--------------------------------------------------------------------------------

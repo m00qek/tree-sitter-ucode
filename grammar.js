@@ -353,6 +353,21 @@ module.exports = grammar({
       ),
     ),
 
+    // Initializer declaration for a C-style for-header. Differs from
+    // lexical_declaration in two ucode-faithful ways:
+    //   - no trailing `$._semicolon`: the for-header supplies its own literal
+    //     `;`, and ucode does NOT insert a semicolon there
+    //     (`for (let i = 0⏎i < 3; …)` is an error), and
+    //   - `let` only: ucode rejects `const` in a for-header initializer
+    //     (`for (const …)` → "Expecting expression"), just as it does for the
+    //     for-in target.
+    // Aliased back to lexical_declaration in the for-header so the tree node
+    // name is unchanged.
+    _for_lexical_declaration: $ => seq(
+      field('kind', 'let'),
+      commaSep1($.variable_declarator),
+    ),
+
     variable_declarator: $ => seq(
       field('name', $.identifier),
       optional($._initializer),
@@ -1153,7 +1168,7 @@ function forHeader($) {
     'for',
     '(',
     choice(
-      field('initializer', $.lexical_declaration),
+      seq(field('initializer', alias($._for_lexical_declaration, $.lexical_declaration)), ';'),
       seq(field('initializer', $._expressions), ';'),
       field('initializer', $.empty_statement),
     ),
