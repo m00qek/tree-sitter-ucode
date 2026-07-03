@@ -654,3 +654,23 @@ Markup elif after else is rejected — produces ERROR
 ================================================================================
 {% if (a): %}w{% elif (b): %}x{% else %}y{% elif (c): %}z{% endif %}
 --------------------------------------------------------------------------------
+
+================================================================================
+Lenient ASI across a bare newline inside a statement tag (divergence)
+================================================================================
+{% x = 1
+y = 2 %}
+--------------------------------------------------------------------------------
+
+(markup
+  (statement_tag
+    open: (statement_tag_open)
+    (expression_statement
+      (assignment_expression
+        left: (identifier)
+        right: (number)))
+    (expression_statement
+      (assignment_expression
+        left: (identifier)
+        right: (number)))
+    close: (statement_tag_close)))

@@ -486,6 +486,38 @@ static AsiResult scan_automatic_semicolon(TSLexer *lexer) {
     }
 }
 
+/*
+ * ASI decision when a line terminator has ALREADY been consumed — scan_comment
+ * skips newlines to reach a possible following-line comment, and when it finds
+ * none it reports crossed_newline and leaves the lexer at the next real token.
+ * Decide purely from that token, mirroring the post-newline tail of
+ * scan_automatic_semicolon (there is no more whitespace or comment to skip:
+ * scan_comment stopped at the first non-whitespace char, and a comment there
+ * would have been emitted as its own token).
+ */
+static AsiResult asi_after_newline(TSLexer *lexer) {
+    lexer->result_symbol = AUTOMATIC_SEMICOLON;
+    lexer->mark_end(lexer);
+
+    switch (lexer->lookahead) {
+        case '(': case '[': case '`':
+        case '.': case ',': case ';':
+        case '+': case '*':
+        case '=': case '<': case '>': case '!': case '~':
+        case '&': case '|': case '^': case '?':
+            /* Continuation token; nothing consumed, so a ternary '?' here is
+               safe (e.g. `a\n// c\n? b : c`). */
+            return ASI_TRY_TERNARY;
+        case '-':
+        case '%':
+            if (lookahead_is_stmt_close(lexer)) return ASI_INSERT;
+            return ASI_DECLINE; /* consumed '-'/'%' operator */
+        default:
+            /* '}', EOF, or the start of a new statement → insert. */
+            return ASI_INSERT;
+    }
+}
+
 static bool scan_ternary_qmark(TSLexer *lexer) {
     while (iswspace(lexer->lookahead))
         skip(lexer);
@@ -531,17 +563,35 @@ static bool scan_ternary_qmark(TSLexer *lexer) {
  */
 typedef enum { CMT_NONE, CMT_FOUND, CMT_ABORT } CommentResult;
 
-static CommentResult scan_comment(TSLexer *lexer, const bool *valid_symbols) {
-    /* Skip leading whitespace: tree-sitter calls the scanner at the whitespace
-       before the comment and will not re-invoke it after lexing that whitespace
-       internally, so a comment reached only across whitespace would otherwise be
-       lexed as division or a regex. Newlines are skipped too (the comment is an
-       extra, so ASI still fires at the statement boundary after it). skip()
-       leaves the whitespace out of the token. */
-    while (lexer->lookahead == ' '  || lexer->lookahead == '\t' ||
-           lexer->lookahead == '\r' || lexer->lookahead == '\n' ||
-           lexer->lookahead == 0x2028 || lexer->lookahead == 0x2029)
-        skip(lexer);
+static CommentResult scan_comment(TSLexer *lexer, const bool *valid_symbols,
+                                  bool *crossed_newline) {
+    *crossed_newline = false;
+    /* Skip leading whitespace to reach a comment.  tree-sitter calls the
+       scanner at the whitespace before the comment and will not re-invoke it
+       after lexing that whitespace internally, so a comment reached only across
+       whitespace would otherwise be lexed as division or a regex.
+       Line terminators need care: skipping one destroys the newline that
+       scan_automatic_semicolon relies on for lenient inter-statement ASI.  We
+       cannot defer to ASI (leave the newline unconsumed) — a comment may follow
+       on the next line, and once ASI skips past it to decide, an emitted
+       zero-length ';' cannot carry the skipped comment back out.  Instead we
+       skip the newline ourselves but, when ASI could fire here, report it via
+       *crossed_newline; the dispatcher then runs asi_after_newline at the first
+       token past this whitespace when no comment intervenes.  A comment that
+       does follow is emitted normally (CMT_FOUND), and the preceding
+       statement's ASI is decided on a later call once the comments are past. */
+    for (;;) {
+        while (lexer->lookahead == ' ' || lexer->lookahead == '\t')
+            skip(lexer);
+        if (lexer->lookahead == '\r' || lexer->lookahead == '\n' ||
+            lexer->lookahead == 0x2028 || lexer->lookahead == 0x2029) {
+            if (valid_symbols[AUTOMATIC_SEMICOLON])
+                *crossed_newline = true;
+            skip(lexer);
+            continue;
+        }
+        break;
+    }
     if (lexer->lookahead != '/') return CMT_NONE;
     advance(lexer);
 
@@ -658,11 +708,28 @@ static bool ucode_scanner_scan(
      * CMT_ABORT means a '/' was consumed that is really division/regex: return
      * false so tree-sitter re-lexes it from the original position.
      */
+    bool crossed_newline = false;
     if (valid_symbols[COMMENT]) {
-        switch (scan_comment(lexer, valid_symbols)) {
+        switch (scan_comment(lexer, valid_symbols, &crossed_newline)) {
             case CMT_FOUND: return true;
             case CMT_ABORT: return false;
             case CMT_NONE:  break;
+        }
+    }
+
+    /*
+     * scan_comment skipped a line terminator while ASI was valid and found no
+     * following-line comment: the newline it consumed is exactly the one ASI
+     * needs.  Decide the insertion at the token it stopped on.  This handles
+     * both bare-newline ASI (`x = 1\ny = 2`) and a continuation token reached
+     * across a comment (`a\n// c\n.b`, which ucode accepts — the '.' declines
+     * insertion so the member access still attaches).
+     */
+    if (crossed_newline) {
+        switch (asi_after_newline(lexer)) {
+            case ASI_INSERT:      return true;
+            case ASI_TRY_TERNARY: return valid_symbols[TERNARY_QMARK] && scan_ternary_qmark(lexer);
+            case ASI_DECLINE:     return false;
         }
     }
 
