@@ -34,13 +34,20 @@ const dstDir = path.join(root, 'markup', 'queries');
 
 // Markup-only indent rules for the clause-tag nodes that only the spanning
 // if-alt markup form produces.  Appended after the shared code indents.
+//
+// Unlike the code form, both clause tags CONTAIN their body (field('body',
+// repeat($._markup_node))), and the header ends with the `%}` close, not the
+// `:` — so a `:`-token @indent.begin would not sit at the end of the header
+// line and would not open the scope reliably.  Capture the whole node for
+// @indent.begin on both clauses (as the code form does for else), so elif and
+// else bodies indent identically.
 const INDENTS_MARKUP_EXTRA = [
   '',
   '; ── Markup-only alt-syntax clause tags ────────────────────────────────',
   '(else_alt_clause_tag "else") @indent.branch',
   '(elif_clause_tag "elif") @indent.branch',
   '(else_alt_clause_tag) @indent.begin',
-  '(elif_clause_tag ":" @indent.begin)',
+  '(elif_clause_tag) @indent.begin',
   '',
 ].join('\n');
 

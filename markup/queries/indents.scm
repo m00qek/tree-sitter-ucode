@@ -70,4 +70,4 @@
 (else_alt_clause_tag "else") @indent.branch
 (elif_clause_tag "elif") @indent.branch
 (else_alt_clause_tag) @indent.begin
-(elif_clause_tag ":" @indent.begin)
+(elif_clause_tag) @indent.begin
