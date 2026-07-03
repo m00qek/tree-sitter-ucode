@@ -1164,6 +1164,17 @@ module.exports = grammar({
 });
 
 function forHeader($) {
+  // KNOWN LIMITATION (documented divergence): the expression-initializer branch
+  // accepts any expression, which is MORE permissive than ucode.  ucode's
+  // C-style for-init is a stateful hand-parser (uc_compiler_compile_for /
+  // _for_count in lang/compiler.c): after a leading identifier it accepts only
+  // `x`, `x = e`, `x op= e` or `x => e` (no binary/member/call/postfix), and a
+  // top-level `in` there forces the for-in interpretation — so ucode rejects
+  // `for (a in b; …)`, `for (a + b; …)`, `for (a.b; …)`, `for (a(); …)`, etc.
+  // Matching that exactly would need a restricted label-expression rule plus a
+  // no-in expression variant (ECMAScript's Expression[~In]) — a large, fragile
+  // special-case for constructs no one writes.  We stay permissive on purpose;
+  // the ASI and `const` restrictions above (the parts that matter) are enforced.
   return seq(
     'for',
     '(',
