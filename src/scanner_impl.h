@@ -706,7 +706,9 @@ static bool ucode_scanner_scan(
 
     /*
      * Template chars: only when we are unambiguously inside a template
-     * literal body (not competing with ASI).
+     * literal body.  The !AUTOMATIC_SEMICOLON guard keeps this from firing when
+     * an ASI decision is also pending at this position (the recovery state where
+     * every token is valid is already handled by the guard above).
      */
     if (valid_symbols[TEMPLATE_CHARS] && !valid_symbols[AUTOMATIC_SEMICOLON])
         return scan_template_chars(lexer);
@@ -716,8 +718,9 @@ static bool ucode_scanner_scan(
      * ahead of COMMENT, so that a `/*` or `//` at the start of the string (or
      * right after an escape) is kept as content instead of being lexed as a
      * comment (the `comment` extra is otherwise offered even inside strings).
-     * The !AUTOMATIC_SEMICOLON guard mirrors template chars and keeps these
-     * from firing in the error-recovery state where every token is valid.
+     * The !AUTOMATIC_SEMICOLON guard mirrors template chars: fire only when the
+     * string body is the unambiguous interpretation and no ASI decision competes
+     * at this position (error recovery already returned false above).
      */
     if (valid_symbols[SINGLE_QUOTE_STRING_CONTENT] && !valid_symbols[AUTOMATIC_SEMICOLON])
         return scan_string_chars(lexer, '\'', SINGLE_QUOTE_STRING_CONTENT);

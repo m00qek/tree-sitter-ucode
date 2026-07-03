@@ -499,8 +499,9 @@ module.exports = grammar({
       field('body', repeat($.statement)),
     ),
 
-    // Markup form of elif: just the header tag; its body is the sibling
-    // $._markup_nodes that follow it in if_alt_statement (see that rule).
+    // Markup form of elif: the header tag plus the body markup nodes that
+    // follow it, nested under this clause (see the if_alt_statement header
+    // comment on why each clause owns its body rather than trailing as siblings).
     elif_clause_tag: $ => seq(
       field('open',      $._stmt_open),
       'elif',
@@ -515,8 +516,9 @@ module.exports = grammar({
       field('body', repeat($.statement)),
     ),
 
-    // Markup form of else: just the header tag; its body is the sibling
-    // $._markup_nodes that follow it in if_alt_statement (see that rule).
+    // Markup form of else: the header tag plus the body markup nodes that
+    // follow it, nested under this clause (see the if_alt_statement header
+    // comment on why each clause owns its body rather than trailing as siblings).
     else_alt_clause_tag: $ => seq(
       field('open',  $._stmt_open),
       'else',

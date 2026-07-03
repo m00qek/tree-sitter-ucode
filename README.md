@@ -37,12 +37,22 @@ Ucode is an ECMAScript subset with OpenWrt-specific extensions. Key differences:
 | Regex flags | `g`, `i`, `s` only | Full set |
 | Module system | Static `import`/`export` only; no `from` on re-exports | Full ES modules |
 
-The grammar tracks ucode's parser closely, with one deliberate exception: **automatic
-semicolon insertion is kept ECMAScript-style (more lenient than the compiler).** ucode
-only lets you drop a statement's `;` before `}`, end-of-file, a template tag close, or an
-alt-syntax end keyword (`endif`/`endfor`/`endwhile`/`endfunction`/`elif`/`else`), whereas
-the grammar also tolerates a bare newline between statements so that in-progress edits are
-not flagged as errors.
+The grammar tracks ucode's parser closely, with a few deliberate divergences:
+
+- **Automatic semicolon insertion is kept ECMAScript-style (more lenient than the
+  compiler).** ucode only lets you drop a statement's `;` before `}`, end-of-file, a
+  template tag close, or an alt-syntax end keyword (`endif`/`endfor`/`endwhile`/
+  `endfunction`/`elif`/`else`), whereas the grammar also tolerates a **bare newline
+  between statements** so that in-progress edits are not flagged as errors. The leniency
+  spans comments too: a line or block comment sitting on its own line between two
+  statements still gets a semicolon inserted at the boundary. Conversely, a comment does
+  **not** break an expression that continues on the next line — `a\n// note\n.b` stays a
+  single member access and `a\n/* note */\n+ b` a single addition, matching ucode.
+- **Unterminated tags and the single-line `// … %}` footgun are flagged, not tolerated.**
+  ucode leniently accepts an unterminated `{% … ` at EOF, and (because `//` runs to
+  end-of-line) silently swallows a same-line `%}` into the comment; the grammar reports an
+  error in both cases so the mistake surfaces in an editor. Put the comment on its own line
+  (with `%}` on the next) or use `/* */` to close on the same line.
 
 ## Doc comment grammar (ucdocs)
 
