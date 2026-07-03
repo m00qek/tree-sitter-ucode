@@ -647,6 +647,16 @@ static CommentResult scan_comment(TSLexer *lexer, const bool *valid_symbols,
     if (lexer->lookahead == '*') {
         advance(lexer);
         lexer->result_symbol = COMMENT;
+        /* ucode quirk (lexer.c parse_comment): the block opener is scanned by
+           peeking the '*' without consuming it, so the opening '*' also counts
+           as a potential closing '*'.  A '/' immediately after `/*` therefore
+           closes an empty comment — `/`+`*`+`/` is complete, not an unterminated
+           opener.  (`/* /` with anything between the stars is still open.) */
+        if (lexer->lookahead == '/') {
+            advance(lexer);
+            lexer->mark_end(lexer);
+            return CMT_FOUND;
+        }
         for (;;) {
             /* EOF before a closing star-slash: ucode rejects an unterminated
                block comment ("Unterminated comment").  Abort so the whole
