@@ -42,6 +42,11 @@ jobs:
 
       - name: Set up tree-sitter
         uses: tree-sitter/setup-action/cli@v2
+        with:
+          # Pin to the same CLI the other jobs use via the npm devDependency
+          # (tree-sitter-cli 0.26.9). The default `latest` would float the test
+          # matrix onto a different generator than validate/wasm and local dev.
+          tree-sitter-ref: v0.26.9
 
       - name: Set up Node.js
         uses: actions/setup-node@v6
@@ -132,6 +137,7 @@ jobs:
         run: |
           npx tree-sitter build --wasm .
           npx tree-sitter build --wasm markup
+          npx tree-sitter build --wasm ucdocs
 
       - name: Upload WASM artifact
         uses: actions/upload-artifact@v7
