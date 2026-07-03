@@ -727,3 +727,22 @@ let r = a
         left: (identifier)
         (comment)
         right: (identifier)))))
+
+================================================================================
+Line comment on its own line does not break a leading-minus continuation
+================================================================================
+
+let r = a
+// c
+- b;
+
+--------------------------------------------------------------------------------
+
+(program
+  (lexical_declaration
+    (variable_declarator
+      name: (identifier)
+      value: (binary_expression
+        left: (identifier)
+        (comment)
+        right: (identifier)))))
