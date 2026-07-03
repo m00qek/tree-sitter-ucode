@@ -75,12 +75,22 @@ jobs:
 
       - name: Verify generated files are up to date
         run: |
+          gen_paths='src/ markup/src/ markup/grammar.js markup/queries/ ucdocs/src/'
           node scripts/generate-markup-grammar.js
           node scripts/generate-markup-queries.js
           npx tree-sitter generate
           npx tree-sitter generate markup/grammar.js --output markup/src
           npx tree-sitter generate ucdocs/grammar.js --output ucdocs/src
-          git diff --exit-code src/ markup/src/ markup/grammar.js markup/queries/ ucdocs/src/
+          # Catch modified tracked files (with a helpful diff)...
+          git diff --exit-code $gen_paths
+          # ...and NEW untracked artifacts a generator started emitting, which
+          # `git diff` ignores — a generator's derived-file set can grow.
+          untracked="$(git status --porcelain --untracked-files=all -- $gen_paths)"
+          if [ -n "$untracked" ]; then
+            echo "Untracked generated files (run the generators and commit them):"
+            echo "$untracked"
+            exit 1
+          fi
 
       - name: Build parsers
         run: |
