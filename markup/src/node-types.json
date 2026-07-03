@@ -2245,7 +2245,7 @@
     "fields": {
       "kind": {
         "multiple": false,
-        "required": true,
+        "required": false,
         "types": [
           {
             "type": "const",

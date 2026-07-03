@@ -362,9 +362,11 @@ module.exports = grammar({
     //     (`for (const …)` → "Expecting expression"), just as it does for the
     //     for-in target.
     // Aliased back to lexical_declaration in the for-header so the tree node
-    // name is unchanged.
+    // name is unchanged. No `kind` field on the `let`: it is invariant here
+    // (always `let`), no query reads it, and adding it roughly doubles the
+    // generated parse tables (measured: STATE_COUNT 2937 → 6055).
     _for_lexical_declaration: $ => seq(
-      field('kind', 'let'),
+      'let',
       commaSep1($.variable_declarator),
     ),
 

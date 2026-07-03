@@ -836,12 +836,8 @@
       "type": "SEQ",
       "members": [
         {
-          "type": "FIELD",
-          "name": "kind",
-          "content": {
-            "type": "STRING",
-            "value": "let"
-          }
+          "type": "STRING",
+          "value": "let"
         },
         {
           "type": "SEQ",
