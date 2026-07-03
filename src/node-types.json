@@ -1940,6 +1940,10 @@
           {
             "type": "elif_clause",
             "named": true
+          },
+          {
+            "type": "elif_clause_tag",
+            "named": true
           }
         ]
       },
@@ -1949,6 +1953,10 @@
         "types": [
           {
             "type": "else_alt_clause",
+            "named": true
+          },
+          {
+            "type": "else_alt_clause_tag",
             "named": true
           }
         ]
@@ -2010,14 +2018,6 @@
       "types": [
         {
           "type": "comment_tag",
-          "named": true
-        },
-        {
-          "type": "elif_clause_tag",
-          "named": true
-        },
-        {
-          "type": "else_alt_clause_tag",
           "named": true
         },
         {

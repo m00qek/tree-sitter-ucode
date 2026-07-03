@@ -621,15 +621,36 @@ Markup if / elif / else spanning tags
       (identifier))
     close: (statement_tag_close)
     (raw_text)
-    (elif_clause_tag
+    elif_clause: (elif_clause_tag
       open: (statement_tag_open)
       condition: (parenthesized_expression
         (identifier))
       close: (statement_tag_close))
     (raw_text)
-    (else_alt_clause_tag
+    else_body: (else_alt_clause_tag
       open: (statement_tag_open)
       close: (statement_tag_close))
     (raw_text)
     end_open: (statement_tag_open)
     end_close: (statement_tag_close)))
+
+================================================================================
+Markup else before elif is rejected — produces ERROR
+:error
+================================================================================
+{% if (a): %}x{% else %}z{% elif (b): %}y{% endif %}
+--------------------------------------------------------------------------------
+
+================================================================================
+Markup duplicate else is rejected — produces ERROR
+:error
+================================================================================
+{% if (a): %}x{% else %}y{% else %}z{% endif %}
+--------------------------------------------------------------------------------
+
+================================================================================
+Markup elif after else is rejected — produces ERROR
+:error
+================================================================================
+{% if (a): %}w{% elif (b): %}x{% else %}y{% elif (c): %}z{% endif %}
+--------------------------------------------------------------------------------

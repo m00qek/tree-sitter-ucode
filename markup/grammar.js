@@ -86,7 +86,6 @@ module.exports = grammar({
     $._reserved_identifier,
     $._lhs_expression,
     $._markup_node,
-    $._if_markup_node,
     $._stmt_open,
     $._stmt_close,
     $._expr_open,
@@ -128,6 +127,10 @@ module.exports = grammar({
     [$.variable_declarator, $._for_header],
     [$.primary_expression, $.delete_expression],
     [$.primary_expression, $.update_expression],
+    // Markup if-form: at a statement_tag_open after an elif/else body, the
+    // parser must decide (via the following keyword) whether it starts another
+    // body markup node or the next elif / else / endif clause.  GLR resolves it.
+    [$.if_alt_statement],
   ],
 
   word: $ => $.identifier,
@@ -435,20 +438,20 @@ module.exports = grammar({
         ':',
         repeat($.statement),
         field('close',   $._stmt_close),
-        repeat($._if_markup_node),
+        // Ordered clause structure (matches ucode): the if-body, then zero or
+        // more elif clauses each with their own body, then an optional single
+        // else clause with its body.  This makes `else` before `elif`, a
+        // duplicate `else`, and an `elif` after `else` all ERRORs, unlike a
+        // flat `repeat(choice(node, elif, else))`.  Bodies stay flat (sibling
+        // markup nodes); the elif/else header tags now also carry
+        // `elif_clause` / `else_body` fields.
+        repeat($._markup_node),
+        repeat(seq(field('elif_clause', $.elif_clause_tag), repeat($._markup_node))),
+        optional(seq(field('else_body', $.else_alt_clause_tag), repeat($._markup_node))),
         field('end_open',  $._stmt_open),
         'endif',
         field('end_close', $._stmt_close),
       ),
-    ),
-
-    // Flat content node for if_alt_statement markup bodies.
-    // elif_clause_tag and else_alt_clause_tag are plain header tags here;
-    // the actual body content between them is expressed as sibling nodes.
-    _if_markup_node: $ => choice(
-      $._markup_node,
-      $.elif_clause_tag,
-      $.else_alt_clause_tag,
     ),
 
     // Inline wrappers for tag delimiter tokens.

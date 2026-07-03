@@ -1153,8 +1153,59 @@
               "type": "REPEAT",
               "content": {
                 "type": "SYMBOL",
-                "name": "_if_markup_node"
+                "name": "_markup_node"
               }
+            },
+            {
+              "type": "REPEAT",
+              "content": {
+                "type": "SEQ",
+                "members": [
+                  {
+                    "type": "FIELD",
+                    "name": "elif_clause",
+                    "content": {
+                      "type": "SYMBOL",
+                      "name": "elif_clause_tag"
+                    }
+                  },
+                  {
+                    "type": "REPEAT",
+                    "content": {
+                      "type": "SYMBOL",
+                      "name": "_markup_node"
+                    }
+                  }
+                ]
+              }
+            },
+            {
+              "type": "CHOICE",
+              "members": [
+                {
+                  "type": "SEQ",
+                  "members": [
+                    {
+                      "type": "FIELD",
+                      "name": "else_body",
+                      "content": {
+                        "type": "SYMBOL",
+                        "name": "else_alt_clause_tag"
+                      }
+                    },
+                    {
+                      "type": "REPEAT",
+                      "content": {
+                        "type": "SYMBOL",
+                        "name": "_markup_node"
+                      }
+                    }
+                  ]
+                },
+                {
+                  "type": "BLANK"
+                }
+              ]
             },
             {
               "type": "FIELD",
@@ -1177,23 +1228,6 @@
               }
             }
           ]
-        }
-      ]
-    },
-    "_if_markup_node": {
-      "type": "CHOICE",
-      "members": [
-        {
-          "type": "SYMBOL",
-          "name": "_markup_node"
-        },
-        {
-          "type": "SYMBOL",
-          "name": "elif_clause_tag"
-        },
-        {
-          "type": "SYMBOL",
-          "name": "else_alt_clause_tag"
         }
       ]
     },
@@ -5620,6 +5654,9 @@
     [
       "primary_expression",
       "update_expression"
+    ],
+    [
+      "if_alt_statement"
     ]
   ],
   "precedences": [
@@ -5836,7 +5873,6 @@
     "_reserved_identifier",
     "_lhs_expression",
     "_markup_node",
-    "_if_markup_node",
     "_stmt_open",
     "_stmt_close",
     "_expr_open",
