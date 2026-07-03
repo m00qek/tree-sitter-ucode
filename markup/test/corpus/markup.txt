@@ -217,7 +217,7 @@ if alt-syntax
     condition: (parenthesized_expression
       (identifier))
     close: (statement_tag_close)
-    (raw_text)
+    body: (raw_text)
     end_open: (statement_tag_open)
     end_close: (statement_tag_close)))
 
@@ -319,7 +319,7 @@ nested if inside for-in body
       condition: (parenthesized_expression
         (identifier))
       close: (statement_tag_close)
-      (raw_text)
+      body: (raw_text)
       end_open: (statement_tag_open)
       end_close: (statement_tag_close))
     end_open: (statement_tag_open)
@@ -620,17 +620,50 @@ Markup if / elif / else spanning tags
     condition: (parenthesized_expression
       (identifier))
     close: (statement_tag_close)
-    (raw_text)
+    body: (raw_text)
     elif_clause: (elif_clause_tag
       open: (statement_tag_open)
       condition: (parenthesized_expression
         (identifier))
-      close: (statement_tag_close))
-    (raw_text)
+      close: (statement_tag_close)
+      body: (raw_text))
     else_body: (else_alt_clause_tag
       open: (statement_tag_open)
-      close: (statement_tag_close))
-    (raw_text)
+      close: (statement_tag_close)
+      body: (raw_text))
+    end_open: (statement_tag_open)
+    end_close: (statement_tag_close)))
+
+================================================================================
+Nested if_alt inside an elif body
+================================================================================
+{% if (a): %}A{% elif (b): %}{% if (c): %}B{% endif %}{% else %}C{% endif %}
+--------------------------------------------------------------------------------
+
+(markup
+  (if_alt_statement
+    open: (statement_tag_open)
+    condition: (parenthesized_expression
+      (identifier))
+    close: (statement_tag_close)
+    body: (raw_text)
+    elif_clause: (elif_clause_tag
+      open: (statement_tag_open)
+      condition: (parenthesized_expression
+        (identifier))
+      close: (statement_tag_close)
+      body: (if_alt_statement
+        open: (statement_tag_open)
+        condition: (parenthesized_expression
+          (identifier))
+        close: (statement_tag_close)
+        body: (raw_text)
+        end_open: (statement_tag_open)
+        end_close: (statement_tag_close)))
+    else_body: (else_alt_clause_tag
+      open: (statement_tag_open)
+      close: (statement_tag_close)
+      body: (raw_text))
     end_open: (statement_tag_open)
     end_close: (statement_tag_close)))
 

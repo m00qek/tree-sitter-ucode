@@ -734,6 +734,48 @@
     "type": "elif_clause_tag",
     "named": true,
     "fields": {
+      "body": {
+        "multiple": true,
+        "required": false,
+        "types": [
+          {
+            "type": "comment_tag",
+            "named": true
+          },
+          {
+            "type": "expression_tag",
+            "named": true
+          },
+          {
+            "type": "for_alt_statement",
+            "named": true
+          },
+          {
+            "type": "for_in_alt_statement",
+            "named": true
+          },
+          {
+            "type": "function_alt_declaration",
+            "named": true
+          },
+          {
+            "type": "if_alt_statement",
+            "named": true
+          },
+          {
+            "type": "raw_text",
+            "named": true
+          },
+          {
+            "type": "statement_tag",
+            "named": true
+          },
+          {
+            "type": "while_alt_statement",
+            "named": true
+          }
+        ]
+      },
       "close": {
         "multiple": false,
         "required": true,
@@ -798,6 +840,48 @@
     "type": "else_alt_clause_tag",
     "named": true,
     "fields": {
+      "body": {
+        "multiple": true,
+        "required": false,
+        "types": [
+          {
+            "type": "comment_tag",
+            "named": true
+          },
+          {
+            "type": "expression_tag",
+            "named": true
+          },
+          {
+            "type": "for_alt_statement",
+            "named": true
+          },
+          {
+            "type": "for_in_alt_statement",
+            "named": true
+          },
+          {
+            "type": "function_alt_declaration",
+            "named": true
+          },
+          {
+            "type": "if_alt_statement",
+            "named": true
+          },
+          {
+            "type": "raw_text",
+            "named": true
+          },
+          {
+            "type": "statement_tag",
+            "named": true
+          },
+          {
+            "type": "while_alt_statement",
+            "named": true
+          }
+        ]
+      },
       "close": {
         "multiple": false,
         "required": true,
@@ -1904,7 +1988,27 @@
         "required": false,
         "types": [
           {
+            "type": "comment_tag",
+            "named": true
+          },
+          {
+            "type": "expression_tag",
+            "named": true
+          },
+          {
+            "type": "function_alt_declaration",
+            "named": true
+          },
+          {
+            "type": "raw_text",
+            "named": true
+          },
+          {
             "type": "statement",
+            "named": true
+          },
+          {
+            "type": "statement_tag",
             "named": true
           }
         ]
@@ -2017,27 +2121,7 @@
       "required": false,
       "types": [
         {
-          "type": "comment_tag",
-          "named": true
-        },
-        {
-          "type": "expression_tag",
-          "named": true
-        },
-        {
-          "type": "function_alt_declaration",
-          "named": true
-        },
-        {
-          "type": "raw_text",
-          "named": true
-        },
-        {
           "type": "statement",
-          "named": true
-        },
-        {
-          "type": "statement_tag",
           "named": true
         }
       ]
