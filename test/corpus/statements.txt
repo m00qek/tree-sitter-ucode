@@ -311,6 +311,30 @@ x = 1; /* / y = 2;
 --------------------------------------------------------------------------------
 
 ================================================================================
+Unterminated block comment whose body forms a valid regex is silently accepted
+================================================================================
+
+x = /* a/gi
+
+--------------------------------------------------------------------------------
+
+; Documented residual (see to-fix.md #10, scanner_impl.h scan_comment): an
+; unterminated `/*` run that happens to contain a `/` (and optional flags) is
+; re-lexed by tree-sitter as a regex from the original `/`, so this parses as a
+; clean `x = /* a/gi` regex rather than erroring.  ucode rejects it as an
+; "Unterminated comment" (rc=255).  The common `/* note`<EOF> case, having no
+; second `/`, still errors correctly (see the EOF test above).  This test pins
+; the escape hatch so it cannot widen unnoticed.
+
+(program
+  (expression_statement
+    (assignment_expression
+      left: (identifier)
+      right: (regex
+        pattern: (regex_pattern)
+        flags: (regex_flags)))))
+
+================================================================================
 Try without catch is not supported — produces ERROR
 :error
 ================================================================================
