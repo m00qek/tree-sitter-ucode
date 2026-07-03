@@ -74,6 +74,19 @@ typedef enum {
     ASI_DECLINE,      /* no semicolon; an operator ('-' '%' '/') was consumed */
 } AsiResult;
 
+/*
+ * Inline (non-line-terminating) whitespace.  iswspace() minus the four
+ * ECMAScript line terminators (LF, CR, LS, PS), which are handled separately
+ * wherever a newline is significant (ASI, block-comment newline detection).
+ * This is the single predicate for "blank that does not end a line", matching
+ * the whitespace the grammar's `extras` skip: keeping scan_comment's leading
+ * skip in step with it stops exotic blanks (\f, \v, NBSP, …) from stranding the
+ * ASI decision on a whitespace character.
+ */
+static inline bool is_inline_ws(int32_t c) {
+    return iswspace(c) && c != '\n' && c != '\r' && c != 0x2028 && c != 0x2029;
+}
+
 /* -------------------------------------------------------------------------
  * Markup-mode tokens
  * ---------------------------------------------------------------------- */
@@ -377,151 +390,48 @@ static AsiResult scan_automatic_semicolon(TSLexer *lexer) {
     lexer->result_symbol = AUTOMATIC_SEMICOLON;
     lexer->mark_end(lexer);
 
-    /* ECMAScript rule 1: '}' → insert */
-    if (lexer->lookahead == '}') return ASI_INSERT;
-    /* ECMAScript rule 3: EOF → insert */
-    if (lexer->lookahead == 0) return ASI_INSERT;
-
-    /* Ucode extension: %} or -%} at end of statement tag → insert */
-    if (lexer->lookahead == '%' || lexer->lookahead == '-') {
-        if (lookahead_is_stmt_close(lexer)) return ASI_INSERT;
-        /* Not a tag close: the '-'/'%' is a binary operator continuing the
-           expression.  lookahead_is_stmt_close consumed it, so report DECLINE
-           — the dispatcher must not try a ternary here or it would swallow the
-           operator (e.g. `a -? b : c`, which ucode rejects). */
-        return ASI_DECLINE;
-    }
-
     /*
-     * ECMAScript rule 2: scan for a line terminator before the next token.
-     * Skip inline whitespace and comments; bail on anything else on the
-     * same line.
+     * scan_comment() is dispatched before ASI (see ucode_scanner_scan) and is
+     * valid wherever ASI is, so by the time we reach here it has already skipped
+     * all inline whitespace, line terminators and comments.  When it crossed a
+     * line terminator it set *crossed_newline and asi_after_newline() made the
+     * post-newline decision, returning before this function runs.  So this is
+     * reached ONLY in the same-line case, with the lexer sitting on the next
+     * real (non-whitespace, non-'/') token — a same-line token never triggers
+     * ASI except at the three ECMAScript boundaries below.
+     *
+     * (Verified empirically over the full corpus + the jow-/ucode suite: ASI was
+     * never entered without COMMENT co-valid, and the old forward scan never
+     * reached a line terminator or a comment.  The previous version's own
+     * whitespace/comment/newline scanning was therefore dead code, duplicated
+     * from scan_comment + asi_after_newline; it has been removed.)
      */
-    for (;;) {
-        if (lexer->lookahead == 0) return ASI_INSERT;
-        if (lexer->lookahead == '}') return ASI_INSERT;
 
-        if (lexer->lookahead == '\r' || lexer->lookahead == '\n' ||
-            lexer->lookahead == 0x2028 || lexer->lookahead == 0x2029) {
-            skip(lexer);
-            break; /* found line terminator */
-        }
+    /* ECMAScript rule 1 ('}') and rule 3 (EOF): insert. */
+    if (lexer->lookahead == '}' || lexer->lookahead == 0)
+        return ASI_INSERT;
 
-        if (iswspace(lexer->lookahead)) { skip(lexer); continue; }
+    /* Ucode extension: %} / -%} closing a statement tag → insert.  A bare
+       '-'/'%' that is not a tag close is a binary operator continuing the
+       expression; lookahead_is_stmt_close consumed it, so DECLINE (a ternary
+       here would swallow it, e.g. `a -? b : c`, which ucode rejects). */
+    if (lexer->lookahead == '%' || lexer->lookahead == '-')
+        return lookahead_is_stmt_close(lexer) ? ASI_INSERT : ASI_DECLINE;
 
-        /* Line comment — skip to end of line */
-        if (lexer->lookahead == '/') {
-            skip(lexer);
-            if (lexer->lookahead == '/') {
-                skip(lexer);
-                while (lexer->lookahead != 0 &&
-                       lexer->lookahead != '\r' && lexer->lookahead != '\n' &&
-                       lexer->lookahead != 0x2028 && lexer->lookahead != 0x2029)
-                    skip(lexer);
-                continue;
-            }
-            /* Block comment — check for embedded newline */
-            if (lexer->lookahead == '*') {
-                skip(lexer);
-                bool has_newline = false;
-                while (lexer->lookahead != 0) {
-                    if (lexer->lookahead == '\r' || lexer->lookahead == '\n' ||
-                        lexer->lookahead == 0x2028 || lexer->lookahead == 0x2029)
-                        has_newline = true;
-                    if (lexer->lookahead == '*') {
-                        skip(lexer);
-                        if (lexer->lookahead == '/') { skip(lexer); break; }
-                    } else {
-                        skip(lexer);
-                    }
-                }
-                if (has_newline) break;
-                continue;
-            }
-            /* Division slash — not a comment, no ASI.  The '/' was consumed,
-               so DECLINE (do not let a ternary swallow it, e.g. `a /? b`). */
-            return ASI_DECLINE;
-        }
-
-        /* %} / -%} on the same line as the expression: still allow ASI */
-        if (lexer->lookahead == '%' || lexer->lookahead == '-') {
-            if (lookahead_is_stmt_close(lexer)) return ASI_INSERT;
-            return ASI_DECLINE; /* consumed '-'/'%' operator */
-        }
-
-        /* Any other non-whitespace on the same line: no ASI, but nothing was
-           consumed, so a ternary '?' here is safe (the `a ? b : c` case). */
-        return ASI_TRY_TERNARY;
-    }
-
-    /*
-     * Found a line terminator.  Skip trailing whitespace/comments after it,
-     * then check whether the next real token would suppress ASI.
-     */
-    for (;;) {
-        if (lexer->lookahead == 0) return ASI_INSERT;
-
-        if (iswspace(lexer->lookahead)) { skip(lexer); continue; }
-
-        if (lexer->lookahead == '/') {
-            skip(lexer);
-            if (lexer->lookahead == '/') {
-                skip(lexer);
-                while (lexer->lookahead != 0 &&
-                       lexer->lookahead != '\r' && lexer->lookahead != '\n' &&
-                       lexer->lookahead != 0x2028 && lexer->lookahead != 0x2029)
-                    skip(lexer);
-                continue;
-            }
-            if (lexer->lookahead == '*') {
-                skip(lexer);
-                while (lexer->lookahead != 0) {
-                    if (lexer->lookahead == '*') {
-                        skip(lexer);
-                        if (lexer->lookahead == '/') { skip(lexer); break; }
-                    } else {
-                        skip(lexer);
-                    }
-                }
-                continue;
-            }
-            /* division slash after newline: consumed '/', DECLINE */
-            return ASI_DECLINE;
-        }
-        break;
-    }
-
-    /*
-     * Tokens that can continue the prior expression suppress ASI.
-     * %} and -%} are tag closers and always allow ASI even though they
-     * start with '%' or '-'.
-     */
-    switch (lexer->lookahead) {
-        case '(': case '[': case '`':
-        case '.': case ',': case ';':
-        case '+': case '*':
-        case '=': case '<': case '>': case '!': case '~':
-        case '&': case '|': case '^': case '?':
-            /* Continuation token; nothing consumed, so a ternary '?' here is
-               safe (e.g. `a\n? b : c`, which ucode accepts). */
-            return ASI_TRY_TERNARY;
-        case '-':
-        case '%':
-            if (lookahead_is_stmt_close(lexer)) return ASI_INSERT;
-            return ASI_DECLINE; /* consumed '-'/'%' operator */
-        default:
-            return ASI_INSERT;
-    }
+    /* Any other token on the same line: no line terminator precedes it, so no
+       ASI.  Nothing was consumed, so a ternary '?' here is safe (`a ? b : c`). */
+    return ASI_TRY_TERNARY;
 }
 
 /*
  * ASI decision when a line terminator has ALREADY been consumed — scan_comment
  * skips newlines to reach a possible following-line comment, and when it finds
  * none it reports crossed_newline and leaves the lexer at the next real token.
- * Decide purely from that token, mirroring the post-newline tail of
- * scan_automatic_semicolon (there is no more whitespace or comment to skip:
- * scan_comment stopped at the first non-whitespace char, and a comment there
- * would have been emitted as its own token).
+ * Decide purely from that token: there is no more whitespace or comment to skip
+ * (scan_comment stopped at the first non-whitespace char, and a comment there
+ * would have been emitted as its own token).  This is the single authoritative
+ * post-newline continuation list — scan_automatic_semicolon handles only the
+ * same-line case and shares the '-'/'%' tag-close arm below.
  */
 static AsiResult asi_after_newline(TSLexer *lexer) {
     lexer->result_symbol = AUTOMATIC_SEMICOLON;
@@ -591,15 +501,19 @@ static bool scan_ternary_qmark(TSLexer *lexer) {
  */
 typedef enum { CMT_NONE, CMT_FOUND, CMT_ABORT } CommentResult;
 
-static CommentResult scan_comment(TSLexer *lexer, const bool *valid_symbols,
+static CommentResult scan_comment(TSLexer *lexer, bool asi_valid,
                                   bool *crossed_newline) {
     *crossed_newline = false;
-    /* Skip leading whitespace to reach a comment.  tree-sitter calls the
+    /* Skip leading inline whitespace to reach a comment.  tree-sitter calls the
        scanner at the whitespace before the comment and will not re-invoke it
        after lexing that whitespace internally, so a comment reached only across
-       whitespace would otherwise be lexed as division or a regex.
+       whitespace would otherwise be lexed as division or a regex.  is_inline_ws
+       matches everything the grammar's `extras` treat as whitespace except line
+       terminators, so exotic blanks (form feed, vertical tab, NBSP, …) between a
+       newline and the next token are consumed here rather than derailing the ASI
+       decision that follows.
        Line terminators need care: skipping one destroys the newline that
-       scan_automatic_semicolon relies on for lenient inter-statement ASI.  We
+       lenient inter-statement ASI relies on.  We
        cannot defer to ASI (leave the newline unconsumed) — a comment may follow
        on the next line, and once ASI skips past it to decide, an emitted
        zero-length ';' cannot carry the skipped comment back out.  Instead we
@@ -609,11 +523,11 @@ static CommentResult scan_comment(TSLexer *lexer, const bool *valid_symbols,
        does follow is emitted normally (CMT_FOUND), and the preceding
        statement's ASI is decided on a later call once the comments are past. */
     for (;;) {
-        while (lexer->lookahead == ' ' || lexer->lookahead == '\t')
+        while (is_inline_ws(lexer->lookahead))
             skip(lexer);
         if (lexer->lookahead == '\r' || lexer->lookahead == '\n' ||
             lexer->lookahead == 0x2028 || lexer->lookahead == 0x2029) {
-            if (valid_symbols[AUTOMATIC_SEMICOLON])
+            if (asi_valid)
                 *crossed_newline = true;
             skip(lexer);
             continue;
@@ -762,7 +676,7 @@ static bool ucode_scanner_scan(
      */
     bool crossed_newline = false;
     if (valid_symbols[COMMENT]) {
-        switch (scan_comment(lexer, valid_symbols, &crossed_newline)) {
+        switch (scan_comment(lexer, valid_symbols[AUTOMATIC_SEMICOLON], &crossed_newline)) {
             case CMT_FOUND: return true;
             case CMT_ABORT: return false;
             case CMT_NONE:  break;

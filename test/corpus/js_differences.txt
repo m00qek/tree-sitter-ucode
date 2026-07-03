@@ -746,3 +746,39 @@ let r = a
         left: (identifier)
         (comment)
         right: (identifier)))))
+
+================================================================================
+Exotic inline whitespace (form feed) after a newline keeps a member continuation
+================================================================================
+
+let r = a
+.b;
+
+--------------------------------------------------------------------------------
+
+(program
+  (lexical_declaration
+    (variable_declarator
+      name: (identifier)
+      value: (member_expression
+        object: (identifier)
+        property: (property_identifier)))))
+
+================================================================================
+Exotic inline whitespace (form feed) after a newline keeps a binary continuation
+================================================================================
+
+let r = a
+/* c */
++ b;
+
+--------------------------------------------------------------------------------
+
+(program
+  (lexical_declaration
+    (variable_declarator
+      name: (identifier)
+      value: (binary_expression
+        left: (identifier)
+        (comment)
+        right: (identifier)))))
