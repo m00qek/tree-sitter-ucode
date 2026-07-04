@@ -1068,9 +1068,21 @@ module.exports = grammar({
       optional(field('flags', $.regex_flags)),
     ),
 
+    // Inside a bracket expression an optional leading '^' and then an optional
+    // leading ']' are literal members before the class reads up to its closing
+    // ']' (lexer.c ~386-393): `[]…]` and `[^]…]` do not close at the first ']'.
+    //
+    // NOTE: ucode also lets regex literals span raw newlines (lexer.c parses
+    // them with the newline-agnostic string loop), which the '\n' exclusions
+    // below deliberately do NOT allow.  Permitting them here would make an
+    // unterminated '/' swallow the rest of the file into one token, wrecking
+    // editor recovery — regex_pattern is a greedy grammar token with no
+    // false-at-EOF escape, unlike the external string-content token.  Kept as a
+    // documented divergence; the faithful fix is to move regex into the external
+    // scanner (tracked with the unterminated-string rescan item in to-fix.md).
     regex_pattern: _ => token.immediate(prec(-1,
       repeat1(choice(
-        seq('[', repeat(choice(
+        seq('[', optional('^'), optional(']'), repeat(choice(
           // POSIX bracket sub-expressions: [:class:] [.coll.] [=equiv=].
           // Their inner ']' must not close the enclosing character class.
           seq('[:', /[^:\n\]]*/, ':]'),

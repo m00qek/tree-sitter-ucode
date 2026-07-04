@@ -406,6 +406,28 @@ let r = /\d+/g;
         flags: (regex_flags)))))
 
 ================================================================================
+Regex character class with a leading ] (literal, does not close the class)
+================================================================================
+
+let r = /[]/]/;
+let s = /[^]a]/g;
+
+--------------------------------------------------------------------------------
+
+(program
+  (lexical_declaration
+    (variable_declarator
+      name: (identifier)
+      value: (regex
+        pattern: (regex_pattern))))
+  (lexical_declaration
+    (variable_declarator
+      name: (identifier)
+      value: (regex
+        pattern: (regex_pattern)
+        flags: (regex_flags)))))
+
+================================================================================
 Lone dollar sign in template string (not a substitution)
 ================================================================================
 
