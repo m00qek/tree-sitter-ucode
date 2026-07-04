@@ -31,6 +31,7 @@ module.exports = grammar({
     $.comment,                     // 14  // line and /* */ block comments
     $._single_quote_string_content, // 15  '...' body (scans up to ' / \ / EOF; raw newlines are content)
     $._double_quote_string_content, // 16  "..." body (scans up to " / \ / EOF; raw newlines are content)
+    $._regex_content,               // 17  /.../ body (scans up to the closing / or EOF; raw newlines are content)
   ],
 
   extras: $ => [
@@ -1079,40 +1080,22 @@ module.exports = grammar({
       '}',
     ),
 
+    // The pattern body is the external token `_regex_content` (see externals /
+    // scanner_impl.h scan_regex_content), aliased back to `regex_pattern` so the
+    // tree shape is unchanged.  ucode lexes regexes with parse_string(lex, '/')
+    // (lexer.c parse_regexp) — the same routine as strings — so raw newlines are
+    // ordinary content and only EOF makes the literal unterminated.  A grammar
+    // token cannot model that without swallowing the file tail on an
+    // unterminated '/', which is why the body lives in the external scanner (it
+    // returns false at EOF, recovering statement-by-statement like the
+    // string-content tokens).  The scanner also handles the character-class
+    // structure (leading '^'/']' literals, nested [:name:]/[.coll.]/[=eq=]).
     regex: $ => seq(
       '/',
-      field('pattern', $.regex_pattern),
+      field('pattern', alias($._regex_content, $.regex_pattern)),
       token.immediate(prec(1, '/')),
       optional(field('flags', $.regex_flags)),
     ),
-
-    // Inside a bracket expression an optional leading '^' and then an optional
-    // leading ']' are literal members before the class reads up to its closing
-    // ']' (lexer.c ~386-393): `[]…]` and `[^]…]` do not close at the first ']'.
-    //
-    // NOTE: ucode also lets regex literals span raw newlines (lexer.c parses
-    // them with the newline-agnostic string loop), which the '\n' exclusions
-    // below deliberately do NOT allow.  Permitting them here would make an
-    // unterminated '/' swallow the rest of the file into one token, wrecking
-    // editor recovery — regex_pattern is a greedy grammar token with no
-    // false-at-EOF escape, unlike the external string-content token.  Kept as a
-    // documented divergence; the faithful fix is to move regex into the external
-    // scanner (tracked with the unterminated-string rescan item in to-fix.md).
-    regex_pattern: _ => token.immediate(prec(-1,
-      repeat1(choice(
-        seq('[', optional('^'), optional(']'), repeat(choice(
-          // POSIX bracket sub-expressions: [:class:] [.coll.] [=equiv=].
-          // Their inner ']' must not close the enclosing character class.
-          seq('[:', /[^:\n\]]*/, ':]'),
-          seq('[.', /[^.\n\]]*/, '.]'),
-          seq('[=', /[^=\n\]]*/, '=]'),
-          seq('\\', /./),
-          /[^\]\n\\]/,
-        )), ']'),
-        seq('\\', /./),
-        /[^/\\\[\n]/,
-      )),
-    )),
 
     // Ucode supports only g, i, s flags (not m, u, y, d)
     regex_flags: _ => token.immediate(/[gis]+/),

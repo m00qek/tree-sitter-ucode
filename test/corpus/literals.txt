@@ -428,6 +428,38 @@ let s = /[^]a]/g;
         flags: (regex_flags)))))
 
 ================================================================================
+Regex literal spanning a raw newline (ucode lexes regexes like strings)
+================================================================================
+
+let r = /a
+b/;
+
+--------------------------------------------------------------------------------
+
+(program
+  (lexical_declaration
+    (variable_declarator
+      name: (identifier)
+      value: (regex
+        pattern: (regex_pattern)))))
+
+================================================================================
+Regex with a raw newline inside a character class
+================================================================================
+
+let r = /[a
+b]/;
+
+--------------------------------------------------------------------------------
+
+(program
+  (lexical_declaration
+    (variable_declarator
+      name: (identifier)
+      value: (regex
+        pattern: (regex_pattern)))))
+
+================================================================================
 Lone dollar sign in template string (not a substitution)
 ================================================================================
 

@@ -863,6 +863,23 @@ b'; %}
     close: (statement_tag_close)))
 
 ================================================================================
+Regex literal spanning a raw newline inside a statement tag is content
+================================================================================
+{% x = /a
+b/; %}
+--------------------------------------------------------------------------------
+
+(markup
+  (statement_tag
+    open: (statement_tag_open)
+    (expression_statement
+      (assignment_expression
+        left: (identifier)
+        right: (regex
+          pattern: (regex_pattern))))
+    close: (statement_tag_close)))
+
+================================================================================
 Unterminated block comment inside a statement tag is rejected — produces ERROR
 :error
 ================================================================================

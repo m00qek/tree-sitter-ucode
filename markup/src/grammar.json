@@ -4867,8 +4867,13 @@
           "type": "FIELD",
           "name": "pattern",
           "content": {
-            "type": "SYMBOL",
-            "name": "regex_pattern"
+            "type": "ALIAS",
+            "content": {
+              "type": "SYMBOL",
+              "name": "_regex_content"
+            },
+            "named": true,
+            "value": "regex_pattern"
           }
         },
         {
@@ -4899,151 +4904,6 @@
           ]
         }
       ]
-    },
-    "regex_pattern": {
-      "type": "IMMEDIATE_TOKEN",
-      "content": {
-        "type": "PREC",
-        "value": -1,
-        "content": {
-          "type": "REPEAT1",
-          "content": {
-            "type": "CHOICE",
-            "members": [
-              {
-                "type": "SEQ",
-                "members": [
-                  {
-                    "type": "STRING",
-                    "value": "["
-                  },
-                  {
-                    "type": "CHOICE",
-                    "members": [
-                      {
-                        "type": "STRING",
-                        "value": "^"
-                      },
-                      {
-                        "type": "BLANK"
-                      }
-                    ]
-                  },
-                  {
-                    "type": "CHOICE",
-                    "members": [
-                      {
-                        "type": "STRING",
-                        "value": "]"
-                      },
-                      {
-                        "type": "BLANK"
-                      }
-                    ]
-                  },
-                  {
-                    "type": "REPEAT",
-                    "content": {
-                      "type": "CHOICE",
-                      "members": [
-                        {
-                          "type": "SEQ",
-                          "members": [
-                            {
-                              "type": "STRING",
-                              "value": "[:"
-                            },
-                            {
-                              "type": "PATTERN",
-                              "value": "[^:\\n\\]]*"
-                            },
-                            {
-                              "type": "STRING",
-                              "value": ":]"
-                            }
-                          ]
-                        },
-                        {
-                          "type": "SEQ",
-                          "members": [
-                            {
-                              "type": "STRING",
-                              "value": "[."
-                            },
-                            {
-                              "type": "PATTERN",
-                              "value": "[^.\\n\\]]*"
-                            },
-                            {
-                              "type": "STRING",
-                              "value": ".]"
-                            }
-                          ]
-                        },
-                        {
-                          "type": "SEQ",
-                          "members": [
-                            {
-                              "type": "STRING",
-                              "value": "[="
-                            },
-                            {
-                              "type": "PATTERN",
-                              "value": "[^=\\n\\]]*"
-                            },
-                            {
-                              "type": "STRING",
-                              "value": "=]"
-                            }
-                          ]
-                        },
-                        {
-                          "type": "SEQ",
-                          "members": [
-                            {
-                              "type": "STRING",
-                              "value": "\\"
-                            },
-                            {
-                              "type": "PATTERN",
-                              "value": "."
-                            }
-                          ]
-                        },
-                        {
-                          "type": "PATTERN",
-                          "value": "[^\\]\\n\\\\]"
-                        }
-                      ]
-                    }
-                  },
-                  {
-                    "type": "STRING",
-                    "value": "]"
-                  }
-                ]
-              },
-              {
-                "type": "SEQ",
-                "members": [
-                  {
-                    "type": "STRING",
-                    "value": "\\"
-                  },
-                  {
-                    "type": "PATTERN",
-                    "value": "."
-                  }
-                ]
-              },
-              {
-                "type": "PATTERN",
-                "value": "[^/\\\\\\[\\n]"
-              }
-            ]
-          }
-        }
-      }
     },
     "regex_flags": {
       "type": "IMMEDIATE_TOKEN",
@@ -5996,6 +5856,10 @@
     {
       "type": "SYMBOL",
       "name": "_double_quote_string_content"
+    },
+    {
+      "type": "SYMBOL",
+      "name": "_regex_content"
     }
   ],
   "inline": [

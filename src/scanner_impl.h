@@ -49,6 +49,7 @@ enum TokenType {
     COMMENT,
     SINGLE_QUOTE_STRING_CONTENT,
     DOUBLE_QUOTE_STRING_CONTENT,
+    REGEX_CONTENT,
 };
 
 static inline void advance(TSLexer *lexer) { lexer->advance(lexer, false); }
@@ -361,6 +362,93 @@ static bool scan_string_chars(TSLexer *lexer, int32_t quote, enum TokenType sym)
         if (c == quote || c == '\\')
             return has_content;
         advance(lexer);
+        has_content = true;
+    }
+}
+
+/* Consume a backslash escape (the '\' plus the escaped char).  Returns false on
+   a trailing '\' at EOF, which makes the surrounding literal unterminated. */
+static inline bool regex_consume_escape(TSLexer *lexer) {
+    advance(lexer); /* the backslash */
+    if (lexer->eof(lexer)) return false;
+    advance(lexer); /* the escaped char (any char, incl. newline) */
+    return true;
+}
+
+/*
+ * Body of a regex literal, up to the closing '/' delimiter (external token
+ * REGEX_CONTENT).  ucode lexes regexes with parse_string(lex, '/') — the SAME
+ * routine as strings (lexer.c parse_regexp) — so, exactly like scan_string_chars:
+ * raw newlines are ordinary content, and only EOF makes the literal
+ * unterminated.  Returning false at EOF discards the run so the parser recovers
+ * statement-by-statement instead of swallowing the file tail (a greedy grammar
+ * token could not do this — the reason regex moved into the scanner; see the
+ * regex rule in grammar.js).
+ *
+ * A regex additionally has character-class structure a plain string lacks
+ * (parse_string only applies it when the delimiter is '/'): inside `[ ... ]`,
+ * '/' and newlines are literal, an optional leading '^' and a leading ']' are
+ * literal members (`[]…]`, `[^]…]` do not close at the first ']'), and nested
+ * POSIX / collating / equivalence sub-expressions ([:name:] [.coll.] [=eq=])
+ * keep their inner ']' from closing the class.  We stop just before the closing
+ * '/', leaving it for the grammar (like scan_string_chars leaves the quote).
+ *
+ * An empty pattern is impossible here: `//` is a line comment, dispatched by
+ * scan_comment before REGEX_CONTENT is offered.  We still require at least one
+ * content char (return false on a leading '/') so the grammar never accepts an
+ * empty regex.
+ */
+static bool scan_regex_content(TSLexer *lexer) {
+    lexer->result_symbol = REGEX_CONTENT;
+    bool has_content = false;
+    for (;;) {
+        lexer->mark_end(lexer);
+        if (lexer->eof(lexer)) return false;
+        int32_t c = lexer->lookahead;
+        if (c == '/')
+            return has_content;
+        if (c == '\\') {
+            if (!regex_consume_escape(lexer)) return false;
+            has_content = true;
+            continue;
+        }
+        if (c == '[') {
+            advance(lexer);
+            has_content = true;
+            if (lexer->lookahead == '^') advance(lexer);
+            if (lexer->lookahead == ']') advance(lexer); /* literal leading ']' */
+            for (;;) { /* read up to the closing ']' */
+                if (lexer->eof(lexer)) return false;
+                int32_t d = lexer->lookahead;
+                if (d == '\\') {
+                    if (!regex_consume_escape(lexer)) return false;
+                    continue;
+                }
+                advance(lexer);
+                if (d == ']') break;
+                if (d == '[') { /* nested [:name:] / [.coll.] / [=eq=] */
+                    int32_t kind = lexer->lookahead;
+                    if (kind == ':' || kind == '.' || kind == '=') {
+                        advance(lexer); /* the kind char */
+                        for (;;) { /* read up to the matching kind + ']' */
+                            if (lexer->eof(lexer)) return false;
+                            int32_t e = lexer->lookahead;
+                            if (e == '\\') {
+                                if (!regex_consume_escape(lexer)) return false;
+                                continue;
+                            }
+                            advance(lexer);
+                            if (e == kind && lexer->lookahead == ']') {
+                                advance(lexer);
+                                break;
+                            }
+                        }
+                    }
+                }
+            }
+            continue;
+        }
+        advance(lexer); /* ordinary content, including raw newlines */
         has_content = true;
     }
 }
@@ -683,6 +771,15 @@ static bool ucode_scanner_scan(
         return scan_string_chars(lexer, '\'', SINGLE_QUOTE_STRING_CONTENT);
     if (valid_symbols[DOUBLE_QUOTE_STRING_CONTENT] && !valid_symbols[AUTOMATIC_SEMICOLON])
         return scan_string_chars(lexer, '"', DOUBLE_QUOTE_STRING_CONTENT);
+
+    /*
+     * Regex body: only inside a `/ ... /` literal, dispatched like the string
+     * bodies above (and ahead of COMMENT so a `/` opening a regex is not lexed
+     * as a comment/division).  The !AUTOMATIC_SEMICOLON guard mirrors them: fire
+     * only when regex content is the unambiguous interpretation.
+     */
+    if (valid_symbols[REGEX_CONTENT] && !valid_symbols[AUTOMATIC_SEMICOLON])
+        return scan_regex_content(lexer);
 
     /*
      * Comment body: only valid inside {# ... #}, where no other external token
