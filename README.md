@@ -54,6 +54,13 @@ The grammar tracks ucode's parser closely, with a few deliberate divergences:
   end-of-line) silently swallows a same-line `%}` into the comment; the grammar reports an
   error in both cases so the mistake surfaces in an editor. Put the comment on its own line
   (with `%}` on the next) or use `/* */` to close on the same line.
+- **Some constructs ucode rejects only at compile time still parse.** The grammar
+  describes ucode's *syntax*; semantic rejections the compiler makes after parsing are
+  left to the compiler (and to linters), not enforced here — matching how tree-sitter
+  grammars work in general. Known cases: a statement-position or unparenthesized
+  arrow-body object literal (`{a: 1};` and `x => {a: 1}`, which ucode treats as a block
+  and rejects — write `({a: 1})`); and `break`/`continue` outside a loop or switch. These
+  parse as well-formed trees even though `ucode -c` reports a syntax error.
 
 ## Doc comment grammar (ucdocs)
 

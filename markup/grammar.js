@@ -341,6 +341,12 @@ module.exports = grammar({
       $.empty_statement,
     ),
 
+    // A leading `{` in statement position parses here as an object literal, but
+    // ucode always opens a block there and rejects it (it has no labeled
+    // statements, so `{a: 1};` is a block whose `a: 1` is a syntax error).
+    // Forcing that error would need a whole `expression`-can't-start-with-`{`
+    // hierarchy; we leave the semantic rejection to the compiler instead (a
+    // documented divergence — see README; the same applies to the arrow body).
     expression_statement: $ => seq(
       $._expressions,
       $._semicolon,
@@ -678,6 +684,9 @@ module.exports = grammar({
     ),
 
     // ucode has no labeled statements, so `break`/`continue` take no label.
+    // These parse anywhere a statement is valid, including top level; ucode
+    // rejects `break`/`continue` outside a loop or switch, but only at compile
+    // time — that context check is left to the compiler (documented divergence).
     break_statement: $ => seq(
       'break',
       $._semicolon,
@@ -972,6 +981,9 @@ module.exports = grammar({
         $._call_signature,
       ),
       '=>',
+      // `x => {a: 1}` parses the body as an object, but ucode reads `{` after
+      // `=>` as a block and rejects it — write `x => ({a: 1})` for an object.
+      // Same root as expression_statement's leading-`{` divergence (see there).
       field('body', choice(
         $.expression,
         $.statement_block,
