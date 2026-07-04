@@ -1234,6 +1234,13 @@
               "value": "endif"
             },
             {
+              "type": "REPEAT",
+              "content": {
+                "type": "SYMBOL",
+                "name": "statement"
+              }
+            },
+            {
               "type": "FIELD",
               "name": "end_close",
               "content": {
@@ -1359,6 +1366,13 @@
         {
           "type": "STRING",
           "value": ":"
+        },
+        {
+          "type": "REPEAT",
+          "content": {
+            "type": "SYMBOL",
+            "name": "statement"
+          }
         },
         {
           "type": "FIELD",
@@ -1889,6 +1903,13 @@
               "value": "endfor"
             },
             {
+              "type": "REPEAT",
+              "content": {
+                "type": "SYMBOL",
+                "name": "statement"
+              }
+            },
+            {
               "type": "FIELD",
               "name": "end_close",
               "content": {
@@ -2016,6 +2037,13 @@
             {
               "type": "STRING",
               "value": "endfor"
+            },
+            {
+              "type": "REPEAT",
+              "content": {
+                "type": "SYMBOL",
+                "name": "statement"
+              }
             },
             {
               "type": "FIELD",
@@ -2357,6 +2385,13 @@
               "value": "endwhile"
             },
             {
+              "type": "REPEAT",
+              "content": {
+                "type": "SYMBOL",
+                "name": "statement"
+              }
+            },
+            {
               "type": "FIELD",
               "name": "end_close",
               "content": {
@@ -2429,6 +2464,13 @@
         {
           "type": "STRING",
           "value": "endfunction"
+        },
+        {
+          "type": "REPEAT",
+          "content": {
+            "type": "SYMBOL",
+            "name": "statement"
+          }
         },
         {
           "type": "FIELD",

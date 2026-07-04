@@ -224,6 +224,14 @@ Give each alt-syntax block its own tag pair — this nests to any depth:
 {% endfor %}
 ```
 
+A statement tag is a slice of ucode's statement stream, so extra statements may
+share a tag with an alt-syntax keyword. **Trailing** statements are supported —
+after the header colon (`{% if (c): log(c); %}`, already the case for `if`, and
+now also `elif`) and after an end keyword (`{% endif; %}`, `{% endfor; print(n); %}`,
+etc.). **Leading** statements in the same tag as the keyword
+(`{% log(n); if (c): %}`, `{% log(n); endif %}`) are not supported — put them in
+their own tag.
+
 ucode also allows a *compact* form that packs several openers into one tag
 and their closers into another (`{% for (x in xs): for (y in ys): %} … {% endfor; endfor %}`).
 The grammar supports the compact form **only for two nested `for`-in loops**.

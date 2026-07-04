@@ -644,6 +644,33 @@ Markup if / elif / else spanning tags
     end_close: (statement_tag_close)))
 
 ================================================================================
+Trailing statements share the elif and endif tags (ucode statement stream)
+================================================================================
+{% if (a): %}x{% elif (b): c(); %}y{% endif; %}
+--------------------------------------------------------------------------------
+
+(markup
+  (if_alt_statement
+    open: (statement_tag_open)
+    condition: (parenthesized_expression
+      (identifier))
+    close: (statement_tag_close)
+    body: (raw_text)
+    elif_clause: (elif_clause_tag
+      open: (statement_tag_open)
+      condition: (parenthesized_expression
+        (identifier))
+      (expression_statement
+        (call_expression
+          function: (identifier)
+          arguments: (arguments)))
+      close: (statement_tag_close)
+      body: (raw_text))
+    end_open: (statement_tag_open)
+    (empty_statement)
+    end_close: (statement_tag_close)))
+
+================================================================================
 Nested if_alt inside an elif body
 ================================================================================
 {% if (a): %}A{% elif (b): %}{% if (c): %}B{% endif %}{% else %}C{% endif %}
