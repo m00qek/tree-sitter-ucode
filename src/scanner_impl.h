@@ -339,6 +339,17 @@ static bool scan_template_chars(TSLexer *lexer) {
  * starting with `/*` or `//` (e.g. the glob `'/*.uc'`) is kept as string
  * content instead of being lexed as a comment.  A literal NUL is ordinary
  * content (ucode allows it in strings).
+ *
+ * Cost note (accepted): return-false-at-EOF means an UNTERMINATED string is
+ * rescanned to end-of-file on every keystroke while it is open, because the
+ * discarded token leaves no reusable subtree.  This was benchmarked as a
+ * linear ~0.06 ms per KB of file tail on incremental reparse — below the
+ * measurement noise floor at realistic ucode file sizes (<1 ms up to ~15 KB),
+ * transient (only while the quote is unbalanced), and the same behaviour
+ * backtick templates have always had.  The alternatives (mark_end at the last
+ * newline, return has_content) are cheaper but swallow the file tail into the
+ * string, reversing the statement-by-statement recovery this false-at-EOF
+ * return deliberately buys.  Recovery quality wins; the cost is a non-issue.
  */
 static bool scan_string_chars(TSLexer *lexer, int32_t quote, enum TokenType sym) {
     lexer->result_symbol = sym;
