@@ -256,7 +256,7 @@ for (let k in obj) print(k);
         arguments: (arguments (identifier))))))
 
 ================================================================================
-For-in with let keyword
+For-in with let keyword and block body
 ================================================================================
 
 for (let k in obj) {}

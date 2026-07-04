@@ -29,8 +29,8 @@ module.exports = grammar({
     $.expression_tag_trim_close,   // 12  -}}
     $.comment_content,             // 13  {# ... #} body (scans up to #}/-#})
     $.comment,                     // 14  // line and /* */ block comments
-    $._single_quote_string_content, // 15  '...' body (scans up to ' / \ / newline)
-    $._double_quote_string_content, // 16  "..." body (scans up to " / \ / newline)
+    $._single_quote_string_content, // 15  '...' body (scans up to ' / \ / EOF; raw newlines are content)
+    $._double_quote_string_content, // 16  "..." body (scans up to " / \ / EOF; raw newlines are content)
   ],
 
   extras: $ => [

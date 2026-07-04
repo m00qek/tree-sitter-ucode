@@ -45,10 +45,12 @@ The grammar tracks ucode's parser closely, with a few deliberate divergences:
   template tag close, or an alt-syntax end keyword (`endif`/`endfor`/`endwhile`/
   `endfunction`/`elif`/`else`), whereas the grammar also tolerates a **bare newline
   between statements** so that in-progress edits are not flagged as errors. The leniency
-  spans comments too: a line or block comment sitting on its own line between two
-  statements still gets a semicolon inserted at the boundary. Conversely, a comment does
-  **not** break an expression that continues on the next line — `a\n// note\n.b` stays a
-  single member access and `a\n/* note */\n+ b` a single addition, matching ucode.
+  spans a comment that sits on **its own line** between two statements — the boundary
+  semicolon is still inserted. It does not extend to a statement that begins on the
+  comment's own closing line: `x = 1` `/* c */ y = 2` (with `y = 2` after the `*/`)
+  errors, matching ucode. Conversely, a comment does **not** break an expression that
+  continues on the next line — `a\n// note\n.b` stays a single member access and
+  `a\n/* note */\n+ b` a single addition, also matching ucode.
 - **Unterminated tags and the single-line `// … %}` footgun are flagged, not tolerated.**
   ucode leniently accepts an unterminated `{% … ` at EOF, and (because `//` runs to
   end-of-line) silently swallows a same-line `%}` into the comment; the grammar reports an

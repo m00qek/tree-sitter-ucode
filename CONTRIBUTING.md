@@ -71,7 +71,7 @@ To change a query that both grammars share (folds, tags, textobjects, locals, in
 
 The external lexer is hand-written and handles features that context-free grammars cannot express: automatic semicolon insertion, template string content, comment/prose terminators, and ternary-vs-nullish disambiguation. All of its logic lives in **`src/scanner_impl.h`** — edit that file. `src/scanner.c` and `markup/src/scanner.c` are thin shims that only export the entry points and `#include "scanner_impl.h"`, so a single implementation is shared by both the `ucode` and `ucode_markup` parsers. None of these are touched by `tree-sitter generate`.
 
-> **Build-cache gotcha:** `tree-sitter build` keys its compiled scanner object on `scanner.c`, not on the `#include`d `scanner_impl.h`. After editing `scanner_impl.h` you must `touch src/scanner.c markup/src/scanner.c` and `rm -rf ~/.cache/tree-sitter`, otherwise the stale object is reused and your change appears to have no effect.
+> **Stale-scanner gotcha:** `tree-sitter build` recompiles the scanner from source every time, so it always picks up `scanner_impl.h` edits. The staleness bites the *loader* cache instead: `tree-sitter test`/`parse` runs **without** `--lib-path` load a pre-built parser from `~/.cache/tree-sitter`, and that cache is keyed on `scanner.c` (not the `#include`d `scanner_impl.h`), so an edit to `scanner_impl.h` alone is not detected. After editing it, either `touch src/scanner.c markup/src/scanner.c` (bumps the key) or `rm -rf ~/.cache/tree-sitter` (nukes it) before running the CLI without `--lib-path` — otherwise the stale parser is reused and your change appears to have no effect. Passing `--lib-path` to a freshly `cc`-built `.so` sidesteps the cache entirely.
 
 ## Adding corpus tests
 
