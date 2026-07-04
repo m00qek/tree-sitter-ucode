@@ -6,6 +6,7 @@
 'use strict';
 
 const fs   = require('fs');
+const os   = require('os');
 const path = require('path');
 const { execFileSync } = require('child_process');
 
@@ -14,6 +15,12 @@ const { execFileSync } = require('child_process');
 const ROOT  = path.dirname(__dirname);
 const ext   = process.platform === 'win32' ? 'dll' : 'so';
 const force = process.argv.includes('--force');
+
+// A trivial source file for the query compile-check below. A query is compiled
+// when it loads (node names and structure are validated then), independent of
+// what it matches, so an empty file is enough.
+const querySource = path.join(os.tmpdir(), 'ts-ucode-query-check.txt');
+fs.writeFileSync(querySource, '');
 
 // The C/H sources in a generated `src` directory (parser.c, scanner.c,
 // scanner_impl.h, …) whose mtimes decide whether a rebuild is needed.
@@ -30,10 +37,11 @@ function srcFiles(dir) {
 // deps:      source files whose mtime is compared against the built library.
 //            ucode_markup's scanner is a shim that #includes ../../src/
 //            scanner_impl.h, so that shared header is part of its deps too.
+// queryDir:  directory of *.scm query files compile-checked against the grammar
 const grammars = [
-  { name: 'ucode',        buildPath: '.',        project: null,     deps: srcFiles('src') },
-  { name: 'ucode_markup', buildPath: './markup', project: 'markup', deps: srcFiles('markup/src').concat(path.join(ROOT, 'src/scanner_impl.h')) },
-  { name: 'ucdocs',       buildPath: './ucdocs', project: 'ucdocs', deps: srcFiles('ucdocs/src') },
+  { name: 'ucode',        buildPath: '.',        project: null,     deps: srcFiles('src'), queryDir: 'queries' },
+  { name: 'ucode_markup', buildPath: './markup', project: 'markup', deps: srcFiles('markup/src').concat(path.join(ROOT, 'src/scanner_impl.h')), queryDir: 'markup/queries' },
+  { name: 'ucdocs',       buildPath: './ucdocs', project: 'ucdocs', deps: srcFiles('ucdocs/src'), queryDir: 'ucdocs/queries' },
 ];
 
 // Rebuild when forced, when the library is missing, or when any source is
@@ -56,4 +64,18 @@ for (const g of grammars) {
   const testArgs = ['test', '--lib-path', lib, '--lang-name', g.name];
   if (g.project) testArgs.push('-p', g.project);
   execFileSync('tree-sitter', testArgs, { stdio: 'inherit', cwd: ROOT });
+
+  // Compile-check every query file against the freshly built grammar, so a
+  // query that references a renamed/removed node (or has a syntax error) fails
+  // here instead of silently in an editor. `tree-sitter query` compiles the
+  // query when it loads; a non-zero exit throws and fails the run.
+  const queryAbs = path.join(ROOT, g.queryDir);
+  for (const f of fs.readdirSync(queryAbs).filter((f) => f.endsWith('.scm'))) {
+    execFileSync(
+      'tree-sitter',
+      ['query', '--lib-path', lib, '--lang-name', g.name, path.join(queryAbs, f), querySource],
+      { stdio: ['ignore', 'ignore', 'inherit'], cwd: ROOT },
+    );
+  }
+  console.log(`${g.name}: ${g.queryDir}/*.scm compile OK`);
 }

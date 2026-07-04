@@ -41,13 +41,18 @@ const dstDir = path.join(root, 'markup', 'queries');
 // line and would not open the scope reliably.  Capture the whole node for
 // @indent.begin on both clauses (as the code form does for else), so elif and
 // else bodies indent identically.
+//
+// Both captures sit on the CLAUSE-TAG node, so each clause is one dual-capture
+// pattern.  Do NOT move @indent.branch onto the keyword (`("elif" @indent.branch)
+// @indent.begin`): that captures the "elif"/"else" token, a different (smaller)
+// range than the clause tag, so it is NOT equivalent.  The dual-capture form
+// here was verified capture-identical to the four single-capture patterns it
+// replaces via `tree-sitter query` on an if/elif/else sample.
 const INDENTS_MARKUP_EXTRA = [
   '',
   '; ── Markup-only alt-syntax clause tags ────────────────────────────────',
-  '(else_alt_clause_tag "else") @indent.branch',
-  '(elif_clause_tag "elif") @indent.branch',
-  '(else_alt_clause_tag) @indent.begin',
-  '(elif_clause_tag) @indent.begin',
+  '(elif_clause_tag "elif") @indent.branch @indent.begin',
+  '(else_alt_clause_tag "else") @indent.branch @indent.begin',
   '',
 ].join('\n');
 
