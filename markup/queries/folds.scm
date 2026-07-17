@@ -40,3 +40,11 @@
 ; -------------------------------------------------------------------------
 
 (function_declaration "endfunction") @fold
+
+; ── Markup-only alt-syntax spanning forms ─────────────────────────────
+[
+  (if_alt_statement_tag)
+  (for_alt_statement_tag)
+  (for_in_alt_statement_tag)
+  (while_alt_statement_tag)
+] @fold

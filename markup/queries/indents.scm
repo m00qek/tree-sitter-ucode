@@ -66,6 +66,12 @@
 (switch_case "case") @indent.branch
 (switch_default "default") @indent.branch
 
+; ── Markup-only alt-syntax spanning forms ─────────────────────────────
+(if_alt_statement_tag ":" @indent.begin)
+(for_alt_statement_tag ":" @indent.begin)
+(for_in_alt_statement_tag ":" @indent.begin)
+(while_alt_statement_tag ":" @indent.begin)
+
 ; ── Markup-only alt-syntax clause tags ────────────────────────────────
 (elif_clause_tag "elif") @indent.branch @indent.begin
 (else_alt_clause_tag "else") @indent.branch @indent.begin

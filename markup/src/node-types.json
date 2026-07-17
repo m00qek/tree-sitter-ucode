@@ -747,11 +747,11 @@
             "named": true
           },
           {
-            "type": "for_alt_statement",
+            "type": "for_alt_statement_tag",
             "named": true
           },
           {
-            "type": "for_in_alt_statement",
+            "type": "for_in_alt_statement_tag",
             "named": true
           },
           {
@@ -759,7 +759,7 @@
             "named": true
           },
           {
-            "type": "if_alt_statement",
+            "type": "if_alt_statement_tag",
             "named": true
           },
           {
@@ -771,7 +771,7 @@
             "named": true
           },
           {
-            "type": "while_alt_statement",
+            "type": "while_alt_statement_tag",
             "named": true
           }
         ]
@@ -863,11 +863,11 @@
             "named": true
           },
           {
-            "type": "for_alt_statement",
+            "type": "for_alt_statement_tag",
             "named": true
           },
           {
-            "type": "for_in_alt_statement",
+            "type": "for_in_alt_statement_tag",
             "named": true
           },
           {
@@ -875,7 +875,7 @@
             "named": true
           },
           {
-            "type": "if_alt_statement",
+            "type": "if_alt_statement_tag",
             "named": true
           },
           {
@@ -887,7 +887,7 @@
             "named": true
           },
           {
-            "type": "while_alt_statement",
+            "type": "while_alt_statement_tag",
             "named": true
           }
         ]
@@ -1193,6 +1193,80 @@
         "required": false,
         "types": [
           {
+            "type": "statement",
+            "named": true
+          }
+        ]
+      },
+      "condition": {
+        "multiple": true,
+        "required": true,
+        "types": [
+          {
+            "type": ";",
+            "named": false
+          },
+          {
+            "type": "empty_statement",
+            "named": true
+          },
+          {
+            "type": "expression",
+            "named": true
+          },
+          {
+            "type": "sequence_expression",
+            "named": true
+          }
+        ]
+      },
+      "increment": {
+        "multiple": false,
+        "required": false,
+        "types": [
+          {
+            "type": "expression",
+            "named": true
+          },
+          {
+            "type": "sequence_expression",
+            "named": true
+          }
+        ]
+      },
+      "initializer": {
+        "multiple": false,
+        "required": true,
+        "types": [
+          {
+            "type": "empty_statement",
+            "named": true
+          },
+          {
+            "type": "expression",
+            "named": true
+          },
+          {
+            "type": "lexical_declaration",
+            "named": true
+          },
+          {
+            "type": "sequence_expression",
+            "named": true
+          }
+        ]
+      }
+    }
+  },
+  {
+    "type": "for_alt_statement_tag",
+    "named": true,
+    "fields": {
+      "body": {
+        "multiple": true,
+        "required": false,
+        "types": [
+          {
             "type": "comment_tag",
             "named": true
           },
@@ -1201,7 +1275,19 @@
             "named": true
           },
           {
+            "type": "for_alt_statement_tag",
+            "named": true
+          },
+          {
+            "type": "for_in_alt_statement_tag",
+            "named": true
+          },
+          {
             "type": "function_alt_declaration",
+            "named": true
+          },
+          {
+            "type": "if_alt_statement_tag",
             "named": true
           },
           {
@@ -1209,18 +1295,18 @@
             "named": true
           },
           {
-            "type": "statement",
+            "type": "statement_tag",
             "named": true
           },
           {
-            "type": "statement_tag",
+            "type": "while_alt_statement_tag",
             "named": true
           }
         ]
       },
       "close": {
         "multiple": false,
-        "required": false,
+        "required": true,
         "types": [
           {
             "type": "statement_tag_close",
@@ -1256,7 +1342,7 @@
       },
       "end_close": {
         "multiple": false,
-        "required": false,
+        "required": true,
         "types": [
           {
             "type": "statement_tag_close",
@@ -1270,7 +1356,7 @@
       },
       "end_open": {
         "multiple": false,
-        "required": false,
+        "required": true,
         "types": [
           {
             "type": "statement_tag_lstrip_open",
@@ -1324,7 +1410,7 @@
       },
       "open": {
         "multiple": false,
-        "required": false,
+        "required": true,
         "types": [
           {
             "type": "statement_tag_lstrip_open",
@@ -1361,6 +1447,66 @@
         "required": false,
         "types": [
           {
+            "type": "statement",
+            "named": true
+          }
+        ]
+      },
+      "kind": {
+        "multiple": false,
+        "required": false,
+        "types": [
+          {
+            "type": "let",
+            "named": false
+          }
+        ]
+      },
+      "left": {
+        "multiple": false,
+        "required": true,
+        "types": [
+          {
+            "type": "identifier",
+            "named": true
+          }
+        ]
+      },
+      "right": {
+        "multiple": false,
+        "required": true,
+        "types": [
+          {
+            "type": "expression",
+            "named": true
+          },
+          {
+            "type": "sequence_expression",
+            "named": true
+          }
+        ]
+      },
+      "value": {
+        "multiple": false,
+        "required": false,
+        "types": [
+          {
+            "type": "identifier",
+            "named": true
+          }
+        ]
+      }
+    }
+  },
+  {
+    "type": "for_in_alt_statement_tag",
+    "named": true,
+    "fields": {
+      "body": {
+        "multiple": true,
+        "required": false,
+        "types": [
+          {
             "type": "comment_tag",
             "named": true
           },
@@ -1369,7 +1515,19 @@
             "named": true
           },
           {
+            "type": "for_alt_statement_tag",
+            "named": true
+          },
+          {
+            "type": "for_in_alt_statement_tag",
+            "named": true
+          },
+          {
             "type": "function_alt_declaration",
+            "named": true
+          },
+          {
+            "type": "if_alt_statement_tag",
             "named": true
           },
           {
@@ -1377,18 +1535,18 @@
             "named": true
           },
           {
-            "type": "statement",
+            "type": "statement_tag",
             "named": true
           },
           {
-            "type": "statement_tag",
+            "type": "while_alt_statement_tag",
             "named": true
           }
         ]
       },
       "close": {
         "multiple": false,
-        "required": false,
+        "required": true,
         "types": [
           {
             "type": "statement_tag_close",
@@ -1402,7 +1560,7 @@
       },
       "end_close": {
         "multiple": false,
-        "required": false,
+        "required": true,
         "types": [
           {
             "type": "statement_tag_close",
@@ -1416,7 +1574,7 @@
       },
       "end_open": {
         "multiple": false,
-        "required": false,
+        "required": true,
         "types": [
           {
             "type": "statement_tag_lstrip_open",
@@ -1454,7 +1612,7 @@
       },
       "open": {
         "multiple": false,
-        "required": false,
+        "required": true,
         "types": [
           {
             "type": "statement_tag_lstrip_open",
@@ -1804,11 +1962,11 @@
             "named": true
           },
           {
-            "type": "for_alt_statement",
+            "type": "for_alt_statement_tag",
             "named": true
           },
           {
-            "type": "for_in_alt_statement",
+            "type": "for_in_alt_statement_tag",
             "named": true
           },
           {
@@ -1816,7 +1974,7 @@
             "named": true
           },
           {
-            "type": "if_alt_statement",
+            "type": "if_alt_statement_tag",
             "named": true
           },
           {
@@ -1828,7 +1986,7 @@
             "named": true
           },
           {
-            "type": "while_alt_statement",
+            "type": "while_alt_statement_tag",
             "named": true
           }
         ]
@@ -2018,6 +2176,52 @@
         "required": false,
         "types": [
           {
+            "type": "statement",
+            "named": true
+          }
+        ]
+      },
+      "condition": {
+        "multiple": false,
+        "required": true,
+        "types": [
+          {
+            "type": "parenthesized_expression",
+            "named": true
+          }
+        ]
+      },
+      "elif_clause": {
+        "multiple": true,
+        "required": false,
+        "types": [
+          {
+            "type": "elif_clause",
+            "named": true
+          }
+        ]
+      },
+      "else_body": {
+        "multiple": false,
+        "required": false,
+        "types": [
+          {
+            "type": "else_alt_clause",
+            "named": true
+          }
+        ]
+      }
+    }
+  },
+  {
+    "type": "if_alt_statement_tag",
+    "named": true,
+    "fields": {
+      "body": {
+        "multiple": true,
+        "required": false,
+        "types": [
+          {
             "type": "comment_tag",
             "named": true
           },
@@ -2026,7 +2230,19 @@
             "named": true
           },
           {
+            "type": "for_alt_statement_tag",
+            "named": true
+          },
+          {
+            "type": "for_in_alt_statement_tag",
+            "named": true
+          },
+          {
             "type": "function_alt_declaration",
+            "named": true
+          },
+          {
+            "type": "if_alt_statement_tag",
             "named": true
           },
           {
@@ -2034,18 +2250,18 @@
             "named": true
           },
           {
-            "type": "statement",
+            "type": "statement_tag",
             "named": true
           },
           {
-            "type": "statement_tag",
+            "type": "while_alt_statement_tag",
             "named": true
           }
         ]
       },
       "close": {
         "multiple": false,
-        "required": false,
+        "required": true,
         "types": [
           {
             "type": "statement_tag_close",
@@ -2072,10 +2288,6 @@
         "required": false,
         "types": [
           {
-            "type": "elif_clause",
-            "named": true
-          },
-          {
             "type": "elif_clause_tag",
             "named": true
           }
@@ -2086,10 +2298,6 @@
         "required": false,
         "types": [
           {
-            "type": "else_alt_clause",
-            "named": true
-          },
-          {
             "type": "else_alt_clause_tag",
             "named": true
           }
@@ -2097,7 +2305,7 @@
       },
       "end_close": {
         "multiple": false,
-        "required": false,
+        "required": true,
         "types": [
           {
             "type": "statement_tag_close",
@@ -2111,7 +2319,7 @@
       },
       "end_open": {
         "multiple": false,
-        "required": false,
+        "required": true,
         "types": [
           {
             "type": "statement_tag_lstrip_open",
@@ -2129,7 +2337,7 @@
       },
       "open": {
         "multiple": false,
-        "required": false,
+        "required": true,
         "types": [
           {
             "type": "statement_tag_lstrip_open",
@@ -2401,11 +2609,11 @@
           "named": true
         },
         {
-          "type": "for_alt_statement",
+          "type": "for_alt_statement_tag",
           "named": true
         },
         {
-          "type": "for_in_alt_statement",
+          "type": "for_in_alt_statement_tag",
           "named": true
         },
         {
@@ -2417,7 +2625,7 @@
           "named": true
         },
         {
-          "type": "if_alt_statement",
+          "type": "if_alt_statement_tag",
           "named": true
         },
         {
@@ -2429,7 +2637,7 @@
           "named": true
         },
         {
-          "type": "while_alt_statement",
+          "type": "while_alt_statement_tag",
           "named": true
         }
       ]
@@ -3095,6 +3303,32 @@
         "required": false,
         "types": [
           {
+            "type": "statement",
+            "named": true
+          }
+        ]
+      },
+      "condition": {
+        "multiple": false,
+        "required": true,
+        "types": [
+          {
+            "type": "parenthesized_expression",
+            "named": true
+          }
+        ]
+      }
+    }
+  },
+  {
+    "type": "while_alt_statement_tag",
+    "named": true,
+    "fields": {
+      "body": {
+        "multiple": true,
+        "required": false,
+        "types": [
+          {
             "type": "comment_tag",
             "named": true
           },
@@ -3103,7 +3337,19 @@
             "named": true
           },
           {
+            "type": "for_alt_statement_tag",
+            "named": true
+          },
+          {
+            "type": "for_in_alt_statement_tag",
+            "named": true
+          },
+          {
             "type": "function_alt_declaration",
+            "named": true
+          },
+          {
+            "type": "if_alt_statement_tag",
             "named": true
           },
           {
@@ -3111,18 +3357,18 @@
             "named": true
           },
           {
-            "type": "statement",
+            "type": "statement_tag",
             "named": true
           },
           {
-            "type": "statement_tag",
+            "type": "while_alt_statement_tag",
             "named": true
           }
         ]
       },
       "close": {
         "multiple": false,
-        "required": false,
+        "required": true,
         "types": [
           {
             "type": "statement_tag_close",
@@ -3146,7 +3392,7 @@
       },
       "end_close": {
         "multiple": false,
-        "required": false,
+        "required": true,
         "types": [
           {
             "type": "statement_tag_close",
@@ -3160,7 +3406,7 @@
       },
       "end_open": {
         "multiple": false,
-        "required": false,
+        "required": true,
         "types": [
           {
             "type": "statement_tag_lstrip_open",
@@ -3178,7 +3424,7 @@
       },
       "open": {
         "multiple": false,
-        "required": false,
+        "required": true,
         "types": [
           {
             "type": "statement_tag_lstrip_open",

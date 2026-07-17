@@ -27,12 +27,20 @@
 ["for" "endfor" "while" "endwhile"] @keyword.repeat
 "in"                                @keyword.operator
 
-(if_alt_statement     ":" @punctuation.delimiter)
-(elif_clause_tag      ":" @punctuation.delimiter)
-(for_alt_statement    ":" @punctuation.delimiter)
-(for_in_alt_statement ":" @punctuation.delimiter)
-(while_alt_statement  ":" @punctuation.delimiter)
-(function_declaration ":" @punctuation.delimiter)
+; Each alt-statement rule is split in grammar.js into a code-only form (used
+; when the alt-syntax appears inside a single statement_tag's code) and a
+; markup-only `_tag` form (spanning tag boundaries) — both need their own
+; pattern here since they are now distinct node types.
+(if_alt_statement         ":" @punctuation.delimiter)
+(if_alt_statement_tag     ":" @punctuation.delimiter)
+(elif_clause_tag          ":" @punctuation.delimiter)
+(for_alt_statement        ":" @punctuation.delimiter)
+(for_alt_statement_tag    ":" @punctuation.delimiter)
+(for_in_alt_statement     ":" @punctuation.delimiter)
+(for_in_alt_statement_tag ":" @punctuation.delimiter)
+(while_alt_statement      ":" @punctuation.delimiter)
+(while_alt_statement_tag  ":" @punctuation.delimiter)
+(function_declaration     ":" @punctuation.delimiter)
 
 ; ── Code tokens inside statement/expression tags are highlighted via injection ─
 ; (see markup/queries/injections.scm)

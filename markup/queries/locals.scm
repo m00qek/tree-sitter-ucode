@@ -110,3 +110,13 @@
 ; -------------------------------------------------------------------------
 
 (identifier) @local.reference
+
+; ── Markup-only alt-syntax spanning forms ─────────────────────────────
+(for_alt_statement_tag) @local.scope
+(for_in_alt_statement_tag) @local.scope
+(for_in_alt_statement_tag
+  kind: _
+  left: (identifier) @local.definition.var)
+(for_in_alt_statement_tag
+  kind: _
+  value: (identifier) @local.definition.var)

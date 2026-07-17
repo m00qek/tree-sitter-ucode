@@ -28,24 +28,26 @@
 ; Alt-syntax header expressions.
 ;
 ; Conditions and loop headers live directly on the alt-syntax node, not
-; inside a statement_tag, so the captures above do not reach them.  The
-; `open: (_)` guard selects the markup form of each rule (the one with tag
-; delimiters) and excludes the code form that appears inside statement_tag
-; bodies (which are already covered by the statement_tag capture above).
+; inside a statement_tag, so the captures above do not reach them.  Each
+; alt-statement rule is split in grammar.js into a code-only form (reachable
+; from `statement`, already covered by the statement_tag capture above when
+; it appears inside one) and a markup-only `_tag` form (the one with tag
+; delimiters, spanning tag boundaries) — only the `_tag` forms are targeted
+; here.
 
-(if_alt_statement    open: (_) condition: (_) @injection.content (#set! injection.language "ucode") (#set! injection.combined))
-(elif_clause_tag                condition: (_) @injection.content (#set! injection.language "ucode") (#set! injection.combined))
-(while_alt_statement open: (_) condition: (_) @injection.content (#set! injection.language "ucode") (#set! injection.combined))
+(if_alt_statement_tag    condition: (_) @injection.content (#set! injection.language "ucode") (#set! injection.combined))
+(elif_clause_tag         condition: (_) @injection.content (#set! injection.language "ucode") (#set! injection.combined))
+(while_alt_statement_tag condition: (_) @injection.content (#set! injection.language "ucode") (#set! injection.combined))
 
-(for_alt_statement open: (_) initializer: (_) @injection.content
+(for_alt_statement_tag initializer: (_) @injection.content
   (#not-type? @injection.content empty_statement)
   (#set! injection.language "ucode") (#set! injection.combined))
-(for_alt_statement open: (_) condition: (_) @injection.content
+(for_alt_statement_tag condition: (_) @injection.content
   (#not-type? @injection.content empty_statement)
   (#set! injection.language "ucode") (#set! injection.combined))
-(for_alt_statement open: (_) increment: (_) @injection.content (#set! injection.language "ucode") (#set! injection.combined))
+(for_alt_statement_tag increment: (_) @injection.content (#set! injection.language "ucode") (#set! injection.combined))
 
-(for_in_alt_statement open: (_) right: (_) @injection.content (#set! injection.language "ucode") (#set! injection.combined))
+(for_in_alt_statement_tag right: (_) @injection.content (#set! injection.language "ucode") (#set! injection.combined))
 
 ; Inject ucdocs into JSDoc block comments (/** ... */).
 ; The [^*/] guard excludes /*** section dividers (≥3 stars) and /**/ (empty, non-JSDoc).

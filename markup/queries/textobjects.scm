@@ -86,3 +86,9 @@
 
 (statement_block) @block.outer
 (statement_block (_) @block.inner)
+
+; ── Markup-only alt-syntax spanning forms ─────────────────────────────
+(if_alt_statement_tag) @conditional.outer
+(for_alt_statement_tag) @loop.outer
+(for_in_alt_statement_tag) @loop.outer
+(while_alt_statement_tag) @loop.outer

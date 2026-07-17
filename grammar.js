@@ -170,11 +170,14 @@ module.exports = grammar({
       $.expression_tag,
       $.comment_tag,
       $.statement_tag,
-      // Alt-syntax constructs that span tag boundaries:
-      $.if_alt_statement,
-      $.for_alt_statement,
-      $.for_in_alt_statement,
-      $.while_alt_statement,
+      // Alt-syntax constructs that span tag boundaries. Each has a sibling
+      // code-only rule (if_alt_statement, for_alt_statement, etc., without
+      // the _tag suffix) reachable from `statement` instead — see the
+      // if_alt_statement/if_alt_statement_tag split for why they're separate.
+      $.if_alt_statement_tag,
+      $.for_alt_statement_tag,
+      $.for_in_alt_statement_tag,
+      $.while_alt_statement_tag,
       $.function_alt_declaration,
     ),
 
@@ -446,55 +449,66 @@ module.exports = grammar({
       optional(field('alternative', $.else_clause)),
     )),
 
-    // Alternative colon/endif syntax — two forms:
-    //   code form:   if (cond): stmts … endif        (used in program / statement_tag)
-    //   markup form: {% if (cond): %} … {% endif %}   (spans tag boundaries in markup)
-    //
+    // Alternative colon/endif syntax — two forms, in two separate rules (the
+    // same split already used for elif_clause/elif_clause_tag and
+    // else_alt_clause/else_alt_clause_tag below):
+    //   if_alt_statement:     if (cond): stmts … endif       (code; reachable
+    //                          from `statement`, so also valid inside a single
+    //                          statement_tag's body)
+    //   if_alt_statement_tag: {% if (cond): %} … {% endif %}  (markup-only;
+    //                          spans tag boundaries, reachable only from
+    //                          _markup_node)
+    // Splitting them keeps the tag-spanning form — whose open/close/end_open/
+    // end_close fields only make sense at markup tag boundaries — out of
+    // `statement`, so plain script files can no longer parse `{%`/`%}` as
+    // ordinary code (previously reachable transitively through this rule's
+    // body: repeat($._markup_node), which pulled in the rest of _markup_node
+    // — raw_text, statement_tag, function_alt_declaration, etc. — into the
+    // script grammar too).
+    if_alt_statement: $ => seq(
+      'if',
+      field('condition', $.parenthesized_expression),
+      ':',
+      field('body', repeat($.statement)),
+      repeat(field('elif_clause', $.elif_clause)),
+      optional(field('else_body', $.else_alt_clause)),
+      'endif',
+    ),
+
     // The markup form uses an ordered clause structure — if-body, then zero or
     // more elif clauses, then an optional single else clause — so `else` before
     // `elif`, a duplicate `else`, and an `elif` after `else` are all ERRORs
     // (matching ucode).  Each clause carries its OWN body as a trailing
-    // repeat($._markup_node): the if-body sits directly in if_alt_statement,
+    // repeat($._markup_node): the if-body sits directly in if_alt_statement_tag,
     // while elif_clause_tag / else_alt_clause_tag each nest the markup nodes
     // that follow their header.  Because a body node and the next clause both
     // start with statement_tag_open, the `[$.elif_clause_tag]` and
     // `[$.else_alt_clause_tag]` conflicts (see conflicts array) let GLR decide
     // body-node vs next-clause by the keyword after the tag open.  (An earlier
-    // flat design kept every body as siblings under if_alt_statement; that
+    // flat design kept every body as siblings under if_alt_statement_tag; that
     // mis-parsed a nested if_alt inside an elif body, since the elif-clause
-    // repeat and the body repeat conflicted in a way one `[$.if_alt_statement]`
-    // conflict could not resolve.)
-    if_alt_statement: $ => choice(
-      seq(
-        'if',
-        field('condition', $.parenthesized_expression),
-        ':',
-        field('body', repeat($.statement)),
-        repeat(field('elif_clause', $.elif_clause)),
-        optional(field('else_body', $.else_alt_clause)),
-        'endif',
-      ),
-      seq(
-        field('open',    $._stmt_open),
-        'if',
-        field('condition', $.parenthesized_expression),
-        ':',
-        repeat($.statement),
-        field('close',   $._stmt_close),
-        // Ordered clauses (see the header comment above): if-body, then elif
-        // clauses, then an optional else clause. Each elif/else clause node
-        // carries its own body, so the parser never has to decide whether a
-        // statement_tag_open continues a body or starts the next clause at the
-        // same nesting level (the old flat-sibling design mis-parsed a nested
-        // if_alt inside an elif body).
-        field('body', repeat($._markup_node)),
-        repeat(field('elif_clause', $.elif_clause_tag)),
-        optional(field('else_body', $.else_alt_clause_tag)),
-        field('end_open',  $._stmt_open),
-        'endif',
-        repeat($.statement),
-        field('end_close', $._stmt_close),
-      ),
+    // repeat and the body repeat conflicted in a way one conflict entry
+    // could not resolve.)
+    if_alt_statement_tag: $ => seq(
+      field('open',    $._stmt_open),
+      'if',
+      field('condition', $.parenthesized_expression),
+      ':',
+      repeat($.statement),
+      field('close',   $._stmt_close),
+      // Ordered clauses (see the header comment above): if-body, then elif
+      // clauses, then an optional else clause. Each elif/else clause node
+      // carries its own body, so the parser never has to decide whether a
+      // statement_tag_open continues a body or starts the next clause at the
+      // same nesting level (the old flat-sibling design mis-parsed a nested
+      // if_alt inside an elif body).
+      field('body', repeat($._markup_node)),
+      repeat(field('elif_clause', $.elif_clause_tag)),
+      optional(field('else_body', $.else_alt_clause_tag)),
+      field('end_open',  $._stmt_open),
+      'endif',
+      repeat($.statement),
+      field('end_close', $._stmt_close),
     ),
 
     // Inline wrappers for tag delimiter tokens.
@@ -552,25 +566,25 @@ module.exports = grammar({
       field('body', $._unbraced_statement),
     ),
 
-    for_alt_statement: $ => choice(
-      seq(
-        forHeader($),
-        ':',
-        field('body', repeat($.statement)),
-        'endfor',
-      ),
-      seq(
-        field('open',    $._stmt_open),
-        forHeader($),
-        ':',
-        repeat($.statement),
-        field('close',   $._stmt_close),
-        field('body',    repeat($._markup_node)),
-        field('end_open',  $._stmt_open),
-        'endfor',
-        repeat($.statement),
-        field('end_close', $._stmt_close),
-      ),
+    // Split the same way as if_alt_statement/if_alt_statement_tag above.
+    for_alt_statement: $ => seq(
+      forHeader($),
+      ':',
+      field('body', repeat($.statement)),
+      'endfor',
+    ),
+
+    for_alt_statement_tag: $ => seq(
+      field('open',    $._stmt_open),
+      forHeader($),
+      ':',
+      repeat($.statement),
+      field('close',   $._stmt_close),
+      field('body',    repeat($._markup_node)),
+      field('end_open',  $._stmt_open),
+      'endfor',
+      repeat($.statement),
+      field('end_close', $._stmt_close),
     ),
 
     for_in_statement: $ => seq(
@@ -579,14 +593,18 @@ module.exports = grammar({
       field('body', $._unbraced_statement),
     ),
 
-    for_in_alt_statement: $ => choice(
-      seq(
-        'for',
-        $._for_header,
-        ':',
-        field('body', repeat($.statement)),
-        'endfor',
-      ),
+    // Split the same way as if_alt_statement/if_alt_statement_tag above; both
+    // markup-only shapes (single-nesting and the compact double-nested form)
+    // move into for_in_alt_statement_tag.
+    for_in_alt_statement: $ => seq(
+      'for',
+      $._for_header,
+      ':',
+      field('body', repeat($.statement)),
+      'endfor',
+    ),
+
+    for_in_alt_statement_tag: $ => choice(
       seq(
         field('open',    $._stmt_open),
         'for',
@@ -638,27 +656,27 @@ module.exports = grammar({
       field('body', $._unbraced_statement),
     ),
 
-    while_alt_statement: $ => choice(
-      seq(
-        'while',
-        field('condition', $.parenthesized_expression),
-        ':',
-        field('body', repeat($.statement)),
-        'endwhile',
-      ),
-      seq(
-        field('open',    $._stmt_open),
-        'while',
-        field('condition', $.parenthesized_expression),
-        ':',
-        repeat($.statement),
-        field('close',   $._stmt_close),
-        field('body',    repeat($._markup_node)),
-        field('end_open',  $._stmt_open),
-        'endwhile',
-        repeat($.statement),
-        field('end_close', $._stmt_close),
-      ),
+    // Split the same way as if_alt_statement/if_alt_statement_tag above.
+    while_alt_statement: $ => seq(
+      'while',
+      field('condition', $.parenthesized_expression),
+      ':',
+      field('body', repeat($.statement)),
+      'endwhile',
+    ),
+
+    while_alt_statement_tag: $ => seq(
+      field('open',    $._stmt_open),
+      'while',
+      field('condition', $.parenthesized_expression),
+      ':',
+      repeat($.statement),
+      field('close',   $._stmt_close),
+      field('body',    repeat($._markup_node)),
+      field('end_open',  $._stmt_open),
+      'endwhile',
+      repeat($.statement),
+      field('end_close', $._stmt_close),
     ),
 
     // Spanning function alt-syntax: a function whose body is markup between

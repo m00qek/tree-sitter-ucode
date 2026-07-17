@@ -217,7 +217,7 @@ if alt-syntax
 --------------------------------------------------------------------------------
 
 (markup
-  (if_alt_statement
+  (if_alt_statement_tag
     open: (statement_tag_open)
     condition: (parenthesized_expression
       (identifier))
@@ -233,7 +233,7 @@ for-in alt-syntax
 --------------------------------------------------------------------------------
 
 (markup
-  (for_in_alt_statement
+  (for_in_alt_statement_tag
     open: (statement_tag_open)
     left: (identifier)
     right: (identifier)
@@ -254,7 +254,7 @@ while alt-syntax
 --------------------------------------------------------------------------------
 
 (markup
-  (while_alt_statement
+  (while_alt_statement_tag
     open: (statement_tag_open)
     condition: (parenthesized_expression
       (identifier))
@@ -292,7 +292,7 @@ counting for alt-syntax
 --------------------------------------------------------------------------------
 
 (markup
-  (for_alt_statement
+  (for_alt_statement_tag
     open: (statement_tag_open)
     initializer: (assignment_expression
       left: (identifier)
@@ -314,12 +314,12 @@ nested if inside for-in body
 --------------------------------------------------------------------------------
 
 (markup
-  (for_in_alt_statement
+  (for_in_alt_statement_tag
     open: (statement_tag_open)
     left: (identifier)
     right: (identifier)
     close: (statement_tag_close)
-    body: (if_alt_statement
+    body: (if_alt_statement_tag
       open: (statement_tag_open)
       condition: (parenthesized_expression
         (identifier))
@@ -337,12 +337,12 @@ nested for-in inside while body
 --------------------------------------------------------------------------------
 
 (markup
-  (while_alt_statement
+  (while_alt_statement_tag
     open: (statement_tag_open)
     condition: (parenthesized_expression
       (identifier))
     close: (statement_tag_close)
-    body: (for_in_alt_statement
+    body: (for_in_alt_statement_tag
       open: (statement_tag_open)
       left: (identifier)
       right: (identifier)
@@ -560,7 +560,7 @@ For-in alt-syntax with raw text in body
 --------------------------------------------------------------------------------
 
 (markup
-  (for_in_alt_statement
+  (for_in_alt_statement_tag
     open: (statement_tag_open)
     left: (identifier)
     right: (identifier)
@@ -582,7 +582,7 @@ Compact double for-in nesting (both loops in one tag pair)
 --------------------------------------------------------------------------------
 
 (markup
-  (for_in_alt_statement
+  (for_in_alt_statement_tag
     open: (statement_tag_open)
     left: (identifier)
     right: (array
@@ -620,7 +620,7 @@ Markup if / elif / else spanning tags
 --------------------------------------------------------------------------------
 
 (markup
-  (if_alt_statement
+  (if_alt_statement_tag
     open: (statement_tag_open)
     condition: (parenthesized_expression
       (identifier))
@@ -646,7 +646,7 @@ Trailing statements share the elif and endif tags (ucode statement stream)
 --------------------------------------------------------------------------------
 
 (markup
-  (if_alt_statement
+  (if_alt_statement_tag
     open: (statement_tag_open)
     condition: (parenthesized_expression
       (identifier))
@@ -673,7 +673,7 @@ Trailing statement shares the bare else tag
 --------------------------------------------------------------------------------
 
 (markup
-  (if_alt_statement
+  (if_alt_statement_tag
     open: (statement_tag_open)
     condition: (parenthesized_expression
       (identifier))
@@ -719,7 +719,7 @@ Trailing statement shares the compact double for-in end tag
 --------------------------------------------------------------------------------
 
 (markup
-  (for_in_alt_statement
+  (for_in_alt_statement_tag
     open: (statement_tag_open)
     left: (identifier)
     right: (array
@@ -745,7 +745,7 @@ Nested if_alt inside an elif body
 --------------------------------------------------------------------------------
 
 (markup
-  (if_alt_statement
+  (if_alt_statement_tag
     open: (statement_tag_open)
     condition: (parenthesized_expression
       (identifier))
@@ -756,7 +756,7 @@ Nested if_alt inside an elif body
       condition: (parenthesized_expression
         (identifier))
       close: (statement_tag_close)
-      body: (if_alt_statement
+      body: (if_alt_statement_tag
         open: (statement_tag_open)
         condition: (parenthesized_expression
           (identifier))
@@ -778,12 +778,12 @@ Nested if_alt inside an if body
 --------------------------------------------------------------------------------
 
 (markup
-  (if_alt_statement
+  (if_alt_statement_tag
     open: (statement_tag_open)
     condition: (parenthesized_expression
       (identifier))
     close: (statement_tag_close)
-    body: (if_alt_statement
+    body: (if_alt_statement_tag
       open: (statement_tag_open)
       condition: (parenthesized_expression
         (identifier))
@@ -805,7 +805,7 @@ Nested if_alt inside an else body
 --------------------------------------------------------------------------------
 
 (markup
-  (if_alt_statement
+  (if_alt_statement_tag
     open: (statement_tag_open)
     condition: (parenthesized_expression
       (identifier))
@@ -814,7 +814,7 @@ Nested if_alt inside an else body
     else_body: (else_alt_clause_tag
       open: (statement_tag_open)
       close: (statement_tag_close)
-      body: (if_alt_statement
+      body: (if_alt_statement_tag
         open: (statement_tag_open)
         condition: (parenthesized_expression
           (identifier))

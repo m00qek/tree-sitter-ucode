@@ -10,11 +10,16 @@
  *
  * This script derives those files instead:
  *
- *   folds / tags / textobjects  — copied verbatim
- *   locals                      — copied with the root scope (program → markup)
- *   indents                     — copied, plus rules for the markup-only
- *                                 clause-tag nodes (elif_clause_tag /
- *                                 else_alt_clause_tag) of the spanning if-alt
+ *   folds / tags / textobjects / locals / indents — copied, plus rules for
+ *   the markup-only _tag nodes (if_alt_statement_tag, for_alt_statement_tag,
+ *   for_in_alt_statement_tag, while_alt_statement_tag, elif_clause_tag,
+ *   else_alt_clause_tag) that only the spanning alt-syntax markup form
+ *   produces — grammar.js splits each alt-statement into a code-only rule
+ *   (reachable from `statement`, shared with the code grammar) and a
+ *   markup-only `_tag` rule (reachable only from `_markup_node`), so every
+ *   base query pattern on the code-only name needs a sibling pattern on the
+ *   `_tag` name to keep editor behavior (indent/fold/textobject/locals)
+ *   working for the spanning form too.
  *
  * highlights.scm and injections.scm are genuinely markup-specific (tag
  * punctuation and ucode-into-tag injection) and are maintained by hand — this
@@ -50,17 +55,64 @@ const dstDir = path.join(root, 'markup', 'queries');
 // replaces via `tree-sitter query` on an if/elif/else sample.
 const INDENTS_MARKUP_EXTRA = [
   '',
+  '; ── Markup-only alt-syntax spanning forms ─────────────────────────────',
+  '(if_alt_statement_tag ":" @indent.begin)',
+  '(for_alt_statement_tag ":" @indent.begin)',
+  '(for_in_alt_statement_tag ":" @indent.begin)',
+  '(while_alt_statement_tag ":" @indent.begin)',
+  '',
   '; ── Markup-only alt-syntax clause tags ────────────────────────────────',
   '(elif_clause_tag "elif") @indent.branch @indent.begin',
   '(else_alt_clause_tag "else") @indent.branch @indent.begin',
   '',
 ].join('\n');
 
+// The whole-node fold captures mirror queries/folds.scm's alt-syntax group,
+// one entry per spanning `_tag` rule.
+const FOLDS_MARKUP_EXTRA = [
+  '',
+  '; ── Markup-only alt-syntax spanning forms ─────────────────────────────',
+  '[',
+  '  (if_alt_statement_tag)',
+  '  (for_alt_statement_tag)',
+  '  (for_in_alt_statement_tag)',
+  '  (while_alt_statement_tag)',
+  '] @fold',
+  '',
+].join('\n');
+
+const TEXTOBJECTS_MARKUP_EXTRA = [
+  '',
+  '; ── Markup-only alt-syntax spanning forms ─────────────────────────────',
+  '(if_alt_statement_tag) @conditional.outer',
+  '(for_alt_statement_tag) @loop.outer',
+  '(for_in_alt_statement_tag) @loop.outer',
+  '(while_alt_statement_tag) @loop.outer',
+  '',
+].join('\n');
+
+// Only for/for-in get a scope + loop-variable definition in the base locals.scm
+// (if/while introduce no bindings of their own) — mirror only those for the
+// spanning `_tag` forms.
+const LOCALS_MARKUP_EXTRA = [
+  '',
+  '; ── Markup-only alt-syntax spanning forms ─────────────────────────────',
+  '(for_alt_statement_tag) @local.scope',
+  '(for_in_alt_statement_tag) @local.scope',
+  '(for_in_alt_statement_tag',
+  '  kind: _',
+  '  left: (identifier) @local.definition.var)',
+  '(for_in_alt_statement_tag',
+  '  kind: _',
+  '  value: (identifier) @local.definition.var)',
+  '',
+].join('\n');
+
 const DERIVED = {
-  'folds.scm':       { rename: [] },
+  'folds.scm':       { rename: [], append: FOLDS_MARKUP_EXTRA },
   'tags.scm':        { rename: [] },
-  'textobjects.scm': { rename: [] },
-  'locals.scm':      { rename: [['(program)', '(markup)']] },
+  'textobjects.scm': { rename: [], append: TEXTOBJECTS_MARKUP_EXTRA },
+  'locals.scm':      { rename: [['(program)', '(markup)']], append: LOCALS_MARKUP_EXTRA },
   'indents.scm':     { rename: [], append: INDENTS_MARKUP_EXTRA },
 };
 
