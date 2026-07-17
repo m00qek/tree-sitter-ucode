@@ -1431,6 +1431,13 @@
           "value": "else"
         },
         {
+          "type": "REPEAT",
+          "content": {
+            "type": "SYMBOL",
+            "name": "statement"
+          }
+        },
+        {
           "type": "FIELD",
           "name": "close",
           "content": {
@@ -2130,6 +2137,13 @@
               "value": "endfor"
             },
             {
+              "type": "REPEAT",
+              "content": {
+                "type": "SYMBOL",
+                "name": "statement"
+              }
+            },
+            {
               "type": "FIELD",
               "name": "end_close",
               "content": {
@@ -2433,6 +2447,13 @@
         {
           "type": "STRING",
           "value": ":"
+        },
+        {
+          "type": "REPEAT",
+          "content": {
+            "type": "SYMBOL",
+            "name": "statement"
+          }
         },
         {
           "type": "FIELD",

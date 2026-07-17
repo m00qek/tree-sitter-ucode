@@ -671,6 +671,78 @@ Trailing statements share the elif and endif tags (ucode statement stream)
     end_close: (statement_tag_close)))
 
 ================================================================================
+Trailing statement shares the bare else tag
+================================================================================
+{% if (a): %}x{% else print(1); %}y{% endif %}
+--------------------------------------------------------------------------------
+
+(markup
+  (if_alt_statement
+    open: (statement_tag_open)
+    condition: (parenthesized_expression
+      (identifier))
+    close: (statement_tag_close)
+    body: (raw_text)
+    else_body: (else_alt_clause_tag
+      open: (statement_tag_open)
+      (expression_statement
+        (call_expression
+          function: (identifier)
+          arguments: (arguments
+            (number))))
+      close: (statement_tag_close)
+      body: (raw_text))
+    end_open: (statement_tag_open)
+    end_close: (statement_tag_close)))
+
+================================================================================
+Trailing statement shares the function alt-declaration header tag
+================================================================================
+{% function f(): print(1); %}raw{% endfunction %}
+--------------------------------------------------------------------------------
+
+(markup
+  (function_alt_declaration
+    open: (statement_tag_open)
+    name: (identifier)
+    parameters: (formal_parameters)
+    (expression_statement
+      (call_expression
+        function: (identifier)
+        arguments: (arguments
+          (number))))
+    close: (statement_tag_close)
+    body: (raw_text)
+    end_open: (statement_tag_open)
+    end_close: (statement_tag_close)))
+
+================================================================================
+Trailing statement shares the compact double for-in end tag
+================================================================================
+{% for (x in [1]): for (y in [2]): %}a{% endfor; endfor; print(1); %}
+--------------------------------------------------------------------------------
+
+(markup
+  (for_in_alt_statement
+    open: (statement_tag_open)
+    left: (identifier)
+    right: (array
+      (number))
+    left: (identifier)
+    right: (array
+      (number))
+    close: (statement_tag_close)
+    body: (raw_text)
+    end_open: (statement_tag_open)
+    (empty_statement)
+    (expression_statement
+      (call_expression
+        function: (identifier)
+        arguments: (arguments
+          (number))))
+    end_close: (statement_tag_close)))
+
+================================================================================
 Nested if_alt inside an elif body
 ================================================================================
 {% if (a): %}A{% elif (b): %}{% if (c): %}B{% endif %}{% else %}C{% endif %}

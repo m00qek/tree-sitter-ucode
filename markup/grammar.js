@@ -532,6 +532,7 @@ module.exports = grammar({
     else_alt_clause_tag: $ => seq(
       field('open',  $._stmt_open),
       'else',
+      repeat($.statement),
       field('close', $._stmt_close),
       field('body',  repeat($._markup_node)),
     ),
@@ -609,6 +610,7 @@ module.exports = grammar({
         field('body',    repeat($._markup_node)),
         field('end_open',  $._stmt_open),
         'endfor', ';', 'endfor',
+        repeat($.statement),
         field('end_close', $._stmt_close),
       ),
     ),
@@ -673,6 +675,7 @@ module.exports = grammar({
       field('name',      $.identifier),
       $._call_signature,
       ':',
+      repeat($.statement),
       field('close',     $._stmt_close),
       field('body',      repeat($._markup_node)),
       field('end_open',  $._stmt_open),
