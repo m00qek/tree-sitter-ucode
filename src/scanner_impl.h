@@ -23,6 +23,7 @@
  *  14  COMMENT                    $.comment                    line and block
  *  15  SINGLE_QUOTE_STRING_CONTENT $._single_quote_string_content  '...' body
  *  16  DOUBLE_QUOTE_STRING_CONTENT $._double_quote_string_content  "..." body
+ *  17  REGEX_CONTENT               $._regex_content                /.../ body
  */
 
 #ifndef UCODE_SCANNER_IMPL_H_
@@ -707,9 +708,7 @@ static CommentResult scan_comment(TSLexer *lexer) {
            is comment content — the code after it still parses as code. */
         for (;;) {
             lexer->mark_end(lexer);
-            if (lexer->eof(lexer) ||
-                lexer->lookahead == '\n' || lexer->lookahead == '\r' ||
-                lexer->lookahead == 0x2028 || lexer->lookahead == 0x2029)
+            if (lexer->eof(lexer) || is_line_terminator(lexer->lookahead))
                 return CMT_FOUND;
             advance(lexer);
         }
@@ -777,11 +776,13 @@ static bool ucode_scanner_scan(
 
     /*
      * Template chars: only when we are unambiguously inside a template
-     * literal body.  The !AUTOMATIC_SEMICOLON guard keeps this from firing when
-     * an ASI decision is also pending at this position (the recovery state where
-     * every token is valid is already handled by the guard above).
+     * literal body. Outside the all-valid recovery state just handled above,
+     * TEMPLATE_CHARS and AUTOMATIC_SEMICOLON are never simultaneously valid
+     * (confirmed in the generated ts_external_scanner_states of both
+     * parsers), so no separate guard against a competing ASI decision is
+     * needed here.
      */
-    if (valid_symbols[TEMPLATE_CHARS] && !valid_symbols[AUTOMATIC_SEMICOLON])
+    if (valid_symbols[TEMPLATE_CHARS])
         return scan_template_chars(lexer);
 
     /*
@@ -789,22 +790,19 @@ static bool ucode_scanner_scan(
      * ahead of COMMENT, so that a `/*` or `//` at the start of the string (or
      * right after an escape) is kept as content instead of being lexed as a
      * comment (the `comment` extra is otherwise offered even inside strings).
-     * The !AUTOMATIC_SEMICOLON guard mirrors template chars: fire only when the
-     * string body is the unambiguous interpretation and no ASI decision competes
-     * at this position (error recovery already returned false above).
+     * Same non-overlap with AUTOMATIC_SEMICOLON as TEMPLATE_CHARS above.
      */
-    if (valid_symbols[SINGLE_QUOTE_STRING_CONTENT] && !valid_symbols[AUTOMATIC_SEMICOLON])
+    if (valid_symbols[SINGLE_QUOTE_STRING_CONTENT])
         return scan_string_chars(lexer, '\'', SINGLE_QUOTE_STRING_CONTENT);
-    if (valid_symbols[DOUBLE_QUOTE_STRING_CONTENT] && !valid_symbols[AUTOMATIC_SEMICOLON])
+    if (valid_symbols[DOUBLE_QUOTE_STRING_CONTENT])
         return scan_string_chars(lexer, '"', DOUBLE_QUOTE_STRING_CONTENT);
 
     /*
      * Regex body: only inside a `/ ... /` literal, dispatched like the string
      * bodies above (and ahead of COMMENT so a `/` opening a regex is not lexed
-     * as a comment/division).  The !AUTOMATIC_SEMICOLON guard mirrors them: fire
-     * only when regex content is the unambiguous interpretation.
+     * as a comment/division). Same non-overlap with AUTOMATIC_SEMICOLON.
      */
-    if (valid_symbols[REGEX_CONTENT] && !valid_symbols[AUTOMATIC_SEMICOLON])
+    if (valid_symbols[REGEX_CONTENT])
         return scan_regex_content(lexer);
 
     /*
