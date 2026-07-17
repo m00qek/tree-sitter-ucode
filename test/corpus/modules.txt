@@ -182,6 +182,44 @@ import def, { a } from "./mod.uc";
       (string_fragment))))
 
 ================================================================================
+Empty export list is rejected — produces ERROR
+================================================================================
+
+export {};
+
+--------------------------------------------------------------------------------
+
+; ucode's export-list parser demands a label (or `default`) before it will
+; even check for '}' — an empty `{}` is "Expecting Label", so recovery leaves
+; a MISSING identifier where the first specifier's name should be.
+
+(program
+  (export_statement
+    clause: (export_clause
+      (export_specifier
+        name: (MISSING identifier)))))
+
+================================================================================
+Empty named-import list is rejected — produces ERROR
+================================================================================
+
+import {} from "./mod.uc";
+
+--------------------------------------------------------------------------------
+
+; Same root as the empty export list above: ucode's import-list parser
+; demands a label/string/`default` before checking for '}'.
+
+(program
+  (import_statement
+    clause: (import_clause
+      named: (named_imports
+        (import_specifier
+          name: (MISSING identifier))))
+    source: (string
+      (string_fragment))))
+
+================================================================================
 Export forward declaration — not supported, produces ERROR
 ================================================================================
 

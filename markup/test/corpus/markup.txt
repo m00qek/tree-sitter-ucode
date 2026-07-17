@@ -75,15 +75,11 @@ Empty statement tag
     close: (statement_tag_close)))
 
 ================================================================================
-Empty expression tag
+Empty expression tag is rejected — produces ERROR
+:error
 ================================================================================
 {{}}
 --------------------------------------------------------------------------------
-
-(markup
-  (expression_tag
-    open: (expression_tag_open)
-    close: (expression_tag_close)))
 
 ================================================================================
 Statement tag with left-trim marker

@@ -190,10 +190,11 @@ module.exports = grammar({
       field('close', $._stmt_close),
     ),
 
-    // {{ expr }} or {{- expr -}}
+    // {{ expr }} or {{- expr -}}. ucode requires an expression here — `{{ }}`
+    // is "Expecting expression" at parse time, not merely a semantic reject.
     expression_tag: $ => seq(
       field('open',  $._expr_open),
-      optional($._expressions),
+      $._expressions,
       field('close', $._expr_close),
     ),
 
@@ -243,9 +244,11 @@ module.exports = grammar({
       ),
     ),
 
+    // `export {};` is "Expecting Label" in ucode — the specifier list must
+    // have at least one entry.
     export_clause: $ => seq(
       '{',
-      commaSep($.export_specifier),
+      commaSep1($.export_specifier),
       '}',
     ),
 
@@ -299,9 +302,11 @@ module.exports = grammar({
 
     namespace_import: $ => seq('*', 'as', $.identifier),
 
+    // `import {} from "x";` is "Expecting Label, String or 'default'" in
+    // ucode — the specifier list must have at least one entry.
     named_imports: $ => seq(
       '{',
-      commaSep($.import_specifier),
+      commaSep1($.import_specifier),
       '}',
     ),
 
