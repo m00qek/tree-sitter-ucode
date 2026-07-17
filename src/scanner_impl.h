@@ -341,11 +341,18 @@ static bool scan_string_chars(TSLexer *lexer, int32_t quote, enum TokenType sym)
     lexer->result_symbol = sym;
     bool has_content = false;
     for (;;) {
-        lexer->mark_end(lexer);
-        if (lexer->eof(lexer)) return false;
+        /* The terminator/EOF check below always runs before any advance() past
+           it, so no committed character is ever advanced past — one mark_end()
+           right at each return is enough, instead of one per character. */
+        if (lexer->eof(lexer)) {
+            lexer->mark_end(lexer);
+            return false;
+        }
         int32_t c = lexer->lookahead;
-        if (c == quote || c == '\\')
+        if (c == quote || c == '\\') {
+            lexer->mark_end(lexer);
             return has_content;
+        }
         advance(lexer);
         has_content = true;
     }
@@ -387,11 +394,19 @@ static bool scan_regex_content(TSLexer *lexer) {
     lexer->result_symbol = REGEX_CONTENT;
     bool has_content = false;
     for (;;) {
-        lexer->mark_end(lexer);
-        if (lexer->eof(lexer)) return false;
+        /* Same reasoning as scan_string_chars: the terminator check below
+           always runs before advancing past it, so mark_end() is only needed
+           right at the two returns here, not once per outer-loop iteration
+           (the '[' branch's own EOF returns need none — they discard). */
+        if (lexer->eof(lexer)) {
+            lexer->mark_end(lexer);
+            return false;
+        }
         int32_t c = lexer->lookahead;
-        if (c == '/')
+        if (c == '/') {
+            lexer->mark_end(lexer);
             return has_content;
+        }
         if (c == '\\') {
             if (!regex_consume_escape(lexer)) return false;
             has_content = true;
