@@ -625,17 +625,9 @@ module.exports = grammar({
     // targets (`for (a.x in o)`) and only `let` (never `const`) may declare it.
     _for_header: $ => seq(
       '(',
-      choice(
-        seq(
-          field('kind', 'let'),
-          field('left', $.identifier),
-          optional(seq(',', field('value', $.identifier))),
-        ),
-        seq(
-          field('left', $.identifier),
-          optional(seq(',', field('value', $.identifier))),
-        ),
-      ),
+      optional(field('kind', 'let')),
+      field('left', $.identifier),
+      optional(seq(',', field('value', $.identifier))),
       'in',
       field('right', $._expressions),
       ')',
