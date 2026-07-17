@@ -801,6 +801,245 @@ intval = 3;
       right: (number))))
 
 ================================================================================
+ASI continuation coverage: '(' begins a call across the newline
+================================================================================
+
+let r = f
+(1);
+
+--------------------------------------------------------------------------------
+
+(program
+  (lexical_declaration
+    (variable_declarator
+      name: (identifier)
+      value: (call_expression
+        function: (identifier)
+        arguments: (arguments
+          (number))))))
+
+================================================================================
+ASI continuation coverage: '[' begins a subscript across the newline
+================================================================================
+
+let r = a
+[0];
+
+--------------------------------------------------------------------------------
+
+(program
+  (lexical_declaration
+    (variable_declarator
+      name: (identifier)
+      value: (subscript_expression
+        object: (identifier)
+        index: (number)))))
+
+================================================================================
+ASI continuation coverage: ',' continues a sequence expression
+================================================================================
+
+let r = (a
+, b);
+
+--------------------------------------------------------------------------------
+
+(program
+  (lexical_declaration
+    (variable_declarator
+      name: (identifier)
+      value: (parenthesized_expression
+        (sequence_expression
+          (identifier)
+          (identifier))))))
+
+================================================================================
+ASI continuation coverage: ';' on its own line terminates without a second insert
+================================================================================
+
+let r = a
+;
+
+--------------------------------------------------------------------------------
+
+(program
+  (lexical_declaration
+    (variable_declarator
+      name: (identifier)
+      value: (identifier))))
+
+================================================================================
+ASI continuation coverage: '*' continues a binary expression
+================================================================================
+
+let r = a
+* b;
+
+--------------------------------------------------------------------------------
+
+(program
+  (lexical_declaration
+    (variable_declarator
+      name: (identifier)
+      value: (binary_expression
+        left: (identifier)
+        right: (identifier)))))
+
+================================================================================
+ASI continuation coverage: '=' continues an assignment
+================================================================================
+
+a
+= b;
+
+--------------------------------------------------------------------------------
+
+(program
+  (expression_statement
+    (assignment_expression
+      left: (identifier)
+      right: (identifier))))
+
+================================================================================
+ASI continuation coverage: '<' continues a relational expression
+================================================================================
+
+let r = a
+< b;
+
+--------------------------------------------------------------------------------
+
+(program
+  (lexical_declaration
+    (variable_declarator
+      name: (identifier)
+      value: (binary_expression
+        left: (identifier)
+        right: (identifier)))))
+
+================================================================================
+ASI continuation coverage: '>' continues a relational expression
+================================================================================
+
+let r = a
+> b;
+
+--------------------------------------------------------------------------------
+
+(program
+  (lexical_declaration
+    (variable_declarator
+      name: (identifier)
+      value: (binary_expression
+        left: (identifier)
+        right: (identifier)))))
+
+================================================================================
+ASI continuation coverage: '!' continues an equality expression ('!=')
+================================================================================
+
+let r = a
+!= b;
+
+--------------------------------------------------------------------------------
+
+(program
+  (lexical_declaration
+    (variable_declarator
+      name: (identifier)
+      value: (binary_expression
+        left: (identifier)
+        right: (identifier)))))
+
+================================================================================
+ASI continuation coverage: '&' continues a bitwise-and expression
+================================================================================
+
+let r = a
+& b;
+
+--------------------------------------------------------------------------------
+
+(program
+  (lexical_declaration
+    (variable_declarator
+      name: (identifier)
+      value: (binary_expression
+        left: (identifier)
+        right: (identifier)))))
+
+================================================================================
+ASI continuation coverage: '|' continues a bitwise-or expression
+================================================================================
+
+let r = a
+| b;
+
+--------------------------------------------------------------------------------
+
+(program
+  (lexical_declaration
+    (variable_declarator
+      name: (identifier)
+      value: (binary_expression
+        left: (identifier)
+        right: (identifier)))))
+
+================================================================================
+ASI continuation coverage: '^' continues a bitwise-xor expression
+================================================================================
+
+let r = a
+^ b;
+
+--------------------------------------------------------------------------------
+
+(program
+  (lexical_declaration
+    (variable_declarator
+      name: (identifier)
+      value: (binary_expression
+        left: (identifier)
+        right: (identifier)))))
+
+================================================================================
+ASI continuation coverage: '%' continues a modulo expression
+================================================================================
+
+let r = a
+% b;
+
+--------------------------------------------------------------------------------
+
+(program
+  (lexical_declaration
+    (variable_declarator
+      name: (identifier)
+      value: (binary_expression
+        left: (identifier)
+        right: (identifier)))))
+
+================================================================================
+ASI continuation coverage: '`' declines ASI, but ucode has no tagged templates — produces ERROR
+:error
+================================================================================
+
+let r = f
+`x`;
+
+--------------------------------------------------------------------------------
+
+================================================================================
+ASI continuation coverage: '~' declines ASI, but it is unary-only — produces ERROR
+:error
+================================================================================
+
+let r = a
+~ b;
+
+--------------------------------------------------------------------------------
+
+================================================================================
 Exotic inline whitespace (form feed) after a newline keeps a member continuation
 ================================================================================
 
@@ -835,3 +1074,39 @@ let r = a
         left: (identifier)
         (comment)
         right: (identifier)))))
+
+================================================================================
+Lenient ASI treats U+2028 (LINE SEPARATOR) as a line terminator (divergence)
+================================================================================
+
+x = 1 x = 2;
+
+--------------------------------------------------------------------------------
+
+(program
+  (expression_statement
+    (assignment_expression
+      left: (identifier)
+      right: (number)))
+  (expression_statement
+    (assignment_expression
+      left: (identifier)
+      right: (number))))
+
+================================================================================
+Lenient ASI treats U+2029 (PARAGRAPH SEPARATOR) as a line terminator (divergence)
+================================================================================
+
+x = 1 x = 2;
+
+--------------------------------------------------------------------------------
+
+(program
+  (expression_statement
+    (assignment_expression
+      left: (identifier)
+      right: (number)))
+  (expression_statement
+    (assignment_expression
+      left: (identifier)
+      right: (number))))
