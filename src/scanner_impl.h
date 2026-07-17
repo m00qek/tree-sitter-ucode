@@ -205,58 +205,42 @@ static bool scan_markup(TSLexer *lexer, const bool *valid_symbols) {
 
 
 /*
- * Scan statement tag close: %}  -%}
- * No leading-whitespace skip: scan_comment is dispatched first (COMMENT is a
- * valid extra in every state this runs in) and has already consumed any
- * whitespace and line terminators, so the lexer sits on the marker char.
+ * Scan a tag close: mid}  -mid}  (mid is '%' for a statement tag, '}' for an
+ * expression tag). No leading-whitespace skip: scan_comment is dispatched
+ * first (COMMENT is a valid extra in every state this runs in) and has
+ * already consumed any whitespace and line terminators, so the lexer sits on
+ * the marker char.
  */
-static TagCloseResult scan_statement_tag_close(TSLexer *lexer) {
+static TagCloseResult scan_tag_close(
+    TSLexer *lexer, int32_t mid, enum TokenType plain, enum TokenType trim
+) {
     if (lexer->lookahead == '-') {
         advance(lexer);
-        if (lexer->lookahead != '%') return TAG_CLOSE_PARTIAL;
+        if (lexer->lookahead != mid) return TAG_CLOSE_PARTIAL;
         advance(lexer);
         if (lexer->lookahead != '}') return TAG_CLOSE_PARTIAL;
         advance(lexer);
         lexer->mark_end(lexer);
-        lexer->result_symbol = STATEMENT_TAG_TRIM_CLOSE;
+        lexer->result_symbol = trim;
         return TAG_CLOSE_MATCHED;
     }
-    if (lexer->lookahead == '%') {
+    if (lexer->lookahead == mid) {
         advance(lexer);
         if (lexer->lookahead != '}') return TAG_CLOSE_PARTIAL;
         advance(lexer);
         lexer->mark_end(lexer);
-        lexer->result_symbol = STATEMENT_TAG_CLOSE;
+        lexer->result_symbol = plain;
         return TAG_CLOSE_MATCHED;
     }
     return TAG_CLOSE_ABSENT;
 }
 
-/*
- * Scan expression tag close: }}  -}}
- * No leading-whitespace skip — like scan_statement_tag_close, scan_comment ran
- * first and left the lexer on the marker char.
- */
+static TagCloseResult scan_statement_tag_close(TSLexer *lexer) {
+    return scan_tag_close(lexer, '%', STATEMENT_TAG_CLOSE, STATEMENT_TAG_TRIM_CLOSE);
+}
+
 static TagCloseResult scan_expression_tag_close(TSLexer *lexer) {
-    if (lexer->lookahead == '-') {
-        advance(lexer);
-        if (lexer->lookahead != '}') return TAG_CLOSE_PARTIAL;
-        advance(lexer);
-        if (lexer->lookahead != '}') return TAG_CLOSE_PARTIAL;
-        advance(lexer);
-        lexer->mark_end(lexer);
-        lexer->result_symbol = EXPRESSION_TAG_TRIM_CLOSE;
-        return TAG_CLOSE_MATCHED;
-    }
-    if (lexer->lookahead == '}') {
-        advance(lexer);
-        if (lexer->lookahead != '}') return TAG_CLOSE_PARTIAL;
-        advance(lexer);
-        lexer->mark_end(lexer);
-        lexer->result_symbol = EXPRESSION_TAG_CLOSE;
-        return TAG_CLOSE_MATCHED;
-    }
-    return TAG_CLOSE_ABSENT;
+    return scan_tag_close(lexer, '}', EXPRESSION_TAG_CLOSE, EXPRESSION_TAG_TRIM_CLOSE);
 }
 
 /*
