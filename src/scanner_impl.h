@@ -486,6 +486,28 @@ static AsiResult asi_dash_or_percent(TSLexer *lexer) {
 }
 
 /*
+ * Return true if the lookahead is the keyword `in` at a word boundary, not a
+ * prefix of a longer identifier (`intval`).  `in` is ucode's only keyword
+ * binary operator (there is no `instanceof`), so it must decline ASI like any
+ * other continuation token: `let x = y\nin [1, 2];` is valid ucode and must
+ * not be split into two statements.  mark_end was already called at the top
+ * of the caller, so peeking ahead with advance() here does not consume
+ * characters from the (zero-length) semicolon token, exactly as
+ * lookahead_is_stmt_close does above.
+ */
+static bool lookahead_is_in_keyword(TSLexer *lexer) {
+    if (lexer->lookahead != 'i') return false;
+    advance(lexer);
+    if (lexer->lookahead != 'n') return false;
+    advance(lexer);
+
+    int32_t c = lexer->lookahead;
+    bool is_ident_cont = (c >= 'a' && c <= 'z') || (c >= 'A' && c <= 'Z') ||
+                          (c >= '0' && c <= '9') || c == '_';
+    return !is_ident_cont;
+}
+
+/*
  * Automatic Semicolon Insertion (ECMA-262 §12.10).
  *
  * NOTE: This is intentionally MORE lenient than the ucode compiler.  ucode only
@@ -547,7 +569,9 @@ static AsiResult scan_automatic_semicolon(TSLexer *lexer) {
  * (scan_comment stopped at the first non-whitespace char, and a comment there
  * would have been emitted as its own token).  This is the single authoritative
  * post-newline continuation list — scan_automatic_semicolon handles only the
- * same-line case and shares the '-'/'%' tag-close arm below.
+ * same-line case and shares the '-'/'%' tag-close arm below.  `in` (checked
+ * in the default arm via lookahead_is_in_keyword) is the one continuation
+ * token that isn't punctuation.
  */
 static AsiResult asi_after_newline(TSLexer *lexer) {
     lexer->result_symbol = AUTOMATIC_SEMICOLON;
@@ -566,7 +590,9 @@ static AsiResult asi_after_newline(TSLexer *lexer) {
         case '%':
             return asi_dash_or_percent(lexer);
         default:
-            /* '}', EOF, or the start of a new statement → insert. */
+            /* `in` continues the expression (`y\nin [1, 2]`); anything else
+               is '}', EOF, or the start of a new statement → insert. */
+            if (lookahead_is_in_keyword(lexer)) return ASI_DECLINE;
             return ASI_INSERT;
     }
 }

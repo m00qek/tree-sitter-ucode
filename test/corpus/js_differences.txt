@@ -748,6 +748,59 @@ let r = a
         right: (identifier)))))
 
 ================================================================================
+A line terminator does not insert ASI before the `in` operator
+================================================================================
+
+let x = y
+in [1, 2];
+
+--------------------------------------------------------------------------------
+
+(program
+  (lexical_declaration
+    (variable_declarator
+      name: (identifier)
+      value: (binary_expression
+        left: (identifier)
+        right: (array
+          (number)
+          (number))))))
+
+================================================================================
+`in` on the next line is still recognized inside a for-header
+================================================================================
+
+for (a
+in b) {}
+
+--------------------------------------------------------------------------------
+
+(program
+  (for_in_statement
+    left: (identifier)
+    right: (identifier)
+    body: (statement_block)))
+
+================================================================================
+A word-boundary check keeps ASI before an identifier merely starting with `in`
+================================================================================
+
+x = 1
+intval = 3;
+
+--------------------------------------------------------------------------------
+
+(program
+  (expression_statement
+    (assignment_expression
+      left: (identifier)
+      right: (number)))
+  (expression_statement
+    (assignment_expression
+      left: (identifier)
+      right: (number))))
+
+================================================================================
 Exotic inline whitespace (form feed) after a newline keeps a member continuation
 ================================================================================
 
