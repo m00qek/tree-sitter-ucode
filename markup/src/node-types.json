@@ -2537,10 +2537,6 @@
             "named": true
           },
           {
-            "type": "number",
-            "named": true
-          },
-          {
             "type": "property_identifier",
             "named": true
           },

@@ -5548,10 +5548,6 @@
           },
           {
             "type": "SYMBOL",
-            "name": "number"
-          },
-          {
-            "type": "SYMBOL",
             "name": "computed_property_name"
           }
         ]

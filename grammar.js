@@ -1180,13 +1180,16 @@ module.exports = grammar({
       ')',
     ),
 
+    // ucode object keys are a label, a string, or a computed `[expr]` — a bare
+    // numeric key (`{1: 2}`) is rejected at parse time ("Expecting label",
+    // compiler.c uc_compiler_compile_object) even after the 8d7d15e method-
+    // shorthand change, which uses the same key check.
     _property_name: $ => reserved('properties', choice(
       alias(
         choice($.identifier, $._reserved_identifier),
         $.property_identifier,
       ),
       $.string,
-      $.number,
       $.computed_property_name,
     )),
 
