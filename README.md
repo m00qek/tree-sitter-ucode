@@ -17,9 +17,12 @@ code files fall back to `ucode`. See [File-type detection](#file-type-detection)
 
 `ucdocs` is not a standalone file grammar — it is automatically injected by the `ucode` and
 `ucode_markup` grammars into every `/** */` doc comment block. Tools that load grammars
-directly from `tree-sitter.json` (including the tree-sitter CLI) handle this automatically.
-Editor plugins may require registering the `ucdocs` grammar separately — see the editor
-sections below.
+directly from `tree-sitter.json`, and can parse the manifest, handle this automatically.
+**At the time of writing, this repo's own `tree-sitter.json` cannot be parsed by the pinned
+tree-sitter CLI** (see the note in [File-type detection](#file-type-detection) below), so
+CLI commands run against this repo do not get automatic `ucdocs` injection either. Editor
+plugins generally register `ucdocs` and its injection query directly rather than going
+through `tree-sitter.json`, so they are unaffected — see the editor sections below.
 
 ## Ucode vs JavaScript
 
@@ -135,12 +138,26 @@ npx tree-sitter test --file-name control_flow.txt
 
 ## File-type detection
 
-Both `ucode` and `ucode_markup` claim the same file extensions. Tools that respect `content-regex` in
-`tree-sitter.json` (including the tree-sitter CLI ≥ 0.24) automatically route
-template files to `ucode_markup` when a tag opener (`{%`, `{{`, or `{#`) appears at
-the start of a line (with optional leading whitespace).
-Editors that manage their own filetype dispatch (Neovim, Helix) need an explicit
-rule — see the editor sections below.
+Both `ucode` and `ucode_markup` claim the same file extensions. Tools that can parse
+`tree-sitter.json` and respect its `content-regex` field automatically route template files
+to `ucode_markup` when a tag opener (`{%`, `{{`, or `{#`) appears at the start of a line
+(with optional leading whitespace).
+
+**This manifest-driven routing currently does not work when the tree-sitter CLI is pointed
+directly at this repo.** `tree-sitter.json`'s `ucdocs` entry deliberately omits the `scope`
+field — a required workaround for a tree-sitter 0.26.x bug where giving `ucdocs` a scope
+makes bulk `tree-sitter test` runs mis-route between grammars (see CONTRIBUTING.md). That
+omission makes the whole manifest fail strict CLI parsing (`Failed to parse tree-sitter.json
+-- missing field 'scope'`), so the CLI falls back to a single default grammar entry with no
+`content-regex` and no file-type list at all. The workaround is confirmed necessary — adding
+the `scope` back fixes routing but reintroduces the mis-route bug — so it stays, and this note
+documents the tradeoff rather than the fix.
+
+Until that upstream CLI issue moves, drive template files explicitly instead of relying on
+automatic routing: `tree-sitter parse --lib-path ./ucode_markup.so --lang-name ucode_markup
+file.ut` (pair `--lang-name` with `--lib-path` — the flag is silently ignored alone). Editors
+that manage their own filetype dispatch (Neovim, Helix) already need an explicit rule and are
+unaffected — see the editor sections below.
 
 ## Use in Neovim
 

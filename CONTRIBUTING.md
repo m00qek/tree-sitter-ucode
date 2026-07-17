@@ -149,3 +149,5 @@ A small number of upstream test cases are intentionally skipped because they con
 ## Note on tree-sitter.json
 
 The `ucdocs` grammar entry in `tree-sitter.json` deliberately omits the `scope` field. On tree-sitter 0.26.9, giving a scope to a third grammar makes the CLI mis-route bulk `tree-sitter test` runs; omitting it for `ucdocs` is a required workaround, not an oversight. Leave it out.
+
+This has a real cost, not just the missing scope: on the pinned CLI, the omission makes the *entire* manifest fail to parse (`Failed to parse tree-sitter.json -- missing field 'scope'`), so none of `tree-sitter.json`'s manifest-driven features work when the CLI is pointed at this repo — no `content-regex` file routing, no file-type list, no automatic `ucdocs` injection (see the README's File-type detection section). Re-adding `scope` fixes that but reintroduces the bulk-test mis-route this note exists to avoid — confirmed both ways, so the omission stays. Don't try to "fix" the manifest without re-checking `tree-sitter test` across all three grammars first.
