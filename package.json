@@ -1,6 +1,6 @@
 {
   "name": "tree-sitter-ucode",
-  "version": "0.7.0",
+  "version": "0.8.0",
   "description": "Ucode grammar for tree-sitter",
   "repository": {
     "type": "git",
