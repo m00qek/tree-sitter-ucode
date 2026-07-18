@@ -106,3 +106,22 @@
 (call_expression
   function: (member_expression
     property: (property_identifier) @name)) @reference.call
+
+; ── Markup-only function declarations (alt-syntax and brace-spanning) ──
+(
+  (comment)* @doc
+  .
+  (function_alt_declaration
+    name: (identifier) @name) @definition.function
+  (#strip! @doc "^[\\s\\*/]+|^[\\s\\*/]$")
+  (#select-adjacent! @doc @definition.function)
+)
+
+(
+  (comment)* @doc
+  .
+  (function_declaration_tag
+    name: (identifier) @name) @definition.function
+  (#strip! @doc "^[\\s\\*/]+|^[\\s\\*/]$")
+  (#select-adjacent! @doc @definition.function)
+)

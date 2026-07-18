@@ -47,4 +47,15 @@
   (for_alt_statement_tag)
   (for_in_alt_statement_tag)
   (while_alt_statement_tag)
+  (function_alt_declaration)
+] @fold
+
+; ── Markup-only brace-spanning forms ──────────────────────────────────
+[
+  (if_statement_tag)
+  (for_statement_tag)
+  (for_in_statement_tag)
+  (while_statement_tag)
+  (function_declaration_tag)
+  (try_statement_tag)
 ] @fold

@@ -71,7 +71,21 @@
 (for_alt_statement_tag ":" @indent.begin)
 (for_in_alt_statement_tag ":" @indent.begin)
 (while_alt_statement_tag ":" @indent.begin)
+(function_alt_declaration ":" @indent.begin)
 
 ; ── Markup-only alt-syntax clause tags ────────────────────────────────
 (elif_clause_tag "elif") @indent.branch @indent.begin
 (else_alt_clause_tag "else") @indent.branch @indent.begin
+
+; ── Markup-only brace-spanning forms ──────────────────────────────────
+(if_statement_tag "{" @indent.begin)
+(for_statement_tag "{" @indent.begin)
+(for_in_statement_tag "{" @indent.begin)
+(while_statement_tag "{" @indent.begin)
+(function_declaration_tag "{" @indent.begin)
+(try_statement_tag "{" @indent.begin)
+
+; ── Markup-only brace-spanning clause tags ────────────────────────────
+(elseif_clause_tag "else") @indent.branch @indent.begin
+(else_clause_tag "else") @indent.branch @indent.begin
+(catch_clause_tag "catch") @indent.branch @indent.begin

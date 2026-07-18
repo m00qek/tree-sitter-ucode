@@ -92,3 +92,11 @@
 (for_alt_statement_tag) @loop.outer
 (for_in_alt_statement_tag) @loop.outer
 (while_alt_statement_tag) @loop.outer
+(function_alt_declaration) @function.outer
+
+; ── Markup-only brace-spanning forms ──────────────────────────────────
+(if_statement_tag) @conditional.outer
+(for_statement_tag) @loop.outer
+(for_in_statement_tag) @loop.outer
+(while_statement_tag) @loop.outer
+(function_declaration_tag) @function.outer

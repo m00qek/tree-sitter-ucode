@@ -11,14 +11,19 @@
  * This script derives those files instead:
  *
  *   folds / tags / textobjects / locals / indents — copied, plus rules for
- *   the markup-only _tag nodes (if_alt_statement_tag, for_alt_statement_tag,
- *   for_in_alt_statement_tag, while_alt_statement_tag, elif_clause_tag,
- *   else_alt_clause_tag) that only the spanning alt-syntax markup form
- *   produces — grammar.js splits each alt-statement into a code-only rule
- *   (reachable from `statement`, shared with the code grammar) and a
- *   markup-only `_tag` rule (reachable only from `_markup_node`), so every
- *   base query pattern on the code-only name needs a sibling pattern on the
- *   `_tag` name to keep editor behavior (indent/fold/textobject/locals)
+ *   every markup-only `_tag`/clause-tag node (if_alt_statement_tag,
+ *   elif_clause_tag, else_alt_clause_tag, for_alt_statement_tag,
+ *   for_in_alt_statement_tag, while_alt_statement_tag,
+ *   function_alt_declaration — the alt-syntax `:`…`endif` spanning forms —
+ *   and if_statement_tag, elseif_clause_tag, else_clause_tag,
+ *   for_statement_tag, for_in_statement_tag, while_statement_tag,
+ *   function_declaration_tag, try_statement_tag, catch_clause_tag — their
+ *   brace-bodied `{`…`}` spanning counterparts) that only the markup grammar
+ *   produces — grammar.js splits each spanning statement into a code-only
+ *   rule (reachable from `statement`, shared with the code grammar) and a
+ *   markup-only rule (reachable only from `_markup_node`), so every base
+ *   query pattern on the code-only name needs a sibling pattern on the
+ *   markup-only name to keep editor behavior (indent/fold/textobject/locals)
  *   working for the spanning form too.
  *
  * highlights.scm and injections.scm are genuinely markup-specific (tag
@@ -37,22 +42,31 @@ const root   = path.resolve(__dirname, '..');
 const srcDir = path.join(root, 'queries');
 const dstDir = path.join(root, 'markup', 'queries');
 
-// Markup-only indent rules for the clause-tag nodes that only the spanning
-// if-alt markup form produces.  Appended after the shared code indents.
+// Indent rules for every markup-only spanning/clause node.
 //
-// Unlike the code form, both clause tags CONTAIN their body (field('body',
-// repeat($._markup_node))), and the header ends with the `%}` close, not the
-// `:` — so a `:`-token @indent.begin would not sit at the end of the header
-// line and would not open the scope reliably.  Capture the whole node for
-// @indent.begin on both clauses (as the code form does for else), so elif and
-// else bodies indent identically.
+// Two shapes, matching the two structural roles a spanning rule can play
+// (verified capture-identical to the four-single-capture predecessor this
+// replaced, via `tree-sitter query` on if/elif/else and if-brace/else-if-
+// brace/else-brace samples):
 //
-// Both captures sit on the CLAUSE-TAG node, so each clause is one dual-capture
-// pattern.  Do NOT move @indent.branch onto the keyword (`("elif" @indent.branch)
-// @indent.begin`): that captures the "elif"/"else" token, a different (smaller)
-// range than the clause tag, so it is NOT equivalent.  The dual-capture form
-// here was verified capture-identical to the four single-capture patterns it
-// replaces via `tree-sitter query` on an if/elif/else sample.
+// TOP-LEVEL rules (own the first `:`/`{` that opens their first body) get a
+// simple single-token @indent.begin, exactly like the code-only forms above
+// (if_alt_statement ":" @indent.begin etc.): if_alt_statement_tag,
+// for_alt_statement_tag, for_in_alt_statement_tag, while_alt_statement_tag,
+// function_alt_declaration, if_statement_tag, for_statement_tag,
+// for_in_statement_tag, while_statement_tag, function_declaration_tag,
+// try_statement_tag.
+//
+// CLAUSE/CONTINUATION rules (reopen a tag with a closing brace/prior clause
+// end, a branch keyword, then their own new body-opening token) CONTAIN
+// their body (field('body', repeat($._markup_node))) and end with the tag
+// close, not the branch keyword — a single-token @indent.begin on the
+// keyword would not sit at the end of the header line and would not open
+// the scope reliably. Capture the whole node for @indent.begin, with
+// @indent.branch on the distinguishing keyword, so the branch dedents to
+// its enclosing construct while still opening its own body's indent:
+// elif_clause_tag, else_alt_clause_tag, elseif_clause_tag, else_clause_tag,
+// catch_clause_tag.
 const INDENTS_MARKUP_EXTRA = [
   '',
   '; ── Markup-only alt-syntax spanning forms ─────────────────────────────',
@@ -60,15 +74,32 @@ const INDENTS_MARKUP_EXTRA = [
   '(for_alt_statement_tag ":" @indent.begin)',
   '(for_in_alt_statement_tag ":" @indent.begin)',
   '(while_alt_statement_tag ":" @indent.begin)',
+  '(function_alt_declaration ":" @indent.begin)',
   '',
   '; ── Markup-only alt-syntax clause tags ────────────────────────────────',
   '(elif_clause_tag "elif") @indent.branch @indent.begin',
   '(else_alt_clause_tag "else") @indent.branch @indent.begin',
   '',
+  '; ── Markup-only brace-spanning forms ──────────────────────────────────',
+  '(if_statement_tag "{" @indent.begin)',
+  '(for_statement_tag "{" @indent.begin)',
+  '(for_in_statement_tag "{" @indent.begin)',
+  '(while_statement_tag "{" @indent.begin)',
+  '(function_declaration_tag "{" @indent.begin)',
+  '(try_statement_tag "{" @indent.begin)',
+  '',
+  '; ── Markup-only brace-spanning clause tags ────────────────────────────',
+  '(elseif_clause_tag "else") @indent.branch @indent.begin',
+  '(else_clause_tag "else") @indent.branch @indent.begin',
+  '(catch_clause_tag "catch") @indent.branch @indent.begin',
+  '',
 ].join('\n');
 
-// The whole-node fold captures mirror queries/folds.scm's alt-syntax group,
-// one entry per spanning `_tag` rule.
+// Whole-node fold captures mirror queries/folds.scm's alt-syntax group, one
+// entry per TOP-LEVEL spanning rule (clause/continuation tags are not folded
+// separately — they are already inside their enclosing construct's fold
+// region, matching the code-only forms: elif_clause/else_alt_clause/
+// catch_clause have no fold entry of their own either).
 const FOLDS_MARKUP_EXTRA = [
   '',
   '; ── Markup-only alt-syntax spanning forms ─────────────────────────────',
@@ -77,6 +108,17 @@ const FOLDS_MARKUP_EXTRA = [
   '  (for_alt_statement_tag)',
   '  (for_in_alt_statement_tag)',
   '  (while_alt_statement_tag)',
+  '  (function_alt_declaration)',
+  '] @fold',
+  '',
+  '; ── Markup-only brace-spanning forms ──────────────────────────────────',
+  '[',
+  '  (if_statement_tag)',
+  '  (for_statement_tag)',
+  '  (for_in_statement_tag)',
+  '  (while_statement_tag)',
+  '  (function_declaration_tag)',
+  '  (try_statement_tag)',
   '] @fold',
   '',
 ].join('\n');
@@ -88,17 +130,35 @@ const TEXTOBJECTS_MARKUP_EXTRA = [
   '(for_alt_statement_tag) @loop.outer',
   '(for_in_alt_statement_tag) @loop.outer',
   '(while_alt_statement_tag) @loop.outer',
+  '(function_alt_declaration) @function.outer',
+  '',
+  '; ── Markup-only brace-spanning forms ──────────────────────────────────',
+  '(if_statement_tag) @conditional.outer',
+  '(for_statement_tag) @loop.outer',
+  '(for_in_statement_tag) @loop.outer',
+  '(while_statement_tag) @loop.outer',
+  '(function_declaration_tag) @function.outer',
   '',
 ].join('\n');
 
-// Only for/for-in get a scope + loop-variable definition in the base locals.scm
-// (if/while introduce no bindings of their own) — mirror only those for the
-// spanning `_tag` forms.
+// Scopes, function-name definitions, catch-parameter bindings, and kind-
+// gated for-in loop-variable definitions — mirrors exactly which code-only
+// forms get each capture in the base file (if/while get none of these; only
+// for/for-in/function/catch do). formal_parameters/rest_element parameter
+// definitions need no markup-only entry: function_alt_declaration and
+// function_declaration_tag both reach $.formal_parameters through the same
+// shared _call_signature field as function_declaration, so the base file's
+// unqualified (formal_parameters (identifier) @local.definition.parameter)
+// already covers them.
 const LOCALS_MARKUP_EXTRA = [
   '',
   '; ── Markup-only alt-syntax spanning forms ─────────────────────────────',
   '(for_alt_statement_tag) @local.scope',
   '(for_in_alt_statement_tag) @local.scope',
+  '(function_alt_declaration) @local.scope',
+  '(function_alt_declaration',
+  '  name: (identifier) @local.definition.function',
+  '  (#set! definition.function.scope parent))',
   '(for_in_alt_statement_tag',
   '  kind: _',
   '  left: (identifier) @local.definition.var)',
@@ -106,11 +166,54 @@ const LOCALS_MARKUP_EXTRA = [
   '  kind: _',
   '  value: (identifier) @local.definition.var)',
   '',
+  '; ── Markup-only brace-spanning forms ──────────────────────────────────',
+  '(for_statement_tag) @local.scope',
+  '(for_in_statement_tag) @local.scope',
+  '(function_declaration_tag) @local.scope',
+  '(function_declaration_tag',
+  '  name: (identifier) @local.definition.function',
+  '  (#set! definition.function.scope parent))',
+  '(catch_clause_tag) @local.scope',
+  '(catch_clause_tag',
+  '  parameter: (identifier) @local.definition.var)',
+  '(for_in_statement_tag',
+  '  kind: _',
+  '  left: (identifier) @local.definition.var)',
+  '(for_in_statement_tag',
+  '  kind: _',
+  '  value: (identifier) @local.definition.var)',
+  '',
+].join('\n');
+
+// Symbol-index (go-to-definition/outline) coverage for the two markup-only
+// function forms, mirroring the base file's (function_declaration name: ...)
+// pattern exactly (same @doc/#select-adjacent! shape).
+const TAGS_MARKUP_EXTRA = [
+  '',
+  '; ── Markup-only function declarations (alt-syntax and brace-spanning) ──',
+  '(',
+  '  (comment)* @doc',
+  '  .',
+  '  (function_alt_declaration',
+  '    name: (identifier) @name) @definition.function',
+  '  (#strip! @doc "^[\\\\s\\\\*/]+|^[\\\\s\\\\*/]$")',
+  '  (#select-adjacent! @doc @definition.function)',
+  ')',
+  '',
+  '(',
+  '  (comment)* @doc',
+  '  .',
+  '  (function_declaration_tag',
+  '    name: (identifier) @name) @definition.function',
+  '  (#strip! @doc "^[\\\\s\\\\*/]+|^[\\\\s\\\\*/]$")',
+  '  (#select-adjacent! @doc @definition.function)',
+  ')',
+  '',
 ].join('\n');
 
 const DERIVED = {
   'folds.scm':       { rename: [], append: FOLDS_MARKUP_EXTRA },
-  'tags.scm':        { rename: [] },
+  'tags.scm':        { rename: [], append: TAGS_MARKUP_EXTRA },
   'textobjects.scm': { rename: [], append: TEXTOBJECTS_MARKUP_EXTRA },
   'locals.scm':      { rename: [['(program)', '(markup)']], append: LOCALS_MARKUP_EXTRA },
   'indents.scm':     { rename: [], append: INDENTS_MARKUP_EXTRA },

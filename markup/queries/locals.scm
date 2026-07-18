@@ -114,9 +114,30 @@
 ; ── Markup-only alt-syntax spanning forms ─────────────────────────────
 (for_alt_statement_tag) @local.scope
 (for_in_alt_statement_tag) @local.scope
+(function_alt_declaration) @local.scope
+(function_alt_declaration
+  name: (identifier) @local.definition.function
+  (#set! definition.function.scope parent))
 (for_in_alt_statement_tag
   kind: _
   left: (identifier) @local.definition.var)
 (for_in_alt_statement_tag
+  kind: _
+  value: (identifier) @local.definition.var)
+
+; ── Markup-only brace-spanning forms ──────────────────────────────────
+(for_statement_tag) @local.scope
+(for_in_statement_tag) @local.scope
+(function_declaration_tag) @local.scope
+(function_declaration_tag
+  name: (identifier) @local.definition.function
+  (#set! definition.function.scope parent))
+(catch_clause_tag) @local.scope
+(catch_clause_tag
+  parameter: (identifier) @local.definition.var)
+(for_in_statement_tag
+  kind: _
+  left: (identifier) @local.definition.var)
+(for_in_statement_tag
   kind: _
   value: (identifier) @local.definition.var)
