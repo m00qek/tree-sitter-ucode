@@ -81,21 +81,6 @@ const EXPECTED_INVALID = new Set([
   // --- Regex literals ---
   '00_syntax/21_regex_literals#3',   // /test/x — unsupported x flag
 
-  // --- Forward declarations (`function foo;`): a newer-ucode feature that the
-  //     targeted 25.12.x release rejects ("Unexpected token"), so the grammar
-  //     correctly rejects it too. These corpus cases come from a newer ucode. ---
-  '00_syntax/29_function_forward_declarations#1',
-  '00_syntax/29_function_forward_declarations#2',
-  '00_syntax/29_function_forward_declarations#3',
-  '00_syntax/29_function_forward_declarations#4',
-  '00_syntax/29_function_forward_declarations#5',
-  '00_syntax/29_function_forward_declarations#6',
-  '00_syntax/29_function_forward_declarations#7',
-  '00_syntax/29_function_forward_declarations#8',
-  '00_syntax/29_function_forward_declarations#9',
-  '00_syntax/29_function_forward_declarations#10',
-  '00_syntax/29_function_forward_declarations#12',
-
   // --- Bug regression tests (invalid/crashing inputs) ---
   '99_bugs/14_incomplete_expression_at_eof#1',          // `{% 1+` — EOF mid-expression
   '99_bugs/15_segfault_on_prefix_increment#1',          // `{% ++"` — invalid prefix operand
@@ -127,16 +112,15 @@ const EXPECTED_INVALID = new Set([
 // syntax errors. Keeping them here (rather than silently tolerating their
 // MISSING nodes, or mislabeling them as EXPECTED_INVALID) keeps the corpus
 // run green without hiding that the feature is unimplemented.
+//
+// Empty for the currently pinned ucode version (see README.md's "Targeted
+// ucode version" section) — every construct in that corpus is either valid
+// and supported, or invalid and in EXPECTED_INVALID above. This stays empty,
+// not deleted: bumping the pinned commit is expected to repopulate it until
+// the grammar catches up, exactly as it did (and was emptied again) here.
 // ---------------------------------------------------------------------------
 
-const KNOWN_GRAMMAR_GAPS = new Set([
-  // --- Object method shorthand `{ foo() {} }` (upstream 8d7d15e) — grammar
-  //     does not yet parse it. ---
-  '00_syntax/29_method_shorthand#1',
-  '00_syntax/29_method_shorthand#2',
-  '00_syntax/29_method_shorthand#3',
-  '00_syntax/29_method_shorthand#4',
-]);
+const KNOWN_GRAMMAR_GAPS = new Set([]);
 
 // ---------------------------------------------------------------------------
 // Helpers

@@ -101,6 +101,12 @@ jobs:
         uses: actions/checkout@v6
         with:
           repository: jow-/ucode
+          # Pinned to the ucode commit shipped by OpenWrt 25.12 (verified via
+          # the ucode-2026.01.16~85922056-r1 package on an OpenWrt 25.12.3
+          # image — the version string embeds this short hash). This grammar
+          # intentionally targets that release, not ucode's unpinned master;
+          # see README.md's "Targeted ucode version" section before bumping.
+          ref: 85922056ef7abeace3cca3ab28bc1ac2d88e31b1
           path: ucode-lang
           sparse-checkout: tests/custom
           sparse-checkout-cone-mode: false

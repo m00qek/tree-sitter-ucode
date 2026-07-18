@@ -24,6 +24,35 @@ CLI commands run against this repo do not get automatic `ucdocs` injection eithe
 plugins generally register `ucdocs` and its injection query directly rather than going
 through `tree-sitter.json`, so they are unaffected — see the editor sections below.
 
+## Targeted ucode version
+
+This grammar targets the ucode interpreter as shipped in **OpenWrt 25.12**
+(package `ucode-2026.01.16~85922056-r1`, commit
+[`8592205`](https://github.com/jow-/ucode/commit/85922056ef7abeace3cca3ab28bc1ac2d88e31b1)
+in [jow-/ucode](https://github.com/jow-/ucode)) — not ucode's unpinned `master`
+branch, which moves independently and can be well ahead of what any released
+OpenWrt version actually runs. `.github/workflows/ci.yml`'s corpus-validation
+job checks out that exact commit; `scripts/validate-corpus.js`'s
+`EXPECTED_INVALID` and `KNOWN_GRAMMAR_GAPS` sets are curated against it.
+
+Syntax that lands on ucode `master` after that commit — at last check:
+dynamic `import()` expressions, object method shorthand (`{ foo() {} }`),
+function forward declarations (`function f;`), and `export function` without
+a trailing `;` — is deliberately **not** supported yet. If your ucode build
+is newer than OpenWrt 25.12's (e.g. built from a recent `master` checkout),
+you may hit spurious ERRORs on these constructs; that's expected until the
+grammar's target is bumped to match a newer OpenWrt release.
+
+To re-target a newer release: find its ucode package version (e.g. via
+`apk info -a ucode` / `opkg info ucode` on that release, or its image's
+`/etc/os-release`), resolve the short hash embedded in the version string
+against [jow-/ucode](https://github.com/jow-/ucode) to get the full commit,
+update the `ref:` in `ci.yml`, and run `node scripts/validate-corpus.js
+corpus <path to that commit's tests/custom>` to find what's newly valid (or
+newly invalid) — this will very likely repopulate `KNOWN_GRAMMAR_GAPS` and/or
+`EXPECTED_INVALID` in `scripts/validate-corpus.js` until the grammar catches
+up.
+
 ## Ucode vs JavaScript
 
 Ucode is an ECMAScript subset with OpenWrt-specific extensions. Key differences:

@@ -126,17 +126,18 @@ cd markup && npx tree-sitter test --file-name markup.txt
 
 ## Validating against real code
 
-CI validates the grammar against the upstream ucode test suite and the firewall4 project. To reproduce locally:
+CI validates the grammar against the upstream ucode test suite — pinned to the commit ucode ships at in OpenWrt 25.12, see README.md's "Targeted ucode version" — and the firewall4 project. To reproduce locally:
 
 ```sh
 git clone https://github.com/jow-/ucode /tmp/ucode
+git -C /tmp/ucode checkout 85922056ef7abeace3cca3ab28bc1ac2d88e31b1
 git clone https://github.com/openwrt/firewall4 /tmp/firewall4
 
 node scripts/validate-corpus.js corpus  /tmp/ucode/tests/custom
 node scripts/validate-corpus.js project /tmp/firewall4
 ```
 
-A small number of upstream test cases are intentionally skipped because they contain code that ucode itself rejects at compile time (not grammar bugs). They are listed in `EXPECTED_INVALID` inside `scripts/validate-corpus.js`.
+A small number of upstream test cases are intentionally skipped because they contain code that ucode itself rejects at compile time (not grammar bugs). They are listed in `EXPECTED_INVALID` inside `scripts/validate-corpus.js`. `KNOWN_GRAMMAR_GAPS` in the same file lists the opposite: valid ucode the grammar doesn't parse yet (currently empty — see README.md).
 
 ## Before submitting a PR
 
