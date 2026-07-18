@@ -33,10 +33,19 @@ module.exports = grammar({
     $._double_quote_string_content, // 16  "..." body (scans up to " / \ / EOF; raw newlines are content)
     $._regex_content,               // 17  /.../ body (scans up to the closing / or EOF; raw newlines are content)
     $._octal_escape,                 // 18  \NNN octal escape in a string/template, range-checked to <= 255
+    $._asi_gap,                      // 19  zero-width no-op emitted before an own-line comment when ASI declines (see scanner)
   ],
 
   extras: $ => [
     $.comment,
+    // Zero-width marker the external scanner emits at an own-line comment when
+    // ASI does NOT fire before it (a continuation like `a\n// c\n.b`). It lets
+    // the scanner decide ASI by peeking PAST the comment yet still emit the
+    // comment on the next call at the same position \u2014 see scan_comment /
+    // scan_asi_before_comment in src/scanner_impl.h. Hidden and zero-width, so
+    // it never appears in the tree; listed as an extra because it can occur at
+    // any inter-statement position a comment can.
+    $._asi_gap,
     /[\s\p{Zs}\uFEFF\u2028\u2029\u2060\u200B]/,
   ],
 

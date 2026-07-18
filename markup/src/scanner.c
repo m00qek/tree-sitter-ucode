@@ -8,11 +8,11 @@
 
 #include "../../src/scanner_impl.h"
 
-void *tree_sitter_ucode_markup_external_scanner_create(void) { return NULL; }
-void  tree_sitter_ucode_markup_external_scanner_destroy(void *p) { (void)p; }
-unsigned tree_sitter_ucode_markup_external_scanner_serialize(void *p, char *b) { (void)p; (void)b; return 0; }
+void *tree_sitter_ucode_markup_external_scanner_create(void) { return ucode_scanner_create(); }
+void  tree_sitter_ucode_markup_external_scanner_destroy(void *p) { ucode_scanner_destroy(p); }
+unsigned tree_sitter_ucode_markup_external_scanner_serialize(void *p, char *b) { return ucode_scanner_serialize(p, b); }
 void  tree_sitter_ucode_markup_external_scanner_deserialize(void *p, const char *b, unsigned n) {
-    (void)p; (void)b; (void)n;
+    ucode_scanner_deserialize(p, b, n);
 }
 
 bool tree_sitter_ucode_markup_external_scanner_scan(

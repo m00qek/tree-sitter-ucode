@@ -700,12 +700,62 @@ y = 2
   (expression_statement
     (assignment_expression
       left: (identifier)
-      right: (number))
-    (comment))
+      right: (number)))
+  (comment)
   (expression_statement
     (assignment_expression
       left: (identifier)
       right: (number))))
+
+================================================================================
+Own-line comment after a brace-terminated statement stays at the outer level
+================================================================================
+
+function f() { return 1; }
+// doc
+export const a = 1;
+
+--------------------------------------------------------------------------------
+
+; ASI is decided before the comment, so a `function f() {}` with no explicit
+; ';' reduces at the '}' and the following comment is a program-level sibling
+; (a doc comment can be associated with the next declaration) rather than
+; being absorbed into the function body.
+
+(program
+  (function_declaration
+    name: (identifier)
+    parameters: (formal_parameters)
+    body: (statement_block
+      (return_statement
+        (number))))
+  (comment)
+  (export_statement
+    declaration: (lexical_declaration
+      (variable_declarator
+        name: (identifier)
+        value: (number)))))
+
+================================================================================
+Own-line block comment between two declarations stays at the outer level
+================================================================================
+
+let x = 1
+/* doc */
+function g() {}
+
+--------------------------------------------------------------------------------
+
+(program
+  (lexical_declaration
+    (variable_declarator
+      name: (identifier)
+      value: (number)))
+  (comment)
+  (function_declaration
+    name: (identifier)
+    parameters: (formal_parameters)
+    body: (statement_block)))
 
 ================================================================================
 Line comment on its own line does not break member-chain continuation

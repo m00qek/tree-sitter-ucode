@@ -6472,6 +6472,10 @@
       "name": "comment"
     },
     {
+      "type": "SYMBOL",
+      "name": "_asi_gap"
+    },
+    {
       "type": "PATTERN",
       "value": "[\\s\\p{Zs}\\uFEFF\\u2028\\u2029\\u2060\\u200B]"
     }
@@ -6730,6 +6734,10 @@
     {
       "type": "SYMBOL",
       "name": "_octal_escape"
+    },
+    {
+      "type": "SYMBOL",
+      "name": "_asi_gap"
     }
   ],
   "inline": [

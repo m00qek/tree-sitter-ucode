@@ -25,6 +25,7 @@
  *  16  DOUBLE_QUOTE_STRING_CONTENT $._double_quote_string_content  "..." body
  *  17  REGEX_CONTENT               $._regex_content                /.../ body
  *  18  OCTAL_ESCAPE                $._octal_escape                 \NNN in a string/template
+ *  19  ASI_GAP                     $._asi_gap                      zero-width no-op (extra)
  */
 
 #ifndef UCODE_SCANNER_IMPL_H_
@@ -32,6 +33,7 @@
 
 #include "tree_sitter/parser.h"
 #include <wctype.h>
+#include <stdlib.h>   /* calloc / free for the scanner state */
 
 enum TokenType {
     AUTOMATIC_SEMICOLON,
@@ -53,7 +55,20 @@ enum TokenType {
     DOUBLE_QUOTE_STRING_CONTENT,
     REGEX_CONTENT,
     OCTAL_ESCAPE,
+    ASI_GAP,
 };
+
+/*
+ * Persistent scanner state.  A single flag, carried across exactly two
+ * consecutive scans: when the ASI-before-comment path emits its zero-width
+ * marker (a real ASI or a no-op ASI_GAP), it sets skip_asi_before_comment so
+ * the very next scan re-scans the comment itself instead of re-deciding the
+ * ASI (which would loop, and would misplace the marker).  Serialized because a
+ * GLR fork between the two scans must carry the flag to each branch.
+ */
+typedef struct {
+    bool skip_asi_before_comment;
+} Scanner;
 
 static inline void advance(TSLexer *lexer) { lexer->advance(lexer, false); }
 static inline void skip(TSLexer *lexer)    { lexer->advance(lexer, true);  }
@@ -564,26 +579,13 @@ static bool lookahead_is_in_keyword(TSLexer *lexer) {
  * so the zero-length semicolon token is emitted and the scanner is called
  * again immediately at the same position for STATEMENT_TAG_CLOSE.
  */
-static AsiResult scan_automatic_semicolon(TSLexer *lexer) {
-    lexer->result_symbol = AUTOMATIC_SEMICOLON;
-    lexer->mark_end(lexer);
-
-    /*
-     * scan_comment() is dispatched before ASI (see ucode_scanner_scan) and is
-     * valid wherever ASI is, so by the time we reach here it has already skipped
-     * all inline whitespace, line terminators and comments.  When it crossed a
-     * line terminator it returns CMT_NONE_NEWLINE and asi_after_newline() makes
-     * the post-newline decision, so ucode_scanner_scan returns before this
-     * function runs.  So this is reached ONLY in the same-line case, with the
-     * lexer sitting on the next real (non-whitespace, non-'/') token — a
-     * same-line token never triggers ASI except at the boundaries below.
-     *
-     * (Verified empirically over the full corpus + the jow-/ucode suite: ASI is
-     * never entered without COMMENT co-valid, so scan_comment always runs first
-     * and this function never needs to skip whitespace, comments or newlines of
-     * its own.)
-     */
-
+/*
+ * Same-line ASI decision from the current lookahead — no mark_end / result_symbol
+ * side effects, so it can be reused both by scan_automatic_semicolon (which sets
+ * up the zero-length token first) and by the ASI-before-comment peek, which
+ * decides while positioned past a comment and rewinds via a held mark_end.
+ */
+static AsiResult asi_same_line_decision(TSLexer *lexer) {
     /* ECMAScript rule 1 ('}') and rule 3 (EOF): insert. */
     if (lexer->lookahead == '}' || lexer->lookahead == 0)
         return ASI_INSERT;
@@ -598,22 +600,31 @@ static AsiResult scan_automatic_semicolon(TSLexer *lexer) {
     return ASI_TRY_TERNARY;
 }
 
-/*
- * ASI decision when a line terminator has ALREADY been consumed — scan_comment
- * skips newlines to reach a possible following-line comment, and when it finds
- * none it reports crossed_newline and leaves the lexer at the next real token.
- * Decide purely from that token: there is no more whitespace or comment to skip
- * (scan_comment stopped at the first non-whitespace char, and a comment there
- * would have been emitted as its own token).  This is the single authoritative
- * post-newline continuation list — scan_automatic_semicolon handles only the
- * same-line case and shares the '-'/'%' tag-close arm below.  `in` (checked
- * in the default arm via lookahead_is_in_keyword) is the one continuation
- * token that isn't punctuation.
- */
-static AsiResult asi_after_newline(TSLexer *lexer) {
+static AsiResult scan_automatic_semicolon(TSLexer *lexer) {
     lexer->result_symbol = AUTOMATIC_SEMICOLON;
     lexer->mark_end(lexer);
 
+    /*
+     * scan_comment() is dispatched before ASI (see ucode_scanner_scan) and is
+     * valid wherever ASI is, so by the time we reach here it has already skipped
+     * all inline whitespace, line terminators and comments.  When it crossed a
+     * line terminator it returns CMT_NONE_NEWLINE and asi_after_newline() makes
+     * the post-newline decision, so ucode_scanner_scan returns before this
+     * function runs.  So this is reached ONLY in the same-line case, with the
+     * lexer sitting on the next real (non-whitespace, non-'/') token — a
+     * same-line token never triggers ASI except at the boundaries below.
+     */
+    return asi_same_line_decision(lexer);
+}
+
+/*
+ * Post-newline ASI decision from the current lookahead — the mark-free core of
+ * asi_after_newline, likewise reused by the ASI-before-comment peek.  This is
+ * the single authoritative post-newline continuation list; `in` (checked in the
+ * default arm via lookahead_is_in_keyword) is the one continuation token that
+ * isn't punctuation.
+ */
+static AsiResult asi_after_newline_decision(TSLexer *lexer) {
     switch (lexer->lookahead) {
         case '(': case '[': case '`':
         case '.': case ',': case ';':
@@ -632,6 +643,20 @@ static AsiResult asi_after_newline(TSLexer *lexer) {
             if (lookahead_is_in_keyword(lexer)) return ASI_DECLINE;
             return ASI_INSERT;
     }
+}
+
+/*
+ * ASI decision when a line terminator has ALREADY been consumed — scan_comment
+ * skips newlines to reach a possible following-line comment, and when it finds
+ * none it reports crossed_newline and leaves the lexer at the next real token.
+ * Decide purely from that token: there is no more whitespace or comment to skip
+ * (scan_comment stopped at the first non-whitespace char, and a comment there
+ * would have been emitted as its own token).
+ */
+static AsiResult asi_after_newline(TSLexer *lexer) {
+    lexer->result_symbol = AUTOMATIC_SEMICOLON;
+    lexer->mark_end(lexer);
+    return asi_after_newline_decision(lexer);
 }
 
 static bool scan_ternary_qmark(TSLexer *lexer) {
@@ -697,8 +722,128 @@ static bool dispatch_asi(AsiResult result, TSLexer *lexer,
  */
 typedef enum { CMT_NONE, CMT_NONE_NEWLINE, CMT_FOUND, CMT_ABORT } CommentResult;
 
-static CommentResult scan_comment(TSLexer *lexer) {
+/*
+ * Decide the preceding statement's ASI BEFORE an own-line comment is emitted.
+ *
+ * A comment is an external `extra`, dispatched ahead of ASI, so once a line
+ * terminator has been crossed and the next thing is a comment, the naive flow
+ * emits the comment first and only decides ASI at the token after it — which
+ * lands the comment INSIDE the still-open preceding statement.  For a statement
+ * ended by a brace (most visibly `function f() {}` with no explicit `;`) that
+ * misplaces a following doc comment inside the function body instead of at the
+ * outer level, breaking doc-to-next-declaration association.  (This was correct
+ * before comments became an external token; the token order flipped.)
+ *
+ * We restore the [ASI, comment] order without un-scanning the comment (mark_end
+ * cannot move backwards): peek PAST this comment and any further own-line
+ * comments to the next real token, decide, and emit a ZERO-WIDTH token at the
+ * ENTRY position (right after the preceding token, before the newline — the
+ * same position ASI used before comments went external, which is why a brace-
+ * terminated statement like `function f(){}` reduces there instead of absorbing
+ * the comment) — a real AUTOMATIC_SEMICOLON when the next token starts a new
+ * statement (INSERT: closes the statement, so the comment attaches at the outer
+ * level), or a no-op ASI_GAP when the next token continues the expression
+ * (`a\n// c\n.b`: the statement stays open, so the comment attaches to the
+ * continuation, exactly as before).  Either way the comment itself is scanned
+ * on the NEXT call.
+ *
+ * Returns true iff it emitted a real ASI (INSERT), false for a no-op ASI_GAP.
+ * The caller uses this to gate Scanner.skip_asi_before_comment: only the GAP
+ * (decline) case needs it, because there the statement stays open and ASI is
+ * still valid next call — without the flag this path would re-trigger and loop.
+ * The INSERT case needs no flag: the emitted ASI closes the statement, so ASI
+ * is no longer valid next call and the path is not re-taken; forcing the flag
+ * there instead makes the follow-up comment attach inside a not-yet-reduced
+ * declaration (the `function f(){}` case).
+ *
+ * Contract: mark_end is set at the ENTRY position; the caller has advanced past
+ * the comment's '/', so lookahead is its second char ('/' or '*').  This
+ * function only advance()s (never mark_end), so the emitted token stays
+ * zero-width at entry.
+ */
+static bool scan_asi_before_comment(TSLexer *lexer) {
+    bool newline_before_next = true;  /* a newline precedes this first comment */
+
+    for (;;) {
+        /* Consume the rest of this comment (lookahead is '/' or '*'). */
+        if (lexer->lookahead == '/') {
+            advance(lexer);
+            while (!lexer->eof(lexer) && !is_line_terminator(lexer->lookahead))
+                advance(lexer);
+        } else {  /* '*' — block comment */
+            advance(lexer);
+            if (lexer->lookahead == '/') {
+                advance(lexer);  /* slash-star-slash is a complete empty comment */
+            } else {
+                bool closed = false;
+                while (!lexer->eof(lexer)) {
+                    if (lexer->lookahead == '*') {
+                        advance(lexer);
+                        if (lexer->lookahead == '/') { advance(lexer); closed = true; break; }
+                    } else {
+                        advance(lexer);
+                    }
+                }
+                if (!closed) {
+                    /* Unterminated block comment: an ERROR either way.  Emit the
+                       gap and let the next call re-scan — scan_comment then hits
+                       EOF and returns CMT_ABORT, so the parser errors as it does
+                       without this path. */
+                    lexer->result_symbol = ASI_GAP;
+                    return false;
+                }
+            }
+        }
+
+        /* Skip whitespace and line terminators after the comment. */
+        newline_before_next = false;
+        for (;;) {
+            while (is_inline_ws(lexer->lookahead)) advance(lexer);
+            if (is_line_terminator(lexer->lookahead)) {
+                newline_before_next = true;
+                advance(lexer);
+                continue;
+            }
+            break;
+        }
+
+        /* Another comment?  Classify a leading '/'. */
+        if (lexer->lookahead != '/') break;
+        advance(lexer);  /* consume the '/'; loop top handles the second char */
+        if (lexer->lookahead == '/' || lexer->lookahead == '*')
+            continue;
+        /* A '/' that is not a comment is division/regex — the next real token,
+           which continues the expression → decline. */
+        lexer->result_symbol = ASI_GAP;
+        return false;
+    }
+
+    /* At the next real token.  A newline before it uses the post-newline
+       continuation list; same line uses the (stricter) same-line rules — which
+       keeps a block comment whose own closing line carries the next statement
+       an error, matching ucode, while allowing ASI before a `%}` on the
+       comment's own line. */
+    AsiResult r = newline_before_next
+        ? asi_after_newline_decision(lexer)
+        : asi_same_line_decision(lexer);
+    lexer->result_symbol = (r == ASI_INSERT) ? AUTOMATIC_SEMICOLON : ASI_GAP;
+    return r == ASI_INSERT;
+}
+
+static CommentResult scan_comment(TSLexer *lexer, Scanner *state,
+                                  bool asi_valid, bool gap_valid) {
     bool crossed_newline = false;
+
+    /* The previous scan emitted an ASI/ASI_GAP marker before this comment (see
+       scan_asi_before_comment); this call re-scans the comment itself.  Consume
+       the flag and take the normal path below, not the ASI-before-comment one. */
+    bool suppress_asi_before_comment = state->skip_asi_before_comment;
+    state->skip_asi_before_comment = false;
+
+    /* Mark the ENTRY position (before any leading whitespace/newline is skipped)
+       so the ASI-before-comment path can emit its zero-width marker here — the
+       position ASI occupied before comments became an external token. */
+    lexer->mark_end(lexer);
     /* Skip leading inline whitespace to reach a comment.  tree-sitter calls the
        scanner at the whitespace before the comment and will not re-invoke it
        after lexing that whitespace internally, so a comment reached only across
@@ -708,15 +853,13 @@ static CommentResult scan_comment(TSLexer *lexer) {
        newline and the next token are consumed here rather than derailing the ASI
        decision that follows.
        Line terminators need care: skipping one destroys the newline that
-       lenient inter-statement ASI relies on.  We
-       cannot defer to ASI (leave the newline unconsumed) — a comment may follow
-       on the next line, and once ASI skips past it to decide, an emitted
-       zero-length ';' cannot carry the skipped comment back out.  Instead we
-       skip the newline ourselves but report that we crossed one (CMT_NONE_NEWLINE);
-       the dispatcher then runs asi_after_newline at the first token past this
-       whitespace when no comment intervenes.  A comment that does follow is
-       emitted normally (CMT_FOUND), and the preceding statement's ASI is decided
-       on a later call once the comments are past. */
+       lenient inter-statement ASI relies on.  We cannot defer to ASI (leave the
+       newline unconsumed).  Instead we skip the newline ourselves but report
+       that we crossed one: when NO comment follows, we return CMT_NONE_NEWLINE
+       and the dispatcher runs asi_after_newline at the next token; when a
+       comment DOES follow, the ASI-before-comment path below decides the
+       preceding statement's ASI first (emitting a zero-width marker at the
+       entry position) so the comment lands after any inserted ';'. */
     for (;;) {
         while (is_inline_ws(lexer->lookahead))
             skip(lexer);
@@ -729,7 +872,29 @@ static CommentResult scan_comment(TSLexer *lexer) {
     }
     if (lexer->lookahead != '/')
         return crossed_newline ? CMT_NONE_NEWLINE : CMT_NONE;
-    advance(lexer);
+
+    /* ASI-before-comment: when a line terminator was crossed and both ASI and
+       the ASI_GAP marker are valid here (and this is not the follow-up re-scan),
+       decide the preceding statement's ASI before this comment is emitted (see
+       scan_asi_before_comment).  mark_end is already at the entry position;
+       advance past the '/' to classify, and hand off only if a comment actually
+       follows.  A lone '/' (division/regex after a newline) falls through to the
+       normal handling below, which returns CMT_ABORT. */
+    bool advanced_slash = false;
+    if (crossed_newline && asi_valid && gap_valid && !suppress_asi_before_comment) {
+        advance(lexer);
+        advanced_slash = true;
+        if (lexer->lookahead == '/' || lexer->lookahead == '*') {
+            bool inserted = scan_asi_before_comment(lexer);
+            /* Only the GAP (decline) case needs the follow-up flag; see the
+               note on scan_asi_before_comment.  INSERT reduces the statement,
+               so ASI is no longer valid next call and the path self-limits. */
+            state->skip_asi_before_comment = !inserted;
+            return CMT_FOUND;
+        }
+    }
+    if (!advanced_slash)
+        advance(lexer);
 
     if (lexer->lookahead == '/') {
         advance(lexer);
@@ -796,7 +961,7 @@ static CommentResult scan_comment(TSLexer *lexer) {
 static bool ucode_scanner_scan(
     void *payload, TSLexer *lexer, const bool *valid_symbols
 ) {
-    (void)payload;
+    Scanner *state = (Scanner *)payload;
 
     /*
      * Error-recovery guard.
@@ -903,7 +1068,7 @@ static bool ucode_scanner_scan(
      */
     bool crossed_newline = false;
     if (valid_symbols[COMMENT]) {
-        switch (scan_comment(lexer)) {
+        switch (scan_comment(lexer, state, valid_symbols[AUTOMATIC_SEMICOLON], valid_symbols[ASI_GAP])) {
             case CMT_FOUND:        return true;
             case CMT_ABORT:        return false;
             case CMT_NONE_NEWLINE: crossed_newline = valid_symbols[AUTOMATIC_SEMICOLON]; break;
@@ -958,6 +1123,29 @@ static bool ucode_scanner_scan(
         return scan_ternary_qmark(lexer);
 
     return false;
+}
+
+/* -------------------------------------------------------------------------
+ * Scanner lifecycle (shared by both parsers' shims)
+ * ---------------------------------------------------------------------- */
+
+static void *ucode_scanner_create(void) {
+    return calloc(1, sizeof(Scanner));
+}
+
+static void ucode_scanner_destroy(void *payload) {
+    free(payload);
+}
+
+static unsigned ucode_scanner_serialize(void *payload, char *buffer) {
+    Scanner *state = (Scanner *)payload;
+    buffer[0] = state->skip_asi_before_comment ? 1 : 0;
+    return 1;
+}
+
+static void ucode_scanner_deserialize(void *payload, const char *buffer, unsigned length) {
+    Scanner *state = (Scanner *)payload;
+    state->skip_asi_before_comment = (length > 0 && buffer[0] != 0);
 }
 
 #endif /* UCODE_SCANNER_IMPL_H_ */
