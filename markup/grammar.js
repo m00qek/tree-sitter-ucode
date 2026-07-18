@@ -33,6 +33,7 @@ module.exports = grammar({
     $._single_quote_string_content, // 15  '...' body (scans up to ' / \ / EOF; raw newlines are content)
     $._double_quote_string_content, // 16  "..." body (scans up to " / \ / EOF; raw newlines are content)
     $._regex_content,               // 17  /.../ body (scans up to the closing / or EOF; raw newlines are content)
+    $._octal_escape,                 // 18  \NNN octal escape in a string/template, range-checked to <= 255
   ],
 
   extras: $ => [
@@ -1241,6 +1242,7 @@ module.exports = grammar({
         repeat(choice(
           alias($._double_quote_string_content, $.string_fragment),
           $.escape_sequence,
+          alias($._octal_escape, $.escape_sequence),
         )),
         '"',
       ),
@@ -1249,6 +1251,7 @@ module.exports = grammar({
         repeat(choice(
           alias($._single_quote_string_content, $.string_fragment),
           $.escape_sequence,
+          alias($._octal_escape, $.escape_sequence),
         )),
         '\'',
       ),
@@ -1256,11 +1259,17 @@ module.exports = grammar({
 
     // Ucode extends JS escapes with \e (ESC), \a (BEL), and octal sequences.
     // Unlike JS, ucode supports only the 4-hex `\uXXXX` form \u2014 not `\u{...}`.
+    //
+    // The octal branch lives entirely in the external `_octal_escape` token
+    // (aliased back to escape_sequence above and in template_string below),
+    // not here: ucode range-checks octal escapes to <= 255 (\377), a check
+    // that requires computing the value, not something a regex can express
+    // (see the doc comment on scan_octal_escape in scanner_impl.h for why a
+    // capped regex alternative like [0-3][0-7]{2}|[0-7]{1,2} does not work).
     escape_sequence: _ => token.immediate(seq(
       '\\',
       choice(
         /[^xu0-7]/,
-        /[0-7]{1,3}/,
         /x[0-9a-fA-F]{2}/,
         /u[0-9a-fA-F]{4}/,
         /\r[\n\u2028\u2029]/,
@@ -1279,6 +1288,7 @@ module.exports = grammar({
       repeat(choice(
         alias($._template_chars, $.string_fragment),
         $.escape_sequence,
+        alias($._octal_escape, $.escape_sequence),
         $.template_substitution,
       )),
       '`',

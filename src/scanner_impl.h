@@ -24,6 +24,7 @@
  *  15  SINGLE_QUOTE_STRING_CONTENT $._single_quote_string_content  '...' body
  *  16  DOUBLE_QUOTE_STRING_CONTENT $._double_quote_string_content  "..." body
  *  17  REGEX_CONTENT               $._regex_content                /.../ body
+ *  18  OCTAL_ESCAPE                $._octal_escape                 \NNN in a string/template
  */
 
 #ifndef UCODE_SCANNER_IMPL_H_
@@ -51,6 +52,7 @@ enum TokenType {
     SINGLE_QUOTE_STRING_CONTENT,
     DOUBLE_QUOTE_STRING_CONTENT,
     REGEX_CONTENT,
+    OCTAL_ESCAPE,
 };
 
 static inline void advance(TSLexer *lexer) { lexer->advance(lexer, false); }
@@ -454,6 +456,41 @@ static bool scan_regex_content(TSLexer *lexer) {
 }
 
 /*
+ * Octal escape sequence in a string/template literal: '\' followed by 1-3
+ * octal digits, e.g. \0, \40, \377.  ucode's lexer (lexer.c parse_escape)
+ * greedily consumes up to 3 octal digits like any grammar regex would, but
+ * then range-checks the resulting value and rejects it ("Invalid escape
+ * sequence") if it exceeds 255 (\377) — a check no regex can express, since
+ * regex/token matching is maximal-munch: a pattern like [0-3][0-7]{2}|[0-7]{1,2}
+ * does not reject "\777", it just matches the shorter "\77" and lets the
+ * remaining '7' be silently absorbed as ordinary string content (verified:
+ * produces a clean tree, no ERROR, just the wrong split). Only a scan
+ * function that computes the value and can refuse to produce a token at all
+ * — leaving nothing else able to start at the '\' — gets a real rejection.
+ *
+ * Aliased back to escape_sequence in grammar.js (like REGEX_CONTENT is
+ * aliased to regex_pattern) so the tree is unchanged for every valid case;
+ * escape_sequence's own regex no longer has an octal branch, so this is the
+ * only path for '\' followed by an octal digit.
+ */
+static bool scan_octal_escape(TSLexer *lexer) {
+    if (lexer->lookahead != '\\') return false;
+    advance(lexer);
+
+    int code = 0, i;
+    for (i = 0; i < 3 && lexer->lookahead >= '0' && lexer->lookahead <= '7'; i++) {
+        code = code * 8 + (lexer->lookahead - '0');
+        advance(lexer);
+    }
+
+    if (i == 0 || code > 255) return false;
+
+    lexer->mark_end(lexer);
+    lexer->result_symbol = OCTAL_ESCAPE;
+    return true;
+}
+
+/*
  * Return true if the lookahead is the start of %} or -%} (statement tag
  * close).  Used during ASI scanning to allow a zero-length semicolon to be
  * inserted immediately before the tag close without consuming any characters.
@@ -780,9 +817,16 @@ static bool ucode_scanner_scan(
      * (confirmed in the generated ts_external_scanner_states of both
      * parsers), so no separate guard against a competing ASI decision is
      * needed here.
+     *
+     * Like the string-content dispatches below, this must NOT return
+     * unconditionally: scan_template_chars declines (returns false) right at
+     * a '\\', and OCTAL_ESCAPE is valid at that exact same position (a
+     * template_string's repeat(choice(...)) includes the aliased octal
+     * escape too) — an unconditional return would hand back that false
+     * result immediately and never give OCTAL_ESCAPE a chance to run.
      */
-    if (valid_symbols[TEMPLATE_CHARS])
-        return scan_template_chars(lexer);
+    if (valid_symbols[TEMPLATE_CHARS] && scan_template_chars(lexer))
+        return true;
 
     /*
      * Quoted-string body: only inside a '...' / "..." literal. Dispatched here,
@@ -790,11 +834,31 @@ static bool ucode_scanner_scan(
      * right after an escape) is kept as content instead of being lexed as a
      * comment (the `comment` extra is otherwise offered even inside strings).
      * Same non-overlap with AUTOMATIC_SEMICOLON as TEMPLATE_CHARS above.
+     *
+     * String content and the octal escape below are both valid at the exact
+     * same position right after the opening quote (or after a preceding
+     * fragment/escape) — scan_string_chars declines there (lookahead is the
+     * quote or a backslash), so it must NOT `return` unconditionally: doing
+     * so would hand back its false result immediately and never give
+     * OCTAL_ESCAPE a chance to run at all. Only return on success; fall
+     * through to try the next external token otherwise.
      */
-    if (valid_symbols[SINGLE_QUOTE_STRING_CONTENT])
-        return scan_string_chars(lexer, '\'', SINGLE_QUOTE_STRING_CONTENT);
-    if (valid_symbols[DOUBLE_QUOTE_STRING_CONTENT])
-        return scan_string_chars(lexer, '"', DOUBLE_QUOTE_STRING_CONTENT);
+    if (valid_symbols[SINGLE_QUOTE_STRING_CONTENT] &&
+        scan_string_chars(lexer, '\'', SINGLE_QUOTE_STRING_CONTENT))
+        return true;
+    if (valid_symbols[DOUBLE_QUOTE_STRING_CONTENT] &&
+        scan_string_chars(lexer, '"', DOUBLE_QUOTE_STRING_CONTENT))
+        return true;
+
+    /*
+     * Octal escape (\NNN) inside a string/template: only valid wherever
+     * escape_sequence itself is (aliased back to it — see scan_octal_escape).
+     * A '\' followed by a non-octal-digit, or an in-range value, falls
+     * through to escape_sequence's own regex; an out-of-range value (> 255)
+     * returns false here with nothing else able to match, forcing an ERROR.
+     */
+    if (valid_symbols[OCTAL_ESCAPE] && scan_octal_escape(lexer))
+        return true;
 
     /*
      * Regex body: only inside a `/ ... /` literal, dispatched like the string

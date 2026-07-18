@@ -5559,6 +5559,15 @@
                   {
                     "type": "SYMBOL",
                     "name": "escape_sequence"
+                  },
+                  {
+                    "type": "ALIAS",
+                    "content": {
+                      "type": "SYMBOL",
+                      "name": "_octal_escape"
+                    },
+                    "named": true,
+                    "value": "escape_sequence"
                   }
                 ]
               }
@@ -5593,6 +5602,15 @@
                   {
                     "type": "SYMBOL",
                     "name": "escape_sequence"
+                  },
+                  {
+                    "type": "ALIAS",
+                    "content": {
+                      "type": "SYMBOL",
+                      "name": "_octal_escape"
+                    },
+                    "named": true,
+                    "value": "escape_sequence"
                   }
                 ]
               }
@@ -5620,10 +5638,6 @@
               {
                 "type": "PATTERN",
                 "value": "[^xu0-7]"
-              },
-              {
-                "type": "PATTERN",
-                "value": "[0-7]{1,3}"
               },
               {
                 "type": "PATTERN",
@@ -5666,6 +5680,15 @@
               {
                 "type": "SYMBOL",
                 "name": "escape_sequence"
+              },
+              {
+                "type": "ALIAS",
+                "content": {
+                  "type": "SYMBOL",
+                  "name": "_octal_escape"
+                },
+                "named": true,
+                "value": "escape_sequence"
               },
               {
                 "type": "SYMBOL",
@@ -6703,6 +6726,10 @@
     {
       "type": "SYMBOL",
       "name": "_regex_content"
+    },
+    {
+      "type": "SYMBOL",
+      "name": "_octal_escape"
     }
   ],
   "inline": [
