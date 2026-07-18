@@ -142,6 +142,52 @@ param description starting with a brace still keeps {type} as the type
     description: (description)))
 
 ================================================================================
+single-character type name keeps the brace as a type, not description
+================================================================================
+
+/** @param {T} item */
+
+--------------------------------------------------------------------------------
+
+(document
+  (param_tag
+    type: (type_expression
+      (named_type
+        name: (type_identifier)))
+    name: (identifier)))
+
+================================================================================
+single lowercase-character type name keeps the brace as a type
+================================================================================
+
+/** @param {t} item */
+
+--------------------------------------------------------------------------------
+
+(document
+  (param_tag
+    type: (type_expression
+      (named_type
+        name: (identifier)))
+    name: (identifier)))
+
+================================================================================
+single-character type followed by a prose brace in the description
+================================================================================
+
+/** @param {T} item the {a:1} thing */
+
+--------------------------------------------------------------------------------
+
+(document
+  (param_tag
+    type: (type_expression
+      (named_type
+        name: (type_identifier)))
+    name: (identifier)
+    description: (description)))
+
+================================================================================
 returns description may contain braces
 ================================================================================
 

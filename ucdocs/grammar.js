@@ -56,9 +56,12 @@ module.exports = grammar({
     // Description after an optional {type} (param_tag, returns_tag, throws_tag).
     // Includes _brace_text so ordinary braces in prose — `{2,5}`, an object
     // example — don't hard-error. When a leading `{...}` could be read as either
-    // the type or the start of a brace-text description, the higher prec.dynamic
-    // on type_expression/rest_type_expression wins, so `@param {int} n` still
-    // parses `{int}` as the type. See the `conflicts` entries below.
+    // the type or the start of a brace-text description, the type wins: for a
+    // multi-character name (`{MyType}`) longest-match already prefers
+    // type_identifier over _brace_text's single-char lead token, and for a
+    // single-character name (`{T}`, `{t}`) the tie is broken by the negative
+    // lexical precedence on that lead token (see _brace_text below), so
+    // `@param {int} n` and `@param {T} n` both parse the brace as the type.
     _typed_description: $ => repeat1(choice($._text, $.inline_tag, $._brace_text)),
 
     // Used wherever no type_expression can appear at the same position, so a bare
@@ -77,10 +80,17 @@ module.exports = grammar({
     // object literal or arrow-function block in an @example code block. Recursive
     // so nested braces (object literals inside arrow functions, etc.) stay balanced
     // instead of erroring out on the first inner `}`.
+    //
+    // The single-character lead token carries prec(-1) so that when a `{X}` could
+    // begin either a type or brace-text and both match the same length — i.e. a
+    // single-char name like `{T}`/`{t}` — the type_identifier/identifier token
+    // (default precedence) wins the tie and the brace parses as the type. Without
+    // it, `@param {T} item` mis-parses `{T}` as description prose (multi-char
+    // names are already saved by longest-match). Mirrors the prec(-1) on `_text`.
     _brace_text: $ => seq(
       '{',
       optional(seq(
-        /[^{}@]/,
+        token(prec(-1, /[^{}@]/)),
         repeat(choice(
           /[^{}]+/,
           $._brace_text,
