@@ -287,6 +287,34 @@ Compact triple (or deeper) nesting and compact mixed blocks
 (`{% if (c): for (…): %} … {% endfor; endif %}`) parse as errors — use the
 one-block-per-tag form above for those instead.
 
+### Brace-bodied blocks spanning tags
+
+ucode's ordinary brace-bodied statements are just as tag-transparent as the
+alt-syntax (`:`…`endif`) forms above: a `{` opened in one tag can be closed by
+a `}` in a later one, with the markup in between acting as the block's body —
+supported for `if`/`else`/`else if`, `for`, `for`-in, `while`, `function`
+declarations, and `try`/`catch`:
+
+```
+{% if (user) { %}
+  Hello, {{ user }}!
+{% } else { %}
+  Please log in.
+{% } %}
+```
+
+The same statement-stream rules as the alt-syntax forms apply: **trailing**
+statements may share a tag with the brace (`{% if (c) { log(c); %}`,
+`{% } log(n); %}`, `{% } else { log(n); %}`), but a **leading** statement in
+the same tag as the `if`/`for`/`while`/`function`/`try` keyword itself
+(`{% log(n); if (c) { %}`) is not supported, matching the alt-syntax
+limitation above. `}` and a following `else`/`else if`/`catch` must share one
+tag — splitting them across separate tags (`{% } %}{% else { %}`) is an
+error. There is no compact form for brace blocks (unlike the two-nested-
+`for`-in compact form above) — nested brace blocks need their own tag pair
+each, same as nested alt-syntax blocks. `switch` bodies do not support this —
+ucode itself rejects a `case`/`default` label split across tag boundaries.
+
 ## License
 
 MIT

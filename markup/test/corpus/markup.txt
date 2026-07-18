@@ -286,6 +286,183 @@ function alt-syntax (spanning tags)
     end_close: (statement_tag_close)))
 
 ================================================================================
+Brace-bodied if spanning tags
+================================================================================
+{% if (a) { %}x{% } %}
+--------------------------------------------------------------------------------
+
+(markup
+  (if_statement_tag
+    open: (statement_tag_open)
+    condition: (parenthesized_expression
+      (identifier))
+    close: (statement_tag_close)
+    body: (raw_text)
+    end_open: (statement_tag_open)
+    end_close: (statement_tag_close)))
+
+================================================================================
+Brace-bodied if/else spanning tags
+================================================================================
+{% if (a) { %}x{% } else { %}y{% } %}
+--------------------------------------------------------------------------------
+
+(markup
+  (if_statement_tag
+    open: (statement_tag_open)
+    condition: (parenthesized_expression
+      (identifier))
+    close: (statement_tag_close)
+    body: (raw_text)
+    else_body: (else_clause_tag
+      open: (statement_tag_open)
+      close: (statement_tag_close)
+      body: (raw_text))
+    end_open: (statement_tag_open)
+    end_close: (statement_tag_close)))
+
+================================================================================
+Brace-bodied if/else-if/else spanning tags
+================================================================================
+{% if (a) { %}x{% } else if (b) { %}y{% } else { %}z{% } %}
+--------------------------------------------------------------------------------
+
+(markup
+  (if_statement_tag
+    open: (statement_tag_open)
+    condition: (parenthesized_expression
+      (identifier))
+    close: (statement_tag_close)
+    body: (raw_text)
+    elif_clause: (elseif_clause_tag
+      open: (statement_tag_open)
+      condition: (parenthesized_expression
+        (identifier))
+      close: (statement_tag_close)
+      body: (raw_text))
+    else_body: (else_clause_tag
+      open: (statement_tag_open)
+      close: (statement_tag_close)
+      body: (raw_text))
+    end_open: (statement_tag_open)
+    end_close: (statement_tag_close)))
+
+================================================================================
+Brace-bodied C-style for spanning tags
+================================================================================
+{% for (let i = 0; i < 3; i++) { %}{{ i }}{% } %}
+--------------------------------------------------------------------------------
+
+(markup
+  (for_statement_tag
+    open: (statement_tag_open)
+    initializer: (lexical_declaration
+      (variable_declarator
+        name: (identifier)
+        value: (number)))
+    condition: (binary_expression
+      left: (identifier)
+      right: (number))
+    increment: (update_expression
+      argument: (identifier))
+    close: (statement_tag_close)
+    body: (expression_tag
+      open: (expression_tag_open)
+      (identifier)
+      close: (expression_tag_close))
+    end_open: (statement_tag_open)
+    end_close: (statement_tag_close)))
+
+================================================================================
+Brace-bodied for-in spanning tags
+================================================================================
+{% for (i in x) { %}{{ i }}{% } %}
+--------------------------------------------------------------------------------
+
+(markup
+  (for_in_statement_tag
+    open: (statement_tag_open)
+    left: (identifier)
+    right: (identifier)
+    close: (statement_tag_close)
+    body: (expression_tag
+      open: (expression_tag_open)
+      (identifier)
+      close: (expression_tag_close))
+    end_open: (statement_tag_open)
+    end_close: (statement_tag_close)))
+
+================================================================================
+Brace-bodied while spanning tags
+================================================================================
+{% while (a) { %}.{% } %}
+--------------------------------------------------------------------------------
+
+(markup
+  (while_statement_tag
+    open: (statement_tag_open)
+    condition: (parenthesized_expression
+      (identifier))
+    close: (statement_tag_close)
+    body: (raw_text)
+    end_open: (statement_tag_open)
+    end_close: (statement_tag_close)))
+
+================================================================================
+Brace-bodied function declaration spanning tags
+================================================================================
+{% function f(a) { %}x{{ a }}{% } %}
+--------------------------------------------------------------------------------
+
+(markup
+  (function_declaration_tag
+    open: (statement_tag_open)
+    name: (identifier)
+    parameters: (formal_parameters
+      (identifier))
+    close: (statement_tag_close)
+    body: (raw_text)
+    body: (expression_tag
+      open: (expression_tag_open)
+      (identifier)
+      close: (expression_tag_close))
+    end_open: (statement_tag_open)
+    end_close: (statement_tag_close)))
+
+================================================================================
+Brace-bodied try/catch spanning tags
+================================================================================
+{% try { %}x{% } catch (e) { %}y{% } %}
+--------------------------------------------------------------------------------
+
+(markup
+  (try_statement_tag
+    open: (statement_tag_open)
+    close: (statement_tag_close)
+    body: (raw_text)
+    handler: (catch_clause_tag
+      open: (statement_tag_open)
+      parameter: (identifier)
+      close: (statement_tag_close)
+      body: (raw_text)
+      end_open: (statement_tag_open)
+      end_close: (statement_tag_close))))
+
+================================================================================
+Brace-bodied if spanning tags rejects splitting '}' and 'else' across tags — produces ERROR
+:error
+================================================================================
+{% if (a) { %}x{% } %}{% else { %}y{% } %}
+--------------------------------------------------------------------------------
+
+================================================================================
+Leading statement sharing the tag with a brace-spanning header is not supported — produces ERROR
+:error
+================================================================================
+{% print(0); if (a) { %}x{% } %}
+--------------------------------------------------------------------------------
+
+================================================================================
 counting for alt-syntax
 ================================================================================
 {% for (i = 0; i < 3; i++): %}x{% endfor %}

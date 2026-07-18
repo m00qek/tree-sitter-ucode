@@ -138,6 +138,13 @@ module.exports = grammar({
     // clause reductions cover the shared states.
     [$.elif_clause_tag],
     [$.else_alt_clause_tag],
+    // Same ambiguity class as above, for the brace-bodied spanning forms'
+    // own clause tags (see the comment on if_statement_tag). catch_clause_tag
+    // needs none — try_statement_tag has only one possible handler, so there
+    // is no elif/else-style "does the body continue or does the next clause
+    // start" ambiguity to resolve.
+    [$.elseif_clause_tag],
+    [$.else_clause_tag],
   ],
 
   word: $ => $.identifier,
@@ -179,6 +186,15 @@ module.exports = grammar({
       $.for_in_alt_statement_tag,
       $.while_alt_statement_tag,
       $.function_alt_declaration,
+      // Brace-bodied constructs that span tag boundaries — the brace
+      // counterparts of the alt-syntax _tag rules above (see the comment on
+      // if_statement_tag).
+      $.if_statement_tag,
+      $.for_statement_tag,
+      $.for_in_statement_tag,
+      $.while_statement_tag,
+      $.function_declaration_tag,
+      $.try_statement_tag,
     ),
 
     // -----------------------------------------------------------------------
@@ -511,6 +527,71 @@ module.exports = grammar({
       field('end_close', $._stmt_close),
     ),
 
+    // Brace-bodied if/else-if/else spanning tag boundaries, e.g.
+    //   {% if (a) { %} x {% } else if (b) { %} y {% } else { %} z {% } %}
+    // ucode's brace-bodied statements are as tag-transparent as the alt-
+    // syntax forms: the `{`/`}` delimiters and the raw markup between them
+    // are just more tokens in one continuous statement stream, so a `{`
+    // opened in one tag can find its `}` in a later one (oracle-verified
+    // across if/for/for-in/while/function/try — this is not if-specific).
+    // Unlike if_alt_statement_tag's flat elif/else repeat (which mirrors the
+    // alt-syntax's own flat clause list), this can't reuse if_statement's
+    // recursive else_clause-wraps-a-nested-if_statement shape: `}`, `else`,
+    // `if`, and `{` must all sit in ONE reopening tag (verified: splitting
+    // `}` and `else` across tags is REJECTED, rc=255), so each `else if`/
+    // `else` is necessarily its own flat, self-contained clause-tag unit —
+    // same flat repeat()/optional() shape as if_alt_statement_tag, just for
+    // a different reason.
+    //
+    // Every open/close tag may carry leading/trailing statements around its
+    // brace (oracle-verified: `{% if (a) { print(1); %}`, `{% print(2); }
+    // print(3); %}`, `{% } else { print(4); %}` are all valid) — mirrors the
+    // alt-syntax tags' own repeat($.statement) allowances. A LEADING
+    // statement sharing the tag with the `if`/`else`/`function`/`for`/
+    // `while`/`try` keyword itself (`{% print(0); if (a) { %}`) is valid
+    // ucode but deliberately NOT supported here, same as the alt-syntax
+    // forms' documented leading-statement gap (README markup limitations).
+    if_statement_tag: $ => seq(
+      field('open', $._stmt_open),
+      'if',
+      field('condition', $.parenthesized_expression),
+      '{',
+      repeat($.statement),
+      field('close', $._stmt_close),
+      field('body', repeat($._markup_node)),
+      repeat(field('elif_clause', $.elseif_clause_tag)),
+      optional(field('else_body', $.else_clause_tag)),
+      field('end_open', $._stmt_open),
+      repeat($.statement),
+      '}',
+      repeat($.statement),
+      field('end_close', $._stmt_close),
+    ),
+
+    elseif_clause_tag: $ => seq(
+      field('open', $._stmt_open),
+      repeat($.statement),
+      '}',
+      'else',
+      'if',
+      field('condition', $.parenthesized_expression),
+      '{',
+      repeat($.statement),
+      field('close', $._stmt_close),
+      field('body', repeat($._markup_node)),
+    ),
+
+    else_clause_tag: $ => seq(
+      field('open', $._stmt_open),
+      repeat($.statement),
+      '}',
+      'else',
+      '{',
+      repeat($.statement),
+      field('close', $._stmt_close),
+      field('body', repeat($._markup_node)),
+    ),
+
     // Inline wrappers for tag delimiter tokens.
     // Each groups all variants (plain / trim / lstrip) so grammar rules stay
     // concise while still surfacing distinct node types for highlight queries.
@@ -587,6 +668,23 @@ module.exports = grammar({
       field('end_close', $._stmt_close),
     ),
 
+    // Brace-bodied C-style for spanning tag boundaries — see the comment on
+    // if_statement_tag above for the shared rationale and statement-
+    // placement rules (oracle-verified for this construct too).
+    for_statement_tag: $ => seq(
+      field('open', $._stmt_open),
+      forHeader($),
+      '{',
+      repeat($.statement),
+      field('close', $._stmt_close),
+      field('body', repeat($._markup_node)),
+      field('end_open', $._stmt_open),
+      repeat($.statement),
+      '}',
+      repeat($.statement),
+      field('end_close', $._stmt_close),
+    ),
+
     for_in_statement: $ => seq(
       'for',
       $._for_header,
@@ -637,6 +735,28 @@ module.exports = grammar({
       ),
     ),
 
+    // Brace-bodied for-in spanning tag boundaries — see the comment on
+    // if_statement_tag above for the shared rationale. Only the single-
+    // nesting shape (no compact double-nested brace form): unlike
+    // for_in_alt_statement_tag's compact colon form, a compact nested brace
+    // form is new, not-yet-requested surface area sharing the same
+    // documented compact-nesting limitation as the alt-syntax forms — left
+    // out here rather than speculatively supported.
+    for_in_statement_tag: $ => seq(
+      field('open', $._stmt_open),
+      'for',
+      $._for_header,
+      '{',
+      repeat($.statement),
+      field('close', $._stmt_close),
+      field('body', repeat($._markup_node)),
+      field('end_open', $._stmt_open),
+      repeat($.statement),
+      '}',
+      repeat($.statement),
+      field('end_close', $._stmt_close),
+    ),
+
     // Supports both `for (k in obj)` and `for (k, v in obj)` (ucode two-variable form).
     // The loop target must be a plain identifier: ucode rejects member/subscript
     // targets (`for (a.x in o)`) and only `let` (never `const`) may declare it.
@@ -679,6 +799,23 @@ module.exports = grammar({
       field('end_close', $._stmt_close),
     ),
 
+    // Brace-bodied while spanning tag boundaries — see the comment on
+    // if_statement_tag above for the shared rationale.
+    while_statement_tag: $ => seq(
+      field('open', $._stmt_open),
+      'while',
+      field('condition', $.parenthesized_expression),
+      '{',
+      repeat($.statement),
+      field('close', $._stmt_close),
+      field('body', repeat($._markup_node)),
+      field('end_open', $._stmt_open),
+      repeat($.statement),
+      '}',
+      repeat($.statement),
+      field('end_close', $._stmt_close),
+    ),
+
     // Spanning function alt-syntax: a function whose body is markup between
     // two tags, e.g.  {% function f(a): %} raw {{ a }} {% endfunction %}
     // (the within-tag form `function f(): stmts endfunction` is handled by
@@ -698,6 +835,26 @@ module.exports = grammar({
       field('end_close', $._stmt_close),
     ),
 
+    // Brace-bodied function declaration spanning tag boundaries — the brace
+    // counterpart of function_alt_declaration above (which spans via
+    // colon/endfunction instead). See the comment on if_statement_tag above
+    // for the shared rationale.
+    function_declaration_tag: $ => seq(
+      field('open', $._stmt_open),
+      'function',
+      field('name', $.identifier),
+      $._call_signature,
+      '{',
+      repeat($.statement),
+      field('close', $._stmt_close),
+      field('body', repeat($._markup_node)),
+      field('end_open', $._stmt_open),
+      repeat($.statement),
+      '}',
+      repeat($.statement),
+      field('end_close', $._stmt_close),
+    ),
+
     // ucode requires the catch clause (`try {}` alone errors with "Unexpected
     // token"); the catch parameter parens stay optional (`try {} catch {}` is
     // valid). Unlike ECMAScript there is no `finally`.
@@ -705,6 +862,19 @@ module.exports = grammar({
       'try',
       field('body', $.statement_block),
       field('handler', $.catch_clause),
+    ),
+
+    // Brace-bodied try/catch spanning tag boundaries — see the comment on
+    // if_statement_tag above for the shared rationale. Like try_statement,
+    // the catch clause is mandatory (ucode rejects a bare spanning `try`).
+    try_statement_tag: $ => seq(
+      field('open', $._stmt_open),
+      'try',
+      '{',
+      repeat($.statement),
+      field('close', $._stmt_close),
+      field('body', repeat($._markup_node)),
+      field('handler', $.catch_clause_tag),
     ),
 
     // ucode has no labeled statements, so `break`/`continue` take no label.
@@ -756,6 +926,27 @@ module.exports = grammar({
       'catch',
       optional(seq('(', field('parameter', $.identifier), ')')),
       field('body', $.statement_block),
+    ),
+
+    // Closes out try_statement_tag: owns the `}` that closes the try body's
+    // last tag AND the `{` that opens its own body, in one reopening tag —
+    // see the comment on if_statement_tag above for why this must be flat
+    // and tag-coupled rather than a nested/wrapped shape.
+    catch_clause_tag: $ => seq(
+      field('open', $._stmt_open),
+      repeat($.statement),
+      '}',
+      'catch',
+      optional(seq('(', field('parameter', $.identifier), ')')),
+      '{',
+      repeat($.statement),
+      field('close', $._stmt_close),
+      field('body', repeat($._markup_node)),
+      field('end_open', $._stmt_open),
+      repeat($.statement),
+      '}',
+      repeat($.statement),
+      field('end_close', $._stmt_close),
     ),
 
     parenthesized_expression: $ => seq(
