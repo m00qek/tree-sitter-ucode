@@ -510,6 +510,23 @@ x = a /? b : c;
 --------------------------------------------------------------------------------
 
 ================================================================================
+Division after postfix increment parses as division (divergence — see README)
+================================================================================
+
+let x = a++ / b;
+
+--------------------------------------------------------------------------------
+
+(program
+  (lexical_declaration
+    (variable_declarator
+      name: (identifier)
+      value: (binary_expression
+        left: (update_expression
+          argument: (identifier))
+        right: (identifier)))))
+
+================================================================================
 Newline before a ternary qmark is allowed
 ================================================================================
 

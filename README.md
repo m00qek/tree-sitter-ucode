@@ -62,7 +62,7 @@ Ucode is an ECMAScript subset with OpenWrt-specific extensions. Key differences:
 | Alternative block syntax | `if/elif/else/endif`, `for/endfor`, `while/endwhile`, `function/endfunction` | Not supported |
 | Two-variable for-in | `for (k, v in obj)` | Single variable only |
 | Removed keywords | `var`, `new`, `throw`, `typeof`, `void`, `class`, `instanceof`, `do`, `async`, `await`, `yield` | All supported |
-| Removed features | Destructuring, `for...of`, `do-while`, generators, forward declarations, dynamic `import()` | All supported |
+| Removed features | Destructuring, `for...of`, `do-while`, generators | All supported |
 | Added number literals | `0177` (C octal), `0x1.8` (hex float), `0B`/`0O` prefixes | Standard only |
 | Added escape sequences | `\e` (ESC), `\a` (BEL), octal `\177` | Standard only |
 | String unicode escapes | `\uXXXX` only (no `\u{…}`); no `\u` escapes in identifiers | `\uXXXX` and `\u{…}` |
@@ -95,6 +95,13 @@ The grammar tracks ucode's parser closely, with a few deliberate divergences:
   arrow-body object literal (`{a: 1};` and `x => {a: 1}`, which ucode treats as a block
   and rejects — write `({a: 1})`); and `break`/`continue` outside a loop or switch. These
   parse as well-formed trees even though `ucode -c` reports a syntax error.
+- **`a++ / b` parses as division, not ucode's own lexer bug.** ucode's lexer never
+  clears its "expect a value, not an operator" flag after a postfix `++`/`--`, so it
+  starts scanning a regex at the following `/` and fails with "Unterminated string" once
+  it runs off the end of the statement (`(a++) / b` is unaffected — only the bare,
+  unparenthesized form triggers it). This is a bug in ucode itself, not a syntax rule;
+  the grammar parses the ordinary, intended meaning instead of reproducing it, since
+  `a++ / b` is overwhelmingly real division in practice.
 
 ## Doc comment grammar (ucdocs)
 

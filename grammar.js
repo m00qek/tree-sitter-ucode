@@ -1309,6 +1309,24 @@ module.exports = grammar({
     // returns false at EOF, recovering statement-by-statement like the
     // string-content tokens).  The scanner also handles the character-class
     // structure (leading '^'/']' literals, nested [:name:]/[.coll.]/[=eq=]).
+    //
+    // DOCUMENTED DIVERGENCE (not emulated — see README): `a++ / b` parses here
+    // as ordinary division, but ucode rejects it ("Unterminated string", since
+    // its lexer starts scanning a regex at that '/' and never finds a closer
+    // before EOF/newline) — verified against both the local oracle and the
+    // packaged 2026.01.16 release, rc=255 for every unparenthesized form
+    // (`(a++) / b` works fine; only the bare postfix-then-slash sequence
+    // fails). Root cause lives entirely in ucode itself: lexer.c's no_regexp
+    // flag is set after every other value-producing token (identifiers,
+    // literals, ')', ']', etc. — see compiler.c) but never after postfix
+    // TK_INC/TK_DEC, so the lexer treats the following '/' as a regex opener
+    // instead of division — still true on ucode master, not something a
+    // future release is likely to have already fixed. Faithfully reproducing
+    // it would mean starting a regex scan after '++'/'--', which is wrong far
+    // more often than the actual bug is meaningful (`a++ / b` is ordinary,
+    // intentional division in the vast majority of real code) — a case where
+    // matching ucode exactly would make the grammar *worse*, not more
+    // faithful. Left as a divergence; a candidate for an upstream ucode fix.
     regex: $ => seq(
       '/',
       field('pattern', alias($._regex_content, $.regex_pattern)),
