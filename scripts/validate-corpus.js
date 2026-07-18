@@ -80,6 +80,10 @@ const EXPECTED_INVALID = new Set([
 
   // --- Regex literals ---
   '00_syntax/21_regex_literals#3',   // /test/x — unsupported x flag
+  '00_syntax/21_regex_literals#4',   // `/foo \/` — unterminated regex; ucode
+                                     //   rejects "Unterminated string" (the
+                                     //   testcase is named "regex compilation
+                                     //   errors" and expects a syntax error)
 
   // --- Bug regression tests (invalid/crashing inputs) ---
   '99_bugs/14_incomplete_expression_at_eof#1',          // `{% 1+` — EOF mid-expression
