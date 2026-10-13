@@ -26,6 +26,7 @@
  *  17  REGEX_CONTENT               $._regex_content                /.../ body
  *  18  OCTAL_ESCAPE                $._octal_escape                 \NNN in a string/template
  *  19  ASI_GAP                     $._asi_gap                      zero-width no-op (extra)
+ *  20  TAG_SEMICOLON               $._tag_semicolon                zero-width ';' before %} (template unbraced body)
  */
 
 #ifndef UCODE_SCANNER_IMPL_H_
@@ -56,6 +57,7 @@ enum TokenType {
     REGEX_CONTENT,
     OCTAL_ESCAPE,
     ASI_GAP,
+    TAG_SEMICOLON,
 };
 
 /*
@@ -1084,6 +1086,22 @@ static bool ucode_scanner_scan(
      * across a comment (`a\n// c\n.b`, which ucode accepts — the '.' declines
      * insertion so the member access still attaches).
      */
+    /*
+     * Template only: ucode's compiler reads every `%}` as `;`, so an unbraced
+     * body (`{% if (a) %}`, `{% else %}`, `{% for (…) %}`) that runs straight
+     * into a tag close is an empty statement. Emit it zero-width so the `%}`
+     * is still lexed next, as the start of the following text_statement. Only
+     * valid in unbraced-body positions, where neither the tag close nor ASI is
+     * (so there is no competing decision); scan_comment has already skipped
+     * the whitespace before the close. Not a close → return false, letting
+     * tree-sitter re-lex the '-'/'%' that lookahead_is_stmt_close consumed.
+     */
+    if (valid_symbols[TAG_SEMICOLON]) {
+        lexer->result_symbol = TAG_SEMICOLON;
+        lexer->mark_end(lexer);
+        return lookahead_is_stmt_close(lexer);
+    }
+
     if (crossed_newline)
         return dispatch_asi(asi_after_newline(lexer), lexer, valid_symbols);
 

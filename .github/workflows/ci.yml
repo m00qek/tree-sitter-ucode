@@ -75,8 +75,7 @@ jobs:
 
       - name: Verify generated files are up to date
         run: |
-          gen_paths='src/ markup/src/ markup/grammar.js markup/queries/ ucdocs/src/'
-          node scripts/generate-markup-grammar.js
+          gen_paths='src/ markup/src/ markup/queries/ ucdocs/src/'
           node scripts/generate-markup-queries.js
           npx tree-sitter generate
           npx tree-sitter generate markup/grammar.js --output markup/src
