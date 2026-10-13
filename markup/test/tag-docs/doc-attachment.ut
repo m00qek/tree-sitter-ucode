@@ -1,0 +1,12 @@
+{% /** Doc in its own tag before a brace-bodied function. */ %}
+{% function own_tag() { %}x{% } %}
+{%- /** Doc in its own tag, trim markers on both sides. */ -%}
+{%- function trimmed(): -%}y{%- endfunction -%}
+{% /** Doc in its own tag before an arrow. */ %}
+{% let arrow = (q) => { %}{{ q }}{% }; %}
+{% /** Same-tag doc on a spanning function. */
+   function same_tag() { %}z{% } %}
+{% /** NOT a doc: real text sits between. */ %}
+Some text.
+{% function separated() { %}w{% } %}
+{% function undocumented() { %}v{% } %}

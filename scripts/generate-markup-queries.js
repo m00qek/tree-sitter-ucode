@@ -6,7 +6,7 @@
  * tree is the script tree plus `text_statement` nodes and the tag tokens (see
  * the comment at the top of that file). Every code-grammar query therefore
  * applies to templates unchanged, so each markup query file is its
- * `queries/` counterpart plus, for highlights only, the few template-only
+ * `queries/` counterpart plus, for highlights and tags, the few template-only
  * patterns below. The one rewrite is the root node: `(program)` becomes
  * `(markup)`, the template grammar's start rule.
  *
@@ -44,9 +44,53 @@ const HIGHLIGHTS_TEMPLATE_EXTRA = `
 (comment_tag) @comment
 `;
 
+// A doc comment in its own tag before a declaration in the next one
+//   {% /** Doc. */ %}
+//   {% function f() { %}…{% } %}
+// is separated from it by a text_statement (`%}` newline `{%`), so the base
+// `(comment)* @doc . (declaration)` patterns never see the two as adjacent.
+// These variants accept one text_statement between them, but only one that
+// holds nothing but whitespace (real text in between means the comment is not
+// the declaration's doc). `(comment)+` rather than `*`: without a doc comment
+// the base pattern already tags the declaration, and matching again here
+// would tag it twice. They are PREPENDED, not appended: the base pattern still
+// matches the same declaration (without the doc), and tree-sitter-tags keeps
+// one tag per name, preferring the LOWER pattern index and discarding the
+// loser's docs — so these must come first to win.
+const TAGS_TEMPLATE_EXTRA = String.raw`
+; ── Template-only: doc comment in the previous tag ───────────────────────────
+
+(
+  (comment)+ @doc
+  .
+  (text_statement) @_gap
+  .
+  (function_declaration
+    name: (identifier) @name) @definition.function
+  (#match? @_gap "^-?%\\}\\s*\\{%[-+]?$")
+  (#strip! @doc "^[\\s\\*/]+|^[\\s\\*/]$")
+  (#select-adjacent! @doc @definition.function)
+)
+
+(
+  (comment)+ @doc
+  .
+  (text_statement) @_gap
+  .
+  (lexical_declaration
+    (variable_declarator
+      name: (identifier) @name
+      value: [(function_expression) (arrow_function)])) @definition.function
+  (#match? @_gap "^-?%\\}\\s*\\{%[-+]?$")
+  (#strip! @doc "^[\\s\\*/]+|^[\\s\\*/]$")
+  (#select-adjacent! @doc @definition.function)
+)
+`;
+
 // [prepend, append] per file.
 const EXTRAS = {
   'highlights.scm': ['', HIGHLIGHTS_TEMPLATE_EXTRA],
+  'tags.scm': [TAGS_TEMPLATE_EXTRA.trimStart() + '\n', ''],
 };
 
 const QUERIES = [

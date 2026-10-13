@@ -1,0 +1,6 @@
+1:12 own_tag <- /** Doc in its own tag before a brace-bodied function. */
+3:13 trimmed <- /** Doc in its own tag, trim markers on both sides. */
+5:7 arrow <- /** Doc in its own tag before an arrow. */
+7:12 same_tag <- /** Same-tag doc on a spanning function. */
+10:12 separated <- (no doc)
+11:12 undocumented <- (no doc)
