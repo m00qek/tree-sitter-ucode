@@ -6,6 +6,7 @@
 (returns_tag ["@returns" "@return"] @keyword)
 (template_tag "@template" @keyword)
 (typedef_tag "@typedef" @keyword)
+(property_tag ["@property" "@prop"] @keyword)
 (type_tag "@type" @keyword)
 (throws_tag ["@throws" "@throw"] @keyword)
 (deprecated_tag "@deprecated" @keyword)
@@ -23,9 +24,18 @@
 (primitive_type) @type.builtin
 (any_type) @type.builtin
 
-(identifier) @variable.parameter
+; Lowercase names are parameters only in name positions — elsewhere they are
+; types (`{myType}`), record fields, or typedef names.
+(param_tag name: (identifier) @variable.parameter)
+(param_tag name: (param_path) @variable.parameter)
+(optional_param name: (_) @variable.parameter)
+(function_param name: (identifier) @variable.parameter)
+(rest_param name: (identifier) @variable.parameter)
+(named_type name: (identifier) @type)
+(typedef_tag name: (identifier) @type)
 (record_field name: (identifier) @variable.member)
 (member_name) @variable.member
+(property_name) @variable.member
 
 (default_value) @constant
 
@@ -69,6 +79,7 @@
 ; ── Punctuation: special ─────────────────────────────────────────────────────
 
 (rest_type_expression "..." @punctuation.special)
+(rest_param "..." @punctuation.special)
 
 ; ── Descriptions ─────────────────────────────────────────────────────────────
 
@@ -78,6 +89,8 @@
 (document          (description) @spell)
 (param_tag         description: (description) @spell)
 (returns_tag       description: (description) @spell)
+(typedef_tag       description: (description) @spell)
+(property_tag      description: (description) @spell)
 (throws_tag        description: (description) @spell)
 (deprecated_tag    description: (description) @spell)
 (since_tag         description: (description) @spell)

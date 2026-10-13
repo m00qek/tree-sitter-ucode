@@ -16,7 +16,13 @@
 
 (typedef_tag
   type: (type_expression)? @typedef.type
-  name: (type_identifier) @typedef.name)
+  name: (_)? @typedef.name
+  description: (description)? @typedef.description)
+
+(property_tag
+  type: (type_expression)? @property.type
+  name: (_)? @property.name
+  description: (description)? @property.description)
 
 (type_tag
   type: (type_expression) @type.type)

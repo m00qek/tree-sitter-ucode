@@ -33,7 +33,8 @@ markup/
                         by scripts/generate-markup-queries.js (do not edit)
 ucdocs/
   grammar.js            ucdocs (JSDoc) grammar — standalone, edit directly
-  src/                  Generated parser for the ucdocs grammar
+  src/scanner.c         Hand-written external lexer: star-runs in prose (vs the */ terminator)
+  src/                  Otherwise the generated parser for the ucdocs grammar
   queries/              Queries for ucdocs (edit directly)
   test/corpus/          Corpus tests for ucdocs
 queries/                Queries for ucode: highlights, locals, tags, folds,

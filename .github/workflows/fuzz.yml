@@ -7,6 +7,7 @@ on:
       - src/scanner.c
       - src/scanner_impl.h
       - markup/src/scanner.c
+      - ucdocs/src/scanner.c
 
 jobs:
   fuzz:
@@ -20,6 +21,8 @@ jobs:
             directory: ''
           - grammar: ucode_markup
             directory: markup
+          - grammar: ucdocs
+            directory: ucdocs
 
     steps:
       - name: Checkout repository

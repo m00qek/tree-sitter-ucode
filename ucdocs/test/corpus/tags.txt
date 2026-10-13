@@ -474,8 +474,7 @@ optional param with no default
       (named_type
         name: (type_identifier)))
     name: (optional_param
-      name: (param_path
-        (identifier)))))
+      name: (identifier))))
 
 ================================================================================
 optional param with dotted path
@@ -493,7 +492,6 @@ optional param with dotted path
       (primitive_type))
     name: (optional_param
       name: (param_path
-        (identifier)
         (identifier)))))
 
 ================================================================================
@@ -512,7 +510,6 @@ optional param with numeric default
       (primitive_type))
     name: (optional_param
       name: (param_path
-        (identifier)
         (identifier))
       default: (default_value))))
 
@@ -531,8 +528,7 @@ optional param with constant identifier default
     type: (type_expression
       (primitive_type))
     name: (optional_param
-      name: (param_path
-        (identifier))
+      name: (identifier)
       default: (default_value))))
 
 ================================================================================
@@ -854,7 +850,7 @@ function tag: bare name without module: prefix is an error
 (document
   (function_tag)
   (ERROR
-    (default_value)))
+    (identifier)))
 
 ================================================================================
 module tag
@@ -959,3 +955,568 @@ full function doc block
         name: (type_identifier)
         params: (named_type
           name: (type_identifier))))))
+
+================================================================================
+typedef with a namepath name
+================================================================================
+
+/**
+ * @typedef {Object} module:core.TimeSpec
+ */
+
+--------------------------------------------------------------------------------
+
+(document
+  (typedef_tag
+    type: (type_expression
+      (named_type
+        name: (type_identifier)))
+    name: (namepath
+      path: (module_path))))
+
+================================================================================
+typedef with a trailing description
+================================================================================
+
+/** @typedef {{ name: string, node: Node }} QueryCapture — A named capture. */
+
+--------------------------------------------------------------------------------
+
+(document
+  (typedef_tag
+    type: (type_expression
+      (record_type
+        (record_field
+          name: (identifier)
+          type: (primitive_type))
+        (record_field
+          name: (identifier)
+          type: (named_type
+            name: (type_identifier)))))
+    name: (type_identifier)
+    description: (description)))
+
+================================================================================
+bare typedef whose name comes from @name and shape from @property
+================================================================================
+
+/**
+ * @typedef
+ * @name module:fs.ST_FLAGS
+ * @property {number} ST_RDONLY - Read-only filesystem.
+ * @property {number} ST_NOEXEC - Do not allow execution.
+ */
+
+--------------------------------------------------------------------------------
+
+(document
+  (typedef_tag)
+  (unknown_tag
+    (tag_name)
+    description: (description))
+  (property_tag
+    type: (type_expression
+      (primitive_type))
+    name: (property_name)
+    description: (description))
+  (property_tag
+    type: (type_expression
+      (primitive_type))
+    name: (property_name)
+    description: (description)))
+
+================================================================================
+property with a plain name
+================================================================================
+
+/** @property {string} name The name. */
+
+--------------------------------------------------------------------------------
+
+(document
+  (property_tag
+    type: (type_expression
+      (primitive_type))
+    name: (property_name)
+    description: (description)))
+
+================================================================================
+property with a dotted name
+================================================================================
+
+/** @property {int} opts.mode File mode. */
+
+--------------------------------------------------------------------------------
+
+(document
+  (property_tag
+    type: (type_expression
+      (primitive_type))
+    name: (property_name)
+    description: (description)))
+
+================================================================================
+optional property with a default
+================================================================================
+
+/** @property {boolean} [strict=false] Strict mode. */
+
+--------------------------------------------------------------------------------
+
+(document
+  (property_tag
+    type: (type_expression
+      (primitive_type))
+    name: (optional_param
+      name: (identifier)
+      default: (default_value))
+    description: (description)))
+
+================================================================================
+property named * (any further key)
+================================================================================
+
+/**
+ * @property {string|string[]} *
+ * Any further option.
+ */
+
+--------------------------------------------------------------------------------
+
+(document
+  (property_tag
+    type: (type_expression
+      (union_type
+        (primitive_type)
+        (array_type
+          (primitive_type))))
+    name: (property_name)
+    description: (description)))
+
+================================================================================
+property without a type
+================================================================================
+
+/** @prop name The name. */
+
+--------------------------------------------------------------------------------
+
+(document
+  (property_tag
+    name: (property_name)
+    description: (description)))
+
+================================================================================
+param default value: string
+================================================================================
+
+/** @param {string} [mode="r"] Open mode. */
+
+--------------------------------------------------------------------------------
+
+(document
+  (param_tag
+    type: (type_expression
+      (primitive_type))
+    name: (optional_param
+      name: (identifier)
+      default: (default_value))
+    description: (description)))
+
+================================================================================
+param default value: string containing a bracket
+================================================================================
+
+/** @param {string} [sep="]"] Separator. */
+
+--------------------------------------------------------------------------------
+
+(document
+  (param_tag
+    type: (type_expression
+      (primitive_type))
+    name: (optional_param
+      name: (identifier)
+      default: (default_value))
+    description: (description)))
+
+================================================================================
+param default value: negative number
+================================================================================
+
+/** @param {int} [timeout=-1] Timeout. */
+
+--------------------------------------------------------------------------------
+
+(document
+  (param_tag
+    type: (type_expression
+      (primitive_type))
+    name: (optional_param
+      name: (identifier)
+      default: (default_value))
+    description: (description)))
+
+================================================================================
+param default value: octal number
+================================================================================
+
+/** @param {int} [mode=0o666] Permissions. */
+
+--------------------------------------------------------------------------------
+
+(document
+  (param_tag
+    type: (type_expression
+      (primitive_type))
+    name: (optional_param
+      name: (identifier)
+      default: (default_value))
+    description: (description)))
+
+================================================================================
+param default value: constant
+================================================================================
+
+/** @param {int} [flags=O_RDONLY] Flags. */
+
+--------------------------------------------------------------------------------
+
+(document
+  (param_tag
+    type: (type_expression
+      (primitive_type))
+    name: (optional_param
+      name: (identifier)
+      default: (default_value))
+    description: (description)))
+
+================================================================================
+param default value: path
+================================================================================
+
+/** @param {string} [dir=/etc/config] Directory. */
+
+--------------------------------------------------------------------------------
+
+(document
+  (param_tag
+    type: (type_expression
+      (primitive_type))
+    name: (optional_param
+      name: (identifier)
+      default: (default_value))
+    description: (description)))
+
+================================================================================
+param default value: call expression
+================================================================================
+
+/** @param {int} [end=buffer.length()] End offset. */
+
+--------------------------------------------------------------------------------
+
+(document
+  (param_tag
+    type: (type_expression
+      (primitive_type))
+    name: (optional_param
+      name: (identifier)
+      default: (default_value))
+    description: (description)))
+
+================================================================================
+param default value: array literal
+================================================================================
+
+/** @param {string[]} [list=[]] Items. */
+
+--------------------------------------------------------------------------------
+
+(document
+  (param_tag
+    type: (type_expression
+      (array_type
+        (primitive_type)))
+    name: (optional_param
+      name: (identifier)
+      default: (default_value))
+    description: (description)))
+
+================================================================================
+param with a dotted name
+================================================================================
+
+/** @param {int} opts.precision Number of digits. */
+
+--------------------------------------------------------------------------------
+
+(document
+  (param_tag
+    type: (type_expression
+      (primitive_type))
+    name: (param_path
+      (identifier))
+    description: (description)))
+
+================================================================================
+param name followed by a full stop stays the name
+================================================================================
+
+/** @param {int} x. The value. */
+
+--------------------------------------------------------------------------------
+
+(document
+  (param_tag
+    type: (type_expression
+      (primitive_type))
+    name: (identifier)
+    description: (description)))
+
+================================================================================
+param description separator is not part of the description
+================================================================================
+
+/** @param {int} x - The x value. */
+
+--------------------------------------------------------------------------------
+
+(document
+  (param_tag
+    type: (type_expression
+      (primitive_type))
+    name: (identifier)
+    description: (description)))
+
+================================================================================
+separator on property, returns, throws and typedef
+================================================================================
+
+/**
+ * @typedef {Object} Flags - Mount flags.
+ * @property {number} ST_RDONLY - Read-only.
+ * @returns {int} - The count.
+ * @throws {Error} - On failure.
+ */
+
+--------------------------------------------------------------------------------
+
+(document
+  (typedef_tag
+    type: (type_expression
+      (named_type
+        name: (type_identifier)))
+    name: (type_identifier)
+    description: (description))
+  (property_tag
+    type: (type_expression
+      (primitive_type))
+    name: (property_name)
+    description: (description))
+  (returns_tag
+    type: (type_expression
+      (primitive_type))
+    description: (description))
+  (throws_tag
+    type: (type_expression
+      (named_type
+        name: (type_identifier)))
+    description: (description)))
+
+================================================================================
+a leading minus sign in a description is kept
+================================================================================
+
+/** @param {int} x -1 to disable. */
+
+--------------------------------------------------------------------------------
+
+(document
+  (param_tag
+    type: (type_expression
+      (primitive_type))
+    name: (identifier)
+    description: (description)))
+
+================================================================================
+an @ inside a word is prose, not a tag
+================================================================================
+
+/** Contact foo@bar.com or `@` for help. */
+
+--------------------------------------------------------------------------------
+
+(document
+  (description))
+
+================================================================================
+an @ after whitespace still starts a tag on a one-line comment
+================================================================================
+
+/** @param {int} x The x. @returns {int} The y. */
+
+--------------------------------------------------------------------------------
+
+(document
+  (param_tag
+    type: (type_expression
+      (primitive_type))
+    name: (identifier)
+    description: (description))
+  (returns_tag
+    type: (type_expression
+      (primitive_type))
+    description: (description)))
+
+================================================================================
+ucode runtime type names are primitive types
+================================================================================
+
+/** @param {number|integer|double|object|array|regexp|resource} v */
+
+--------------------------------------------------------------------------------
+
+(document
+  (param_tag
+    type: (type_expression
+      (union_type
+        (union_type
+          (union_type
+            (union_type
+              (union_type
+                (union_type
+                  (primitive_type)
+                  (primitive_type))
+                (primitive_type))
+              (primitive_type))
+            (primitive_type))
+          (primitive_type))
+        (primitive_type)))
+    name: (identifier)))
+
+================================================================================
+a primitive type name can still be a parameter name
+================================================================================
+
+/** @param {object} object The object. */
+
+--------------------------------------------------------------------------------
+
+(document
+  (param_tag
+    type: (type_expression
+      (primitive_type))
+    name: (identifier)
+    description: (description)))
+
+================================================================================
+markdown bold at the start and end of a line
+================================================================================
+
+/**
+ * **Bold:**
+ * text
+ */
+
+--------------------------------------------------------------------------------
+
+(document
+  (description))
+
+================================================================================
+markdown italic and a trailing star
+================================================================================
+
+/**
+ * Use *italic* here *
+ * next line
+ */
+
+--------------------------------------------------------------------------------
+
+(document
+  (description))
+
+================================================================================
+markdown bullets keep their stars
+================================================================================
+
+/**
+ * * one
+ * * two
+ */
+
+--------------------------------------------------------------------------------
+
+(document
+  (description))
+
+================================================================================
+only one frame star is stripped after a blank line
+================================================================================
+
+/**
+ * text
+ *
+ * **after blank**
+ */
+
+--------------------------------------------------------------------------------
+
+(document
+  (description))
+
+================================================================================
+stars before the terminator belong to it
+================================================================================
+
+/** text **/
+
+--------------------------------------------------------------------------------
+
+(document
+  (description))
+
+================================================================================
+stars before the terminator on their own line
+================================================================================
+
+/**
+ * a
+ ***/
+
+--------------------------------------------------------------------------------
+
+(document
+  (description))
+
+================================================================================
+markdown in a param description
+================================================================================
+
+/**
+ * @param {int} x
+ * **Bold** description.
+ */
+
+--------------------------------------------------------------------------------
+
+(document
+  (param_tag
+    type: (type_expression
+      (primitive_type))
+    name: (identifier)
+    description: (description)))
+
+================================================================================
+nested braces first inside example braces
+================================================================================
+
+/** @example render("{{ name }}", { raw: false }); */
+
+--------------------------------------------------------------------------------
+
+(document
+  (example_tag
+    description: (description)))

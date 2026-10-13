@@ -110,11 +110,12 @@ The grammar understands the following tags:
 
 | Tag | Syntax |
 |-----|--------|
-| `@param` | `@param {Type} name description` |
+| `@param` | `@param {Type} name description` — name may be dotted (`opts.timeout`) or `[optional=default]` |
 | `@returns` / `@return` | `@returns {Type} description` |
 | `@throws` / `@throw` | `@throws {Type} description` |
 | `@type` | `@type {Type}` |
-| `@typedef` | `@typedef {Type} TypeName` |
+| `@typedef` | `@typedef {Type} TypeName description` — the name may be a namepath (`module:core.TimeSpec`); type, name and description are all optional (a bare `@typedef` + `@name` + `@property` lines is the stdlib's enum style) |
+| `@property` / `@prop` | `@property {Type} name description` — name may be a constant, dotted, `[optional=default]`, or `*` |
 | `@template` | `@template T, U` |
 | `@function` | `@function module:path#member` |
 | `@module` | `@module name` |
@@ -124,12 +125,21 @@ The grammar understands the following tags:
 | `@example` | `@example code` |
 | `@default` | `@default value` |
 
-Type expressions support: primitives (`int`, `float`, `string`, `boolean`, `null`, `void`,
-`function`), `*`/`any`, `list<T>`, `dict<T>`, record types (`{field: T}`), named types
+Type expressions support: primitives (`int`, `integer`, `float`, `double`, `number`, `string`,
+`boolean`, `null`, `void`, `function`, `object`, `array`, `regexp`, `resource` — the doc-convention
+names plus ucode's own runtime type names), `*`/`any`, `list<T>`, `dict<T>`, record types (`{field: T}`), named types
 (`TypeName`, `TypeName<T, U>`), cross-module refs (`module:path.To.Type`), named function
-types `(name: T) => U`, anonymous function types `function(T): U`, union `T | U`, nullable
+types `(name: T) => U`, anonymous function types `function(T): U` (both may end in a rest
+parameter: `(...any) => R`, `function(string, ...any)`), JSDoc's dotted generic `Array.<T>`, union `T | U`, nullable
 `?T`, and array postfix `T[]`. Inline `{@link ...}` tags and optional params `[name=default]`
-are also supported.
+are also supported; a default may be any value up to the closing `]`
+(`[mode="r"]`, `[mode=0o666]`, `[end=buffer.length()]`).
+
+A ` - ` between a name and its description is the JSDoc separator and is not part of the
+description. A block tag starts at an `@` at the beginning of a word; an `@` inside a word
+(`foo@bar.com`, `` `@` ``) is ordinary prose. Descriptions may contain markdown: only the
+single ` * ` comment frame at the start of each line is stripped, so `**bold**`, `*italic*` and
+`* bullets` stay intact.
 
 ## Requirements
 

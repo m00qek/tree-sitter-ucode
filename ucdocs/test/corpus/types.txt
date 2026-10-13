@@ -791,3 +791,91 @@ List of named type
       (list_type
         element: (named_type
           name: (type_identifier))))))
+
+================================================================================
+empty record type is a type, not brace text
+================================================================================
+
+/** @param {{}} x Empty record. */
+
+--------------------------------------------------------------------------------
+
+(document
+  (param_tag
+    type: (type_expression
+      (record_type))
+    name: (identifier)
+    description: (description)))
+
+================================================================================
+rest parameter in a function type
+================================================================================
+
+/** @param {(...any) => R} fn */
+
+--------------------------------------------------------------------------------
+
+(document
+  (param_tag
+    type: (type_expression
+      (function_type
+        params: (rest_param
+          type: (any_type))
+        return: (named_type
+          name: (type_identifier))))
+    name: (identifier)))
+
+================================================================================
+named rest parameter in a function type
+================================================================================
+
+/** @param {(a: int, ...rest: string) => void} fn */
+
+--------------------------------------------------------------------------------
+
+(document
+  (param_tag
+    type: (type_expression
+      (function_type
+        params: (function_param
+          name: (identifier)
+          type: (primitive_type))
+        params: (rest_param
+          name: (identifier)
+          type: (primitive_type))
+        return: (primitive_type)))
+    name: (identifier)))
+
+================================================================================
+rest parameter in an anonymous function type
+================================================================================
+
+/** @type {function(string, ...any): int} */
+
+--------------------------------------------------------------------------------
+
+(document
+  (type_tag
+    type: (type_expression
+      (anon_function_type
+        params: (primitive_type)
+        params: (rest_param
+          type: (any_type))
+        return: (primitive_type)))))
+
+================================================================================
+dotted JSDoc generic
+================================================================================
+
+/** @returns {Array.<?module:socket.socket>} */
+
+--------------------------------------------------------------------------------
+
+(document
+  (returns_tag
+    type: (type_expression
+      (named_type
+        name: (type_identifier)
+        params: (nullable_type
+          (module_type
+            path: (module_path)))))))
