@@ -1877,19 +1877,24 @@
             {
               "type": "REPEAT",
               "content": {
-                "type": "CHOICE",
+                "type": "SEQ",
                 "members": [
                   {
                     "type": "PATTERN",
-                    "value": "[^*{}@\\n\\r]"
+                    "value": "[^\\S\\n\\r]*"
                   },
                   {
-                    "type": "PATTERN",
-                    "value": "\\*+[^*/{}@\\n\\r]@*"
-                  },
-                  {
-                    "type": "PATTERN",
-                    "value": "[^\\s*{}@]@+"
+                    "type": "CHOICE",
+                    "members": [
+                      {
+                        "type": "PATTERN",
+                        "value": "[^*{}@\\s]@*"
+                      },
+                      {
+                        "type": "PATTERN",
+                        "value": "\\*+[^*/{}@\\s]@*"
+                      }
+                    ]
                   }
                 ]
               }

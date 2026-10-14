@@ -411,9 +411,18 @@ module.exports = grammar({
     // `@` that starts a word can begin a block tag. (JSDoc only recognises
     // tags at the start of a line; "after whitespace" is the closest a
     // context-free lexer gets, and keeps one-line `/** @a … @b … */` working.)
+    //
+    // Inline whitespace only BETWEEN words: the token starts and ends on a
+    // non-space character, so spaces before `*/`, a line end, `{`, `@` or a
+    // star-run are left to the extras and a description (and the tag holding
+    // it) ends at its last visible character. Likewise a star-run inside the
+    // token must be followed by a non-space; `a * b` is text, stars, text.
     _text: _ => token(prec(-1, seq(
       /[^*{}@\s]@*/,
-      repeat(choice(/[^*{}@\n\r]/, /\*+[^*/{}@\n\r]@*/, /[^\s*{}@]@+/)),
+      repeat(seq(
+        /[^\S\n\r]*/,
+        choice(/[^*{}@\s]@*/, /\*+[^*/{}@\s]@*/),
+      )),
     ))),
   },
 });

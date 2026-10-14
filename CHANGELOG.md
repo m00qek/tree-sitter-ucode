@@ -53,6 +53,8 @@ Notable changes to tree-sitter-ucode. Releases up to v0.8.0 are described in the
   `%}`. Tree shapes are unchanged; only node end positions move.
 - Highlights cover every token: member-access `.`, `:` after object keys, case labels and
   alt-syntax headers, and the ucdocs `function` type keyword, commas and `.<`.
+- ucdocs: a description, and the tag holding it, ends at its last visible character instead of
+  running on through trailing spaces before `*/` or a line end.
 - ucdocs: a record field after a tag no longer starts with the preceding space; a name followed
   by a full stop keeps its name; an `@` inside a word is prose.
 
