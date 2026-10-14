@@ -1,12 +1,11 @@
-ucode/src/parser.c        linguist-generated=true
-ucode/src/grammar.json    linguist-generated=true
-ucode/src/node-types.json linguist-generated=true
+* text=auto eol=lf
 
-ucode_markup/src/parser.c        linguist-generated=true
-ucode_markup/src/grammar.json    linguist-generated=true
-ucode_markup/src/node-types.json linguist-generated=true
-ucode_markup/queries/*.scm       linguist-generated=true
+# Generated parsers
+*/src/parser.c         linguist-generated
+*/src/grammar.json     linguist-generated
+*/src/node-types.json  linguist-generated
+*/src/tree_sitter/*    linguist-generated
 
-ucdocs/src/parser.c        linguist-generated=true
-ucdocs/src/grammar.json    linguist-generated=true
-ucdocs/src/node-types.json linguist-generated=true
+# Generated queries
+ucode_markup/queries/*.scm  linguist-generated
+editors/helix/queries/**    linguist-generated

@@ -71,6 +71,9 @@ jobs:
       - name: Install dependencies
         run: npm ci
 
+      - name: Test the Node binding
+        run: npm run test:bindings
+
       - name: Verify generated files are up to date
         run: |
           gen_paths='ucode/src/ ucode_markup/src/ ucode_markup/queries/ ucdocs/src/'

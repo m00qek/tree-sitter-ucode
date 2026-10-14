@@ -49,6 +49,7 @@
   },
   "devDependencies": {
     "prebuildify": "^6.0.1",
+    "tree-sitter": "^0.25.1",
     "tree-sitter-cli": "0.26.9"
   },
   "peerDependencies": {
@@ -63,6 +64,7 @@
     "install": "node-gyp-build",
     "build": "node scripts/generate-markup-queries.js && tree-sitter generate ucode/grammar.js --output ucode/src && tree-sitter generate ucode_markup/grammar.js --output ucode_markup/src && tree-sitter generate ucdocs/grammar.js --output ucdocs/src && node-gyp-build && node scripts/run-tests.js --build-only",
     "test": "node scripts/run-tests.js",
+    "test:bindings": "node --test bindings/node/binding_test.js",
     "prestart": "tree-sitter build --wasm --output ucode/tree-sitter-ucode.wasm ucode",
     "start": "tree-sitter playground --grammar-path ucode"
   }
