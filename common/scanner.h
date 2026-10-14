@@ -636,8 +636,10 @@ static AsiResult asi_same_line_decision(TSLexer *lexer) {
 }
 
 static AsiResult scan_automatic_semicolon(TSLexer *lexer) {
+    /* mark_end stays at the scan's entry (see ucode_scanner_scan), before the
+       whitespace scan_comment skipped, so `{ x = 1 }` ends the statement at
+       `1`, not at the space before `}`. */
     lexer->result_symbol = AUTOMATIC_SEMICOLON;
-    lexer->mark_end(lexer);
 
     /*
      * scan_comment() is dispatched before ASI (see ucode_scanner_scan) and is
@@ -689,8 +691,13 @@ static AsiResult asi_after_newline_decision(TSLexer *lexer) {
  * would have been emitted as its own token).
  */
 static AsiResult asi_after_newline(TSLexer *lexer) {
+    /* No mark_end here: it stays at the scan's ENTRY position, before the
+       whitespace and newline scan_comment skipped, so the zero-width ';' sits
+       right after the statement's last token. Marking here would stretch the
+       statement (and every node it ends) over the line break and any blank
+       lines to the next token — editors then treat the line after a `}` as
+       still inside the block (Helix indented it). */
     lexer->result_symbol = AUTOMATIC_SEMICOLON;
-    lexer->mark_end(lexer);
     return asi_after_newline_decision(lexer);
 }
 
@@ -1149,6 +1156,11 @@ static bool ucode_scanner_scan(
             case CMT_NONE_NEWLINE: crossed_newline = valid_symbols[AUTOMATIC_SEMICOLON]; break;
             case CMT_NONE:         break;
         }
+    } else {
+        /* scan_comment marks the entry position for the zero-width tokens
+           below (ASI, TAG_SEMICOLON); COMMENT is an extra, so it is valid
+           wherever they are — this is only a safety net. */
+        lexer->mark_end(lexer);
     }
 
     /*
@@ -1170,8 +1182,7 @@ static bool ucode_scanner_scan(
      * tree-sitter re-lex the '-'/'%' that lookahead_is_stmt_close consumed.
      */
     if (valid_symbols[TAG_SEMICOLON]) {
-        lexer->result_symbol = TAG_SEMICOLON;
-        lexer->mark_end(lexer);
+        lexer->result_symbol = TAG_SEMICOLON;   /* at the entry mark_end */
         return lookahead_is_stmt_close(lexer);
     }
 

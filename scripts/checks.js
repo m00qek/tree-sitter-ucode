@@ -6,7 +6,8 @@
 //                      external tokens in the same order (the generated parser
 //                      indexes valid_symbols by position — a mismatch is a
 //                      silent wrong-token bug, not a test failure).
-//   checkPositions     no name-like node may start or end with whitespace
+//   checkPositions     no name-like node may start or end with whitespace,
+//                      and (code grammars) no named node may end with it
 //                      (a lexer bug can absorb a neighbouring space into a
 //                      token without changing the tree's shape — see b6f6574).
 //   checkHighlights    every token of every corpus input must be covered by a
@@ -201,6 +202,16 @@ const CONTENT_NODES = new Set([
   'hash_bang_line', 'description',
 ]);
 
+// Code grammars only: no named node may END with whitespace either — a
+// zero-width token (ASI, TAG_SEMICOLON) placed after skipped whitespace
+// stretches its statement over it, and over line breaks to the next token
+// (editors then indent the line after a `}` as if still inside the block).
+// Exempt: the roots (they span the whole file) and a template's text_statement
+// (raw text after a tag close). ucdocs is not checked: its tag nodes still end
+// at the space before `*/`.
+const ENDS_CHECKED = new Set(['ucode', 'ucode_markup']);
+const MAY_END_WITH_SPACE = new Set(['program', 'markup', 'text_statement']);
+
 function checkPositions(lib, grammar) {
   const { tests, tmp } = corpusInputs(grammar);
   const trees = cst(lib, grammar, tests.map((t) => t.file));
@@ -211,10 +222,11 @@ function checkPositions(lib, grammar) {
     const buf = Buffer.from(t.source, 'utf8');
     const at = offsets(buf);
     for (const n of nodes) {
-      if (!n.named || !n.leaf || CONTENT_NODES.has(n.type)) continue;
+      if (!n.named || CONTENT_NODES.has(n.type)) continue;
+      if (!n.leaf && (!ENDS_CHECKED.has(grammar) || MAY_END_WITH_SPACE.has(n.type))) continue;
       const text = buf.subarray(at(n.sr, n.sc), at(n.er, n.ec)).toString('utf8');
-      if (text.length && /^\s|\s$/.test(text)) {
-        problems.push(`${t.name}: ${n.type} at ${n.sr}:${n.sc} is ${JSON.stringify(text)}`);
+      if (n.leaf ? /^\s|\s$/.test(text) : /\s$/.test(text)) {
+        problems.push(`${t.name}: ${n.type} at ${n.sr}:${n.sc} is ${JSON.stringify(text.length > 60 ? `${text.slice(0, 25)}…${text.slice(-25)}` : text)}`);
       }
     }
   });
