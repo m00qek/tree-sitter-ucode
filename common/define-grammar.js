@@ -61,6 +61,10 @@ module.exports = function defineGrammar(name) {
       $._asi_gap,                      // 19  zero-width no-op emitted before an own-line comment when ASI declines (see scanner)
       $._tag_semicolon,                // 20  zero-width ';' before %} / -%} in an unbraced-body position (template only; see scanner)
       $._text_end,                     // 21  zero-width end of input (template only; see scanner)
+      // Used by no rule, so tree-sitter marks it valid only during error
+      // recovery (when it marks every external token valid) — the scanner's
+      // documented way to detect that mode. Keep it last.
+      $._error_sentinel,               // 22
     ],
 
     extras: $ => [

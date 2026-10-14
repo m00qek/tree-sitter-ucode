@@ -28,6 +28,7 @@
  *  19  ASI_GAP                     $._asi_gap                      zero-width no-op (extra)
  *  20  TAG_SEMICOLON               $._tag_semicolon                zero-width ';' before %} (template unbraced body)
  *  21  TEXT_END                    $._text_end                     zero-width end of input (template)
+ *  22  ERROR_SENTINEL              $._error_sentinel               never emitted; valid only in error recovery
  */
 
 #ifndef UCODE_COMMON_SCANNER_H_
@@ -70,6 +71,7 @@ enum TokenType {
     ASI_GAP,
     TAG_SEMICOLON,
     TEXT_END,
+    ERROR_SENTINEL,
 };
 
 /*
@@ -1028,13 +1030,13 @@ static bool ucode_scanner_scan(
     /*
      * Error-recovery guard.
      *
-     * During error recovery tree-sitter sets every external token valid at
-     * once.  AUTOMATIC_SEMICOLON (code context) and RAW_TEXT (markup context)
-     * are never simultaneously valid in a normal parse, so their co-presence
-     * signals error recovery.  Return false so the parser uses its own grammar
-     * tokens for recovery instead of the scanner consuming raw_text.
+     * During error recovery tree-sitter marks every external token valid at
+     * once; ERROR_SENTINEL, which no grammar rule uses, is valid only then (the
+     * pattern tree-sitter's external-scanner docs recommend). Return false so
+     * the parser uses its own grammar tokens for recovery instead of this
+     * scanner — e.g. consuming code as raw_text.
      */
-    if (valid_symbols[AUTOMATIC_SEMICOLON] && valid_symbols[RAW_TEXT])
+    if (valid_symbols[ERROR_SENTINEL])
         return false;
 
     /*
