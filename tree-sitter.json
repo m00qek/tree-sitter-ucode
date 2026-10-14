@@ -1,10 +1,14 @@
 {
+  "$schema": "https://tree-sitter.github.io/tree-sitter/assets/schemas/config.schema.json",
   "grammars": [
     {
       "name": "ucode",
       "camelcase": "Ucode",
       "scope": "source.uc",
       "path": "ucode",
+      "external-files": [
+        "common/scanner.h"
+      ],
       "file-types": [
         "ucode",
         "uc",
@@ -22,15 +26,6 @@
       "tags": [
         "ucode/queries/tags.scm"
       ],
-      "folds": [
-        "ucode/queries/folds.scm"
-      ],
-      "indents": [
-        "ucode/queries/indents.scm"
-      ],
-      "textobjects": [
-        "ucode/queries/textobjects.scm"
-      ],
       "injection-regex": "^ucode$"
     },
     {
@@ -38,6 +33,9 @@
       "camelcase": "UcodeMarkup",
       "scope": "source.ucode.markup",
       "path": "ucode_markup",
+      "external-files": [
+        "common/scanner.h"
+      ],
       "file-types": [
         "ucode",
         "uc",
@@ -56,15 +54,6 @@
       "tags": [
         "ucode_markup/queries/tags.scm"
       ],
-      "folds": [
-        "ucode_markup/queries/folds.scm"
-      ],
-      "indents": [
-        "ucode_markup/queries/indents.scm"
-      ],
-      "textobjects": [
-        "ucode_markup/queries/textobjects.scm"
-      ],
       "injection-regex": "^ucode_markup$"
     },
     {
@@ -72,7 +61,6 @@
       "camelcase": "Ucdocs",
       "scope": "source.ucdocs",
       "path": "ucdocs",
-      "file-types": null,
       "highlights": [
         "ucdocs/queries/highlights.scm"
       ],
@@ -86,11 +74,21 @@
     "version": "0.8.0",
     "license": "MIT",
     "description": "Ucode grammar for tree-sitter",
+    "authors": [
+      {
+        "name": "António Mora"
+      }
+    ],
     "links": {
       "repository": "https://github.com/m00qek/tree-sitter-ucode"
     }
   },
   "bindings": {
-    "node": true
+    "c": true,
+    "go": true,
+    "node": true,
+    "python": true,
+    "rust": true,
+    "swift": true
   }
 }

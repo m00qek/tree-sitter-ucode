@@ -1,0 +1,30 @@
+[build-system]
+build-backend = "setuptools.build_meta"
+requires = [ "setuptools>=62.4.0", "wheel" ]
+
+[project]
+authors = [ { name = "António Mora" } ]
+classifiers = [
+  "Intended Audience :: Developers",
+  "Topic :: Software Development :: Compilers",
+  "Topic :: Text Processing :: Linguistic",
+  "Typing :: Typed",
+]
+description = "Ucode grammars for tree-sitter: scripts, templates and doc comments"
+keywords = [ "incremental", "parsing", "tree-sitter", "ucode" ]
+license.text = "MIT"
+name = "tree-sitter-ucode"
+readme = "README.md"
+requires-python = ">=3.10"
+version = "0.8.0"
+
+[project.urls]
+Homepage = "https://github.com/m00qek/tree-sitter-ucode"
+
+[project.optional-dependencies]
+# The parsers use ABI 15, which py-tree-sitter supports from 0.25.
+core = [ "tree-sitter~=0.25" ]
+
+[tool.cibuildwheel]
+build = "cp310-*"
+build-frontend = "build"

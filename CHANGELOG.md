@@ -34,6 +34,9 @@ Notable changes to tree-sitter-ucode. Releases up to v0.8.0 are described in the
 
 - The Node package exports all three grammars: `.ucode`, `.ucode_markup` and `.ucdocs`. The
   package itself is still the `ucode` grammar.
+- C, Rust, Python, Go and Swift bindings, each exposing all three grammars (C: one library per
+  grammar, buildable with make or CMake). See "Use from other languages" in the README; only
+  the npm package is published so far.
 - Helix support: queries generated for Helix's capture names under `editors/helix/queries/`, and a
   complete setup in the README (including `ucdocs` injection into doc comments). Tested with
   Helix 25.07.1.
@@ -65,4 +68,6 @@ Notable changes to tree-sitter-ucode. Releases up to v0.8.0 are described in the
   `npm run test:bindings` smoke-tests the Node binding.
 - Built parsers live in `.build/parsers/`. tree-sitter CLI 0.27.1. `.gitattributes` and
   `.editorconfig` added.
+- `tree-sitter.json` validates against the official schema, and declares `common/scanner.h` as
+  an external file so the CLI rebuilds its cached parsers when the shared scanner changes.
 - `scripts/check-helix-indents.sh` checks the Helix indent queries in a real Helix.

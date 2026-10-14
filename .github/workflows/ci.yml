@@ -17,6 +17,14 @@ on:
       - package.json
       - scripts/**
       - tree-sitter.json
+      - CMakeLists.txt
+      - Makefile
+      - Cargo.toml
+      - go.mod
+      - go.sum
+      - pyproject.toml
+      - setup.py
+      - Package.swift
       - .github/workflows/**
 
 env:
@@ -133,6 +141,56 @@ jobs:
 
       - name: Validate grammar against firewall4
         run: node scripts/validate-corpus.js project firewall4
+
+  bindings:
+    name: Bindings — C, Rust, Go, Python
+    runs-on: ubuntu-latest
+
+    steps:
+      - name: Checkout repository
+        uses: actions/checkout@v6
+
+      - name: C — build with make
+        run: make -j
+
+      - name: C — build with CMake
+        run: |
+          cmake -S . -B cmake-build
+          cmake --build cmake-build -j
+
+      - name: Rust — test
+        run: cargo test
+
+      - name: Set up Go
+        uses: actions/setup-go@v6
+        with:
+          go-version-file: go.mod
+
+      - name: Go — test
+        run: go test ./bindings/go/
+
+      - name: Set up Python
+        uses: actions/setup-python@v6
+        with:
+          python-version: '3.12'
+
+      - name: Python — build the sdist and a wheel from it, then test the wheel
+        run: |
+          pip install build
+          python -m build --outdir dist .
+          pip install "$(ls dist/*.whl)[core]"
+          python -m unittest discover -v -s bindings/python/tests
+
+  bindings-swift:
+    name: Bindings — Swift
+    runs-on: macos-latest
+
+    steps:
+      - name: Checkout repository
+        uses: actions/checkout@v6
+
+      - name: Swift — test
+        run: swift test
 
   wasm:
     name: Build WASM

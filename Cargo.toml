@@ -1,0 +1,44 @@
+[package]
+authors = [ "António Mora" ]
+autoexamples = false
+categories = [ "parser-implementations", "parsing", "text-editors" ]
+description = "Ucode grammars for tree-sitter: scripts, templates and doc comments"
+edition = "2024"
+keywords = [ "incremental", "parsing", "tree-sitter", "ucode" ]
+license = "MIT"
+name = "tree-sitter-ucode"
+readme = "README.md"
+repository = "https://github.com/m00qek/tree-sitter-ucode"
+version = "0.8.0"
+
+build = "bindings/rust/build.rs"
+include = [
+  "/LICENSE",
+  "/tree-sitter.json",
+  "bindings/rust/*",
+  "common/*",
+  "ucode/grammar.js",
+  "ucode/queries/*",
+  "ucode/src/*",
+  "ucode/src/tree_sitter/*",
+  "ucode_markup/grammar.js",
+  "ucode_markup/queries/*",
+  "ucode_markup/src/*",
+  "ucode_markup/src/tree_sitter/*",
+  "ucdocs/grammar.js",
+  "ucdocs/queries/*",
+  "ucdocs/src/*",
+  "ucdocs/src/tree_sitter/*",
+]
+
+[lib]
+path = "bindings/rust/lib.rs"
+
+[dependencies]
+tree-sitter-language = "0.1"
+
+[build-dependencies]
+cc = "1.2"
+
+[dev-dependencies]
+tree-sitter = "0.27.1"

@@ -44,6 +44,10 @@ ucdocs/                 doc comments — standalone grammar, edit directly
   src/                  otherwise generated
   queries/  test/corpus/
 editors/helix/queries/  GENERATED query files for Helix (Helix's capture names) — do not edit
+bindings/               one directory per language (c, go, node, python, rust, swift), each
+                        exposing all three grammars; the build files they need sit at the
+                        root (binding.gyp, CMakeLists.txt, Makefile, Cargo.toml, go.mod,
+                        pyproject.toml + setup.py, Package.swift)
 scripts/
   generate-markup-queries.js  derives ucode_markup/queries/*.scm from ucode/queries/
   generate-helix-queries.js   derives editors/helix/queries/ (highlights/locals renamed to
@@ -83,7 +87,7 @@ release. It types into a real Helix and checks the indentation of each new line.
 
 The external lexer is hand-written and handles features that context-free grammars cannot express: automatic semicolon insertion, template string content, comment/prose terminators, and ternary-vs-nullish disambiguation. All of its logic lives in **`common/scanner.h`** — edit that file. `ucode/src/scanner.c` and `ucode_markup/src/scanner.c` are thin shims that only export the entry points and `#include "../../common/scanner.h"`, so a single implementation is shared by both the `ucode` and `ucode_markup` parsers. None of these are touched by `tree-sitter generate`.
 
-> **Stale-scanner gotcha:** `tree-sitter build` recompiles the scanner from source every time, so it always picks up `common/scanner.h` edits. The staleness bites the *loader* cache instead: `tree-sitter test`/`parse` runs **without** `--lib-path` load a pre-built parser from `~/.cache/tree-sitter`, and that cache is keyed on `scanner.c` (not the `#include`d `common/scanner.h`), so an edit to `common/scanner.h` alone is not detected. After editing it, either `touch ucode/src/scanner.c ucode_markup/src/scanner.c` (bumps the key) or `rm -rf ~/.cache/tree-sitter` (nukes it) before running the CLI without `--lib-path` — otherwise the stale parser is reused and your change appears to have no effect. Passing `--lib-path` to a freshly `cc`-built `.so` sidesteps the cache entirely.
+`tree-sitter.json` lists `common/scanner.h` under `external-files`, so the CLI's parser cache (`~/.cache/tree-sitter`, used by `tree-sitter test`/`parse` without `--lib-path`) is rebuilt when it changes, not only when a `scanner.c` shim does. Every binding passes `-I<grammar>/src` because `common/scanner.h` includes `"tree_sitter/parser.h"`, which GCC and Clang resolve via the include path, not relative to the including file — keep that in any new build file.
 
 ## Adding corpus tests
 
@@ -170,6 +174,26 @@ A small number of upstream test cases are intentionally skipped because they con
 - New syntax has at least one corpus test
 - For removed/unsupported JS features, a test in `js_differences.txt` documents the parse behaviour
 - Generated files (`ucode/src/`, `ucode_markup/src/`, `ucdocs/src/`, `ucode_markup/queries/`) are committed
+
+## Bindings
+
+The bindings started from what `tree-sitter init` (CLI 0.27.1) scaffolds, adapted for three
+grammars the way tree-sitter-typescript does it: one library per grammar for C, one package
+exposing all three elsewhere. Do not run `tree-sitter init --update` — it would put the
+single-grammar templates back, convert the Node package to ESM, and rewrite `tree-sitter.json`
+(dropping `content-regex`). CI's Bindings jobs build and test every binding; locally:
+
+```sh
+make && cmake -S . -B cmake-build && cmake --build cmake-build    # C
+cargo test                                                           # Rust
+go test ./bindings/go/                                               # Go
+python -m build && pip install dist/*.whl && python -m unittest discover -s bindings/python/tests
+swift test                                                           # Swift (macOS, or the swift Docker image)
+npm run test:bindings                                                # Node
+```
+
+The version lives in `package.json`, `tree-sitter.json`, `Cargo.toml`, `pyproject.toml`,
+`CMakeLists.txt` and `Makefile`; bump them together.
 
 ## Note on tree-sitter.json
 

@@ -203,6 +203,22 @@ parser.setLanguage(ucode.ucode_markup);  // templates
 parser.setLanguage(ucode.ucdocs);        // /** */ doc comments
 ```
 
+## Use from other languages
+
+C, Rust, Python, Go and Swift bindings ship in this repository too, each exposing the three
+grammars. Only the npm package is published; until the others are, depend on the repository.
+
+| Language | Get it | The three grammars |
+| --- | --- | --- |
+| C | `make install` or CMake (`add_subdirectory()` works) | `tree_sitter_ucode()`, `tree_sitter_ucode_markup()`, `tree_sitter_ucdocs()` — headers `<tree_sitter/tree-sitter-ucode.h>`, `-ucode-markup.h`, `-ucdocs.h`; libraries and pkg-config names `tree-sitter-ucode`, `tree-sitter-ucode-markup`, `tree-sitter-ucdocs` |
+| Rust | `tree-sitter-ucode = { git = "https://github.com/m00qek/tree-sitter-ucode" }` | `LANGUAGE_UCODE`, `LANGUAGE_UCODE_MARKUP`, `LANGUAGE_UCDOCS`, plus `<GRAMMAR>_NODE_TYPES` and `<GRAMMAR>_HIGHLIGHTS_QUERY` (…`INJECTIONS`, `LOCALS`, `TAGS`) |
+| Python | `pip install git+https://github.com/m00qek/tree-sitter-ucode` | `language_ucode()`, `language_ucode_markup()`, `language_ucdocs()`, plus the same `<GRAMMAR>_…_QUERY` constants |
+| Go | `go get github.com/m00qek/tree-sitter-ucode/bindings/go` | `LanguageUcode()`, `LanguageUcodeMarkup()`, `LanguageUcdocs()` |
+| Swift | `.package(url: "https://github.com/m00qek/tree-sitter-ucode", branch: "main")` | modules `TreeSitterUcode`, `TreeSitterUcodeMarkup`, `TreeSitterUcdocs` |
+
+Each needs a tree-sitter runtime that loads ABI 15 parsers: py-tree-sitter 0.25+,
+go-tree-sitter 0.25+, the `tree-sitter` crate 0.25+, libtree-sitter 0.25+.
+
 ## Use in Neovim
 
 The easiest way to install this grammar in Neovim is with
