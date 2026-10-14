@@ -217,7 +217,42 @@ const INDENTS = `[
 (elif_clause "elif" @outdent)
 (else_alt_clause "else" @outdent)
 
-; Single-statement bodies without braces (as in Helix's C indents).
+; Single-statement bodies without braces. Helix starts from the smallest node
+; that CONTAINS the cursor, and a node ending exactly there does not, so after
+; \`if (c)\` + Enter the body node is not on the path and the C-style patterns
+; below never fire for a new line. Indent the whole statement's tail instead
+; (only without an \`else\`, whose line must not indent) …
+(if_statement
+  consequence: (_) @_body
+  !alternative
+  (#not-kind-eq? @_body "statement_block")) @indent
+(else_clause
+  (_) @_body
+  (#not-kind-eq? @_body "statement_block")
+  (#not-kind-eq? @_body "if_statement")) @indent
+(while_statement
+  body: (_) @_body
+  (#not-kind-eq? @_body "statement_block")) @indent
+(for_statement
+  body: (_) @_body
+  (#not-kind-eq? @_body "statement_block")) @indent
+(for_in_statement
+  body: (_) @_body
+  (#not-kind-eq? @_body "statement_block")) @indent
+
+; … and at the end of the file, where the not-yet-typed body is an empty
+; statement whose \`;\` the parser inserted, extend the statement over the
+; cursor so its indent applies (Helix's \`@extend\`).
+(if_statement consequence: (empty_statement (MISSING ";"))) @extend
+(else_clause (empty_statement (MISSING ";"))) @extend
+(while_statement body: (empty_statement (MISSING ";"))) @extend
+(for_statement body: (empty_statement (MISSING ";"))) @extend
+(for_in_statement body: (empty_statement (MISSING ";"))) @extend
+; A dangling \`else\` at the end of the file gets no inserted body: it is an
+; ERROR holding just the keyword.
+(ERROR . "else" .) @indent @extend
+
+; Re-indenting an existing body line (as in Helix's C indents).
 (if_statement
   consequence: (_) @indent
   (#not-kind-eq? @indent "statement_block")

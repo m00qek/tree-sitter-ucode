@@ -274,8 +274,8 @@ for the grammars and the queries. The layout below (`ucode/`, `ucode_markup/`, `
 4. Check with `hx --health ucode` (and `ucode-markup`, `ucdocs`).
 
 Highlights, locals, injections and text objects follow Helix's documented conventions, and CI
-checks that the Helix highlights cover every token. The queries are tested with Helix 25.07.1;
-its indents work like Helix's own JavaScript and C ones.
+checks that the Helix highlights cover every token. The queries are tested with Helix 25.07.1,
+including indentation while typing (`scripts/check-helix-indents.sh`).
 
 Helix does not support content-based filetype detection for shared extensions. For
 `.uc` files that are templates, use `:set-language ucode-markup` in command mode,
