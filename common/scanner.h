@@ -355,7 +355,7 @@ static bool scan_template_chars(TSLexer *lexer) {
  * swallowing the rest of the file into one string.
  *
  * Dispatched as an external token BEFORE the COMMENT scanner so a string
- * starting with `/*` or `//` (e.g. the glob `'/*.uc'`) is kept as string
+ * starting with slash-star or `//` (e.g. the glob `'/\*.uc'`) is kept as string
  * content instead of being lexed as a comment.  A literal NUL is ordinary
  * content (ucode allows it in strings).
  *
@@ -962,9 +962,10 @@ static CommentResult scan_comment(TSLexer *lexer, Scanner *state,
         lexer->result_symbol = COMMENT;
         /* ucode quirk (lexer.c parse_comment): the block opener is scanned by
            peeking the '*' without consuming it, so the opening '*' also counts
-           as a potential closing '*'.  A '/' immediately after `/*` therefore
-           closes an empty comment — `/`+`*`+`/` is complete, not an unterminated
-           opener.  (`/* /` with anything between the stars is still open.) */
+           as a potential closing '*'.  A '/' immediately after the opener
+           therefore closes an empty comment — `/`+`*`+`/` is complete, not an
+           unterminated opener.  (`/`+`*`+` /`, with anything between the star
+           and the slash, is still open.) */
         if (lexer->lookahead == '/') {
             advance(lexer);
             lexer->mark_end(lexer);
@@ -977,7 +978,7 @@ static CommentResult scan_comment(TSLexer *lexer, Scanner *state,
                accepting the run as a valid comment.  (If the unterminated run
                contains a '/', tree-sitter may re-lex the leading '/' as a regex
                and still accept it — a lenient-regex artifact present since the
-               comment was an internal token; the common `/* note<EOF>` case
+               comment was an internal token; the common slash-star `note<EOF>` case
                errors as ucode does.) */
             if (lexer->eof(lexer)) return CMT_ABORT;
             if (lexer->lookahead == '*') {
@@ -1077,7 +1078,7 @@ static bool ucode_scanner_scan(
 
     /*
      * Quoted-string body: only inside a '...' / "..." literal. Dispatched here,
-     * ahead of COMMENT, so that a `/*` or `//` at the start of the string (or
+     * ahead of COMMENT, so that a slash-star or `//` at the start of the string (or
      * right after an escape) is kept as content instead of being lexed as a
      * comment (the `comment` extra is otherwise offered even inside strings).
      * Same non-overlap with AUTOMATIC_SEMICOLON as TEMPLATE_CHARS above.
