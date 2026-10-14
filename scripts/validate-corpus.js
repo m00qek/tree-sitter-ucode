@@ -47,9 +47,7 @@ function soExt() {
 const LIB_UCODE        = path.join(TS_ROOT, '.build', 'parsers', `ucode.${soExt()}`);
 const LIB_UCODE_MARKUP = path.join(TS_ROOT, '.build', 'parsers', `ucode_markup.${soExt()}`);
 
-// Prefer the devDependency binary so the script works without a global install.
-const _tsLocal  = path.join(TS_ROOT, 'node_modules', '.bin', 'tree-sitter');
-const TREE_SITTER = fs.existsSync(_tsLocal) ? _tsLocal : 'tree-sitter';
+const TREE_SITTER = require('./tree-sitter-cli');
 
 // ---------------------------------------------------------------------------
 // Known-invalid testcases in the jow-/ucode corpus.

@@ -20,6 +20,7 @@ const fs = require('fs');
 const os = require('os');
 const path = require('path');
 const { execFileSync } = require('child_process');
+const TREE_SITTER = require('./tree-sitter-cli');
 
 const ROOT = path.dirname(__dirname);
 
@@ -150,7 +151,7 @@ function parseCst(output, grammar) {
 // complete, and those inputs are skipped by the checks, so accept it.
 function treeSitter(args) {
   try {
-    return execFileSync('tree-sitter', args, { cwd: ROOT, encoding: 'utf8', maxBuffer: 256 * 1024 * 1024 });
+    return execFileSync(TREE_SITTER, args, { cwd: ROOT, encoding: 'utf8', maxBuffer: 256 * 1024 * 1024 });
   } catch (e) {
     if (e.status === 1 && e.stdout) return e.stdout;
     throw e;

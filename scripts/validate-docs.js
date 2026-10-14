@@ -18,6 +18,7 @@ const fs = require('fs');
 const os = require('os');
 const path = require('path');
 const { execFileSync } = require('child_process');
+const TREE_SITTER = require('./tree-sitter-cli');
 
 const ROOT = path.dirname(__dirname);
 const LIB = path.join(ROOT, '.build', 'parsers', `ucdocs.${process.platform === 'win32' ? 'dll' : 'so'}`);
@@ -71,7 +72,7 @@ fs.writeFileSync(list, docs.map((d) => d.tmp).join('\n'));
 // node, and exits 1 when there is any.
 let out;
 try {
-  out = execFileSync('tree-sitter',
+  out = execFileSync(TREE_SITTER,
     ['parse', '--lib-path', LIB, '--lang-name', 'ucdocs', '--quiet', '--paths', list],
     { cwd: ROOT, encoding: 'utf8', maxBuffer: 64 * 1024 * 1024 });
 } catch (e) {

@@ -26,6 +26,7 @@ const LIB_DIR = path.join(ROOT, '.build', 'parsers');
 let tagsFailures = 0;
 let checkFailures = 0;
 const checks = require('./checks');
+const TREE_SITTER = require('./tree-sitter-cli');
 
 // Report a check's problems (a list of strings); count a failure if any.
 function report(label, problems) {
@@ -73,13 +74,13 @@ for (const g of grammars) {
 
   if (needsBuild(lib, g.deps)) {
     fs.mkdirSync(LIB_DIR, { recursive: true });
-    execFileSync('tree-sitter', ['build', '--output', lib, g.name], { stdio: 'inherit', cwd: ROOT });
+    execFileSync(TREE_SITTER, ['build', '--output', lib, g.name], { stdio: 'inherit', cwd: ROOT });
   } else {
     console.log(`.build/parsers/${g.name}.${ext} is up to date — skipping build (pass --force to rebuild)`);
   }
   if (buildOnly) continue;
 
-  execFileSync('tree-sitter', ['test', '--lib-path', lib, '--lang-name', g.name, '-p', g.name],
+  execFileSync(TREE_SITTER, ['test', '--lib-path', lib, '--lang-name', g.name, '-p', g.name],
     { stdio: 'inherit', cwd: ROOT });
 
   // Compile-check every query file against the freshly built grammar, so a
@@ -89,7 +90,7 @@ for (const g of grammars) {
   const queryAbs = path.join(ROOT, g.name, 'queries');
   for (const f of fs.readdirSync(queryAbs).filter((f) => f.endsWith('.scm'))) {
     execFileSync(
-      'tree-sitter',
+      TREE_SITTER,
       ['query', '--lib-path', lib, '--lang-name', g.name, path.join(queryAbs, f), querySource],
       { stdio: ['ignore', 'ignore', 'inherit'], cwd: ROOT },
     );
@@ -125,7 +126,7 @@ function checkTagsFixtures(g, lib) {
   if (!fs.existsSync(dir)) return;
   for (const f of fs.readdirSync(dir).filter((f) => !f.endsWith('.expected'))) {
     const out = execFileSync(
-      'tree-sitter',
+      TREE_SITTER,
       ['query', '--lib-path', lib, '--lang-name', g.name, path.join(ROOT, g.name, 'queries', 'tags.scm'), path.join(dir, f)],
       { cwd: ROOT, encoding: 'utf8' },
     );
