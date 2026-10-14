@@ -86,10 +86,11 @@
 ["if" "elif" "else" "endif"] @keyword.conditional
 ["switch" "case"] @keyword.conditional
 ; `default` is context-scoped (not in the list above) so it never overlaps with
-; the export patterns below. That keeps highlighting correct under both
-; first-match-wins engines (Helix / tree-sitter-highlight) and last-match-wins
-; engines (nvim-treesitter): every `default` token is matched by exactly one
-; pattern, so match order is irrelevant.
+; the export patterns below: every `default` token is matched by exactly one
+; pattern, so the result does not depend on an engine's pattern-precedence rule.
+; (Elsewhere this file relies on later patterns winning, as in Neovim, Helix
+; since 24.03, and tree-sitter-highlight — e.g. `(identifier) @variable` first,
+; refined by the function/parameter patterns after it.)
 (switch_default "default" @keyword.conditional)
 
 ; -------------------------------------------------------------------------
@@ -169,5 +170,18 @@
 ; Punctuation
 ; -------------------------------------------------------------------------
 
-["," ";"] @punctuation.delimiter
+["," ";" "."] @punctuation.delimiter
 ["(" ")" "[" "]" "{" "}"] @punctuation.bracket
+
+; `:` after an object key, a case label, or an alt-syntax header (`if (c):`,
+; `function f():`). Listed by parent so these never touch the ternary `:`,
+; which is an operator (see above).
+(pair ":" @punctuation.delimiter)
+(switch_case ":" @punctuation.delimiter)
+(switch_default ":" @punctuation.delimiter)
+(if_alt_statement ":" @punctuation.delimiter)
+(elif_clause ":" @punctuation.delimiter)
+(for_alt_statement ":" @punctuation.delimiter)
+(for_in_alt_statement ":" @punctuation.delimiter)
+(while_alt_statement ":" @punctuation.delimiter)
+(function_declaration ":" @punctuation.delimiter)
