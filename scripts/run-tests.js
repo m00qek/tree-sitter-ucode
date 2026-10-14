@@ -124,8 +124,9 @@ if (tagsFailures > 0 || checkFailures > 0) process.exit(1);
 // ---------------------------------------------------------------------------
 // Tags fixtures: <grammar>/test/tag-docs/<case>.<ext> + <case>.<ext>.expected
 //
-// The CLI's `tree-sitter tags` cannot load these grammars (tree-sitter.json
-// fails to parse; see CONTRIBUTING), so this reproduces the part of
+// The CLI's `tree-sitter tags` only finds grammars installed under one of its
+// configured parser directories, so it can't be pointed at the libraries this
+// script just built; instead this reproduces the part of
 // tree-sitter-tags that decides doc attachment: run tags.scm with
 // `tree-sitter query` (which evaluates #match?), keep ONE match per name —
 // the lowest pattern index, exactly as tree-sitter-tags does, discarding the

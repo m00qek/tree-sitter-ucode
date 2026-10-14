@@ -70,6 +70,7 @@
     {
       "name": "ucdocs",
       "camelcase": "Ucdocs",
+      "scope": "source.ucdocs",
       "path": "ucdocs",
       "file-types": null,
       "highlights": [
