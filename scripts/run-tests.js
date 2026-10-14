@@ -112,7 +112,7 @@ function checkTagsFixtures(g, lib) {
     );
     const best = new Map();   // name position -> { pattern, line }
     let pattern = -1, doc = null;
-    for (const line of out.split('\n')) {
+    for (const line of out.split(/\r?\n/)) {
       let m;
       if ((m = line.match(/^\s+pattern: (\d+)/))) { pattern = Number(m[1]); doc = null; continue; }
       if ((m = line.match(/capture: (?:\d+ - )?doc, .*text: `(.*)`/))) { doc = doc || m[1]; continue; }
@@ -127,7 +127,11 @@ function checkTagsFixtures(g, lib) {
     const actual = [...best.values()].map((v) => v.line)
       .sort((a, b) => a.localeCompare(b, 'en', { numeric: true })).join('\n') + '\n';
     const expFile = path.join(dir, f + '.expected');
-    const expected = fs.existsSync(expFile) ? fs.readFileSync(expFile, 'utf8') : null;
+    // Normalise line endings: on Windows, git checks the .expected file out
+    // with CRLF (tree-sitter's own corpus runner normalises its files likewise).
+    const expected = fs.existsSync(expFile)
+      ? fs.readFileSync(expFile, 'utf8').replace(/\r\n/g, '\n')
+      : null;
     if (update) {
       fs.writeFileSync(expFile, actual);
     } else if (actual !== expected) {
