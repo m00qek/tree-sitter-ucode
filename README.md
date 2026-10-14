@@ -296,8 +296,8 @@ Hello, {{ name }}!
 ucode's compiler reads a template as **one statement stream**: `{%` is dropped,
 every `%}` acts as a `;`, and the text between `%}` and the next `{%` (raw text,
 `{{ … }}` and `{# … #}` tags) is a statement that prints it. The grammar models
-exactly that. A template is a statement list in which each `%} … {%` stretch is
-a `text_statement`:
+exactly that. A template is a statement list in which each `%} … {%` stretch, and
+the text after the last `%}`, is a `text_statement`:
 
 ```
 {% if (user) { %}
@@ -317,7 +317,7 @@ a `text_statement`:
     alternative: (else_clause
       (statement_block
         (text_statement (statement_tag_close) (raw_text) (statement_tag_open)))))
-  (statement_tag_close))
+  (text_statement (statement_tag_close)))
 ```
 
 Text can appear anywhere ucode accepts a statement, and nowhere else. So
@@ -332,6 +332,12 @@ Because `%}` is a `;`, an unbraced body that runs straight into a tag close is
 empty: `{% if (a) %}text{% %}` is `if (a) ;` (an `empty_statement` consequence)
 followed by the text as the next statement. A later `{% else %}` is then an
 error, just as in ucode. Use braces or the `:` form when the text is the body.
+
+While a template is being edited, errors stay local. A block or alt-syntax body
+that is not closed yet ends in a single zero-width `(MISSING "}")` /
+`(MISSING "endif")` node instead of an ERROR around it, and a half-typed tag
+followed by the next `{%` becomes a small ERROR around the stray delimiter
+rather than swallowing the rest of the file.
 
 ## License
 

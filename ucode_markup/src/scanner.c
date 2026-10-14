@@ -6,6 +6,7 @@
  * entry points — no ucode_* symbols leak into this shared library.
  */
 
+#define UCODE_SCANNER_TEMPLATE 1
 #include "../../common/scanner.h"
 
 void *tree_sitter_ucode_markup_external_scanner_create(void) { return ucode_scanner_create(); }

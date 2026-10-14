@@ -1795,19 +1795,11 @@
           "named": true
         },
         {
-          "type": "statement_tag_close",
-          "named": true
-        },
-        {
           "type": "statement_tag_lstrip_open",
           "named": true
         },
         {
           "type": "statement_tag_open",
-          "named": true
-        },
-        {
-          "type": "statement_tag_trim_close",
           "named": true
         },
         {

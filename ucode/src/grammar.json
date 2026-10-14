@@ -4872,6 +4872,10 @@
     {
       "type": "SYMBOL",
       "name": "_tag_semicolon"
+    },
+    {
+      "type": "SYMBOL",
+      "name": "_text_end"
     }
   ],
   "inline": [

@@ -60,6 +60,7 @@ module.exports = function defineGrammar(name) {
       $._octal_escape,                 // 18  \NNN octal escape in a string/template, range-checked to <= 255
       $._asi_gap,                      // 19  zero-width no-op emitted before an own-line comment when ASI declines (see scanner)
       $._tag_semicolon,                // 20  zero-width ';' before %} / -%} in an unbraced-body position (template only; see scanner)
+      $._text_end,                     // 21  zero-width end of input (template only; see scanner)
     ],
 
     extras: $ => [
@@ -179,8 +180,11 @@ module.exports = function defineGrammar(name) {
           optional(seq(
             $._stmt_open,
             repeat($.statement),
-            optional(seq($._stmt_close, optional($._text))),
           )),
+          // Zero-width end of input. Hidden and only ever at the very end, so
+          // it never shows in a tree; it exists for error recovery — see
+          // text_statement below and TEXT_END in common/scanner.h.
+          optional($._text_end),
         ),
       } : {
         program: $ => seq(
@@ -200,15 +204,21 @@ module.exports = function defineGrammar(name) {
         // statement_block holds this node; `{% x = [ %}hi{% ] %}` is an ERROR
         // because text is not an expression. With no text in between
         // (`{% a %}{% b %}`) it is just the two delimiters.
+        //
+        // The text after a template's last `%}` is a text_statement too, the
+        // only one with no `{%` after it: the end of input closes it. (The `{%`
+        // is optional only there — mid-file, the text always runs into the
+        // next `{%`.) With the root's zero-width _text_end, a file that ends
+        // inside an open block — a block still being typed — recovers with
+        // the one missing `}` instead of an ERROR around the whole block.
         text_statement: $ => seq(
           $._stmt_close,
           optional($._text),
-          $._stmt_open,
+          optional($._stmt_open),
         ),
 
-        // Shared by text_statement and the markup entry's leading/trailing text,
-        // so all three reduce the same run and the parser only decides which one
-        // it was at the following `{%` (text_statement) or EOF (trailing).
+        // Shared by text_statement and the markup entry's leading text, so both
+        // reduce the same run of text, raw or in {{ }} / {# #} tags.
         _text: $ => repeat1(choice(
           $.raw_text,
           $.expression_tag,

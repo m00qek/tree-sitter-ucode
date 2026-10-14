@@ -27,6 +27,7 @@
  *  18  OCTAL_ESCAPE                $._octal_escape                 \NNN in a string/template
  *  19  ASI_GAP                     $._asi_gap                      zero-width no-op (extra)
  *  20  TAG_SEMICOLON               $._tag_semicolon                zero-width ';' before %} (template unbraced body)
+ *  21  TEXT_END                    $._text_end                     zero-width end of input (template)
  */
 
 #ifndef UCODE_COMMON_SCANNER_H_
@@ -35,6 +36,16 @@
 #include "tree_sitter/parser.h"
 #include <wctype.h>
 #include <stdlib.h>   /* calloc / free for the scanner state */
+
+/*
+ * 1 when compiled into the ucode_markup scanner (its shim defines it before
+ * including this file), 0 for the plain ucode scanner. Enables the template-
+ * only error-recovery aids below (see lookahead_is_stmt_open and
+ * scan_stray_tag_delimiter); valid input parses identically either way.
+ */
+#ifndef UCODE_SCANNER_TEMPLATE
+#define UCODE_SCANNER_TEMPLATE 0
+#endif
 
 enum TokenType {
     AUTOMATIC_SEMICOLON,
@@ -58,6 +69,7 @@ enum TokenType {
     OCTAL_ESCAPE,
     ASI_GAP,
     TAG_SEMICOLON,
+    TEXT_END,
 };
 
 /*
@@ -528,6 +540,16 @@ static bool lookahead_is_stmt_close(TSLexer *lexer) {
 }
 
 /*
+ * Return true if the lookahead is the start of `{%` (a statement tag open, in
+ * any variant). Like lookahead_is_stmt_close, it peeks by advancing.
+ */
+static bool lookahead_is_stmt_open(TSLexer *lexer) {
+    if (lexer->lookahead != '{') return false;
+    advance(lexer);
+    return lexer->lookahead == '%';
+}
+
+/*
  * ASI decision when the pending token is '-' or '%'.  Shared by both the
  * same-line and post-newline paths: '-'/'%' begins a statement-tag close
  * (%} / -%}) → insert the zero-length ';'; otherwise it is a binary operator
@@ -591,6 +613,15 @@ static AsiResult asi_same_line_decision(TSLexer *lexer) {
     /* ECMAScript rule 1 ('}') and rule 3 (EOF): insert. */
     if (lexer->lookahead == '}' || lexer->lookahead == 0)
         return ASI_INSERT;
+
+    /* Template only: a `{%` inside a tag is always an error in ucode ("Template
+       blocks may not be nested") — typically a half-typed tag followed by the
+       next real one. End the statement here, so error recovery only has to
+       supply the missing `%}` (see scan_stray_tag_delimiter) instead of
+       swallowing the rest of the file. '{' consumed and not `{%` → DECLINE so
+       it is re-lexed. */
+    if (UCODE_SCANNER_TEMPLATE && lexer->lookahead == '{')
+        return lookahead_is_stmt_open(lexer) ? ASI_INSERT : ASI_DECLINE;
 
     /* Ucode extension: %} / -%} closing a statement tag → insert (see
        asi_dash_or_percent). */
@@ -960,6 +991,35 @@ static CommentResult scan_comment(TSLexer *lexer, Scanner *state,
  * Main dispatch
  * ---------------------------------------------------------------------- */
 
+/*
+ * Template only, error recovery: a `{%` or `%}` (any variant) where no tag
+ * delimiter is valid — a half-typed tag (`{% if (co` followed by the next
+ * `{%`), or a tag closed mid-expression (`{% x = 1 + %}`). ucode rejects both
+ * ("Template blocks may not be nested" / a `;` where an operand is expected).
+ * Emit the delimiter token anyway, though it is invalid here: tree-sitter then
+ * recovers around a tag boundary — typically by inserting the one missing
+ * `%}` before a stray `{%` — instead of re-lexing the characters as `{`, `%`
+ * and `}` operators and keeping the error region open until some unrelated
+ * token happens to fit. Valid input never reaches this: a delimiter that is
+ * valid has already been matched above.
+ */
+static bool scan_stray_tag_delimiter(TSLexer *lexer) {
+    if (lexer->lookahead == '{') {
+        if (!lookahead_is_stmt_open(lexer)) return false;
+        advance(lexer);
+        if (lexer->lookahead == '-' || lexer->lookahead == '+') {
+            lexer->result_symbol = lexer->lookahead == '-' ? STATEMENT_TAG_TRIM_OPEN
+                                                           : STATEMENT_TAG_LSTRIP_OPEN;
+            advance(lexer);
+        } else {
+            lexer->result_symbol = STATEMENT_TAG_OPEN;
+        }
+        lexer->mark_end(lexer);
+        return true;
+    }
+    return scan_statement_tag_close(lexer) == TAG_CLOSE_MATCHED;
+}
+
 static bool ucode_scanner_scan(
     void *payload, TSLexer *lexer, const bool *valid_symbols
 ) {
@@ -976,6 +1036,17 @@ static bool ucode_scanner_scan(
      */
     if (valid_symbols[AUTOMATIC_SEMICOLON] && valid_symbols[RAW_TEXT])
         return false;
+
+    /*
+     * Template only: the zero-width end of input that ends the markup root.
+     * (Also emitted below when it is NOT valid — see the end of this function.)
+     * RAW_TEXT declines at EOF, so nothing competes.
+     */
+    if (valid_symbols[TEXT_END] && lexer->eof(lexer)) {
+        lexer->result_symbol = TEXT_END;
+        lexer->mark_end(lexer);
+        return true;
+    }
 
     /*
      * Template chars: only when we are unambiguously inside a template
@@ -1137,8 +1208,31 @@ static bool ucode_scanner_scan(
     if (valid_symbols[AUTOMATIC_SEMICOLON])
         return dispatch_asi(scan_automatic_semicolon(lexer), lexer, valid_symbols);
 
+    if (UCODE_SCANNER_TEMPLATE && (lexer->lookahead == '{' || lexer->lookahead == '%' ||
+                                   lexer->lookahead == '-'))
+        return scan_stray_tag_delimiter(lexer);
+
     if (valid_symbols[TERNARY_QMARK])
         return scan_ternary_qmark(lexer);
+
+    /*
+     * Template only, error recovery: end of input where the root's TEXT_END is
+     * not valid yet — inside a block or alt-syntax body that was never closed
+     * (typically one still being typed). tree-sitter only inserts a MISSING
+     * token if the lookahead can then be SHIFTED, and the real end of input is
+     * accepted, never shifted, so no MISSING `}` could ever be inserted before
+     * it: the whole open construct became an ERROR. Emitting the (here invalid)
+     * TEXT_END gives it a shiftable lookahead: it inserts the missing `}` /
+     * `endif` / …, reduces up to the root, and shifts TEXT_END there.
+     */
+    /* Only in a statement list (where a `%}` could start a text_statement):
+       never after the root has already shifted its TEXT_END, where the
+       scanner is called once more at end of input. */
+    if (UCODE_SCANNER_TEMPLATE && lexer->eof(lexer) && valid_symbols[STATEMENT_TAG_CLOSE]) {
+        lexer->result_symbol = TEXT_END;
+        lexer->mark_end(lexer);
+        return true;
+    }
 
     return false;
 }

@@ -60,7 +60,8 @@ Statement tag
     (variable_declarator
       name: (identifier)
       value: (number)))
-  (statement_tag_close))
+  (text_statement
+    (statement_tag_close)))
 
 ================================================================================
 Empty statement tag
@@ -70,7 +71,8 @@ Empty statement tag
 
 (markup
   (statement_tag_open)
-  (statement_tag_close))
+  (text_statement
+    (statement_tag_close)))
 
 ================================================================================
 Empty expression tag is rejected — produces ERROR
@@ -96,8 +98,9 @@ Statement tag with left-trim marker
     (variable_declarator
       name: (identifier)
       value: (number)))
-  (statement_tag_trim_close)
-  (raw_text))
+  (text_statement
+    (statement_tag_trim_close)
+    (raw_text)))
 
 ================================================================================
 Comment tag
@@ -135,7 +138,8 @@ Line comment inside a statement tag
       left: (identifier)
       right: (number)))
   (comment)
-  (statement_tag_close))
+  (text_statement
+    (statement_tag_close)))
 
 ================================================================================
 Line comment swallows a same-line tag close — the tag stays open to EOF (ucode accepts)
@@ -167,7 +171,8 @@ x = 1;
     (assignment_expression
       left: (identifier)
       right: (number)))
-  (statement_tag_close))
+  (text_statement
+    (statement_tag_close)))
 
 ================================================================================
 Block comment between statements inside a statement tag
@@ -186,7 +191,8 @@ Block comment between statements inside a statement tag
     (assignment_expression
       left: (identifier)
       right: (number)))
-  (statement_tag_close))
+  (text_statement
+    (statement_tag_close)))
 
 ================================================================================
 Consecutive tags with no raw text between them
@@ -200,11 +206,12 @@ Consecutive tags with no raw text between them
     (assignment_expression
       left: (identifier)
       right: (number)))
-  (statement_tag_close)
-  (expression_tag
-    open: (expression_tag_open)
-    (identifier)
-    close: (expression_tag_close)))
+  (text_statement
+    (statement_tag_close)
+    (expression_tag
+      open: (expression_tag_open)
+      (identifier)
+      close: (expression_tag_close))))
 
 ================================================================================
 if alt-syntax
@@ -221,7 +228,8 @@ if alt-syntax
       (statement_tag_close)
       (raw_text)
       (statement_tag_open)))
-  (statement_tag_close))
+  (text_statement
+    (statement_tag_close)))
 
 ================================================================================
 for-in alt-syntax
@@ -243,7 +251,8 @@ for-in alt-syntax
           index: (identifier))
         close: (expression_tag_close))
       (statement_tag_open)))
-  (statement_tag_close))
+  (text_statement
+    (statement_tag_close)))
 
 ================================================================================
 while alt-syntax
@@ -260,7 +269,8 @@ while alt-syntax
       (statement_tag_close)
       (raw_text)
       (statement_tag_open)))
-  (statement_tag_close))
+  (text_statement
+    (statement_tag_close)))
 
 ================================================================================
 function alt-syntax (spanning tags)
@@ -283,7 +293,8 @@ function alt-syntax (spanning tags)
         (identifier)
         close: (expression_tag_close))
       (statement_tag_open)))
-  (statement_tag_close))
+  (text_statement
+    (statement_tag_close)))
 
 ================================================================================
 Brace-bodied if spanning tags
@@ -301,7 +312,8 @@ Brace-bodied if spanning tags
         (statement_tag_close)
         (raw_text)
         (statement_tag_open))))
-  (statement_tag_close))
+  (text_statement
+    (statement_tag_close)))
 
 ================================================================================
 Brace-bodied if/else spanning tags
@@ -325,7 +337,8 @@ Brace-bodied if/else spanning tags
           (statement_tag_close)
           (raw_text)
           (statement_tag_open)))))
-  (statement_tag_close))
+  (text_statement
+    (statement_tag_close)))
 
 ================================================================================
 Brace-bodied if/else-if/else spanning tags
@@ -358,7 +371,8 @@ Brace-bodied if/else-if/else spanning tags
               (statement_tag_close)
               (raw_text)
               (statement_tag_open)))))))
-  (statement_tag_close))
+  (text_statement
+    (statement_tag_close)))
 
 ================================================================================
 Brace-bodied C-style for spanning tags
@@ -386,7 +400,8 @@ Brace-bodied C-style for spanning tags
           (identifier)
           close: (expression_tag_close))
         (statement_tag_open))))
-  (statement_tag_close))
+  (text_statement
+    (statement_tag_close)))
 
 ================================================================================
 Brace-bodied for-in spanning tags
@@ -407,7 +422,8 @@ Brace-bodied for-in spanning tags
           (identifier)
           close: (expression_tag_close))
         (statement_tag_open))))
-  (statement_tag_close))
+  (text_statement
+    (statement_tag_close)))
 
 ================================================================================
 Brace-bodied while spanning tags
@@ -425,7 +441,8 @@ Brace-bodied while spanning tags
         (statement_tag_close)
         (raw_text)
         (statement_tag_open))))
-  (statement_tag_close))
+  (text_statement
+    (statement_tag_close)))
 
 ================================================================================
 Brace-bodied function declaration spanning tags
@@ -448,7 +465,8 @@ Brace-bodied function declaration spanning tags
           (identifier)
           close: (expression_tag_close))
         (statement_tag_open))))
-  (statement_tag_close))
+  (text_statement
+    (statement_tag_close)))
 
 ================================================================================
 Brace-bodied try/catch spanning tags
@@ -471,7 +489,8 @@ Brace-bodied try/catch spanning tags
           (statement_tag_close)
           (raw_text)
           (statement_tag_open)))))
-  (statement_tag_close))
+  (text_statement
+    (statement_tag_close)))
 
 ================================================================================
 Brace-bodied if spanning tags rejects splitting '}' and 'else' across tags — produces ERROR
@@ -503,7 +522,8 @@ Leading statement sharing the tag with a brace-spanning header
         (statement_tag_close)
         (raw_text)
         (statement_tag_open))))
-  (statement_tag_close))
+  (text_statement
+    (statement_tag_close)))
 
 ================================================================================
 counting for alt-syntax
@@ -526,7 +546,8 @@ counting for alt-syntax
       (statement_tag_close)
       (raw_text)
       (statement_tag_open)))
-  (statement_tag_close))
+  (text_statement
+    (statement_tag_close)))
 
 ================================================================================
 nested if inside for-in body
@@ -552,7 +573,8 @@ nested if inside for-in body
     body: (text_statement
       (statement_tag_close)
       (statement_tag_open)))
-  (statement_tag_close))
+  (text_statement
+    (statement_tag_close)))
 
 ================================================================================
 nested for-in inside while body
@@ -581,7 +603,8 @@ nested for-in inside while body
     body: (text_statement
       (statement_tag_close)
       (statement_tag_open)))
-  (statement_tag_close))
+  (text_statement
+    (statement_tag_close)))
 
 ================================================================================
 Comment tag with open-trim marker
@@ -625,7 +648,8 @@ Statement tag with trim-right close marker
     (variable_declarator
       name: (identifier)
       value: (number)))
-  (statement_tag_trim_close))
+  (text_statement
+    (statement_tag_trim_close)))
 
 ================================================================================
 Statement tag with both trim markers
@@ -639,7 +663,8 @@ Statement tag with both trim markers
     (variable_declarator
       name: (identifier)
       value: (number)))
-  (statement_tag_trim_close))
+  (text_statement
+    (statement_tag_trim_close)))
 
 ================================================================================
 Statement tag with lstrip-suppress marker
@@ -653,7 +678,8 @@ Statement tag with lstrip-suppress marker
     (variable_declarator
       name: (identifier)
       value: (number)))
-  (statement_tag_close))
+  (text_statement
+    (statement_tag_close)))
 
 ================================================================================
 Statement tag with lstrip-suppress and trim-right markers
@@ -667,7 +693,8 @@ Statement tag with lstrip-suppress and trim-right markers
     (variable_declarator
       name: (identifier)
       value: (number)))
-  (statement_tag_trim_close))
+  (text_statement
+    (statement_tag_trim_close)))
 
 ================================================================================
 Tag-first document
@@ -682,8 +709,9 @@ raw text after
     (assignment_expression
       left: (identifier)
       right: (number)))
-  (statement_tag_close)
-  (raw_text))
+  (text_statement
+    (statement_tag_close)
+    (raw_text)))
 
 ================================================================================
 Object literal inside expression tag
@@ -713,13 +741,14 @@ Cross-tag variable declaration
     (variable_declarator
       name: (identifier)
       value: (number)))
-  (statement_tag_close)
-  (expression_tag
-    open: (expression_tag_open)
-    (binary_expression
-      left: (identifier)
-      right: (number))
-    close: (expression_tag_close)))
+  (text_statement
+    (statement_tag_close)
+    (expression_tag
+      open: (expression_tag_open)
+      (binary_expression
+        left: (identifier)
+        right: (number))
+      close: (expression_tag_close))))
 
 ================================================================================
 Cross-tag default import
@@ -734,17 +763,18 @@ Cross-tag default import
       default: (identifier))
     source: (string
       (string_fragment)))
-  (statement_tag_close)
-  (expression_tag
-    open: (expression_tag_open)
-    (call_expression
-      function: (member_expression
-        object: (identifier)
-        property: (property_identifier))
-      arguments: (arguments
-        (string
-          (string_fragment))))
-    close: (expression_tag_close)))
+  (text_statement
+    (statement_tag_close)
+    (expression_tag
+      open: (expression_tag_open)
+      (call_expression
+        function: (member_expression
+          object: (identifier)
+          property: (property_identifier))
+        arguments: (arguments
+          (string
+            (string_fragment))))
+      close: (expression_tag_close))))
 
 ================================================================================
 Cross-tag named import
@@ -761,15 +791,16 @@ Cross-tag named import
           name: (identifier))))
     source: (string
       (string_fragment)))
-  (statement_tag_close)
-  (expression_tag
-    open: (expression_tag_open)
-    (call_expression
-      function: (identifier)
-      arguments: (arguments
-        (string
-          (string_fragment))))
-    close: (expression_tag_close)))
+  (text_statement
+    (statement_tag_close)
+    (expression_tag
+      open: (expression_tag_open)
+      (call_expression
+        function: (identifier)
+        arguments: (arguments
+          (string
+            (string_fragment))))
+      close: (expression_tag_close))))
 
 ================================================================================
 For-in alt-syntax with raw text in body
@@ -793,7 +824,8 @@ For-in alt-syntax with raw text in body
         close: (expression_tag_close))
       (raw_text)
       (statement_tag_open)))
-  (statement_tag_close))
+  (text_statement
+    (statement_tag_close)))
 
 ================================================================================
 Compact double for-in nesting (both loops in one tag pair)
@@ -816,7 +848,8 @@ Compact double for-in nesting (both loops in one tag pair)
         (raw_text)
         (statement_tag_open)))
     body: (empty_statement))
-  (statement_tag_close))
+  (text_statement
+    (statement_tag_close)))
 
 ================================================================================
 Compact triple for-in nesting
@@ -844,7 +877,8 @@ Compact triple for-in nesting
           (statement_tag_open)))
       (empty_statement))
     (empty_statement))
-  (statement_tag_close))
+  (text_statement
+    (statement_tag_close)))
 
 ================================================================================
 Compact mixed if/for nesting
@@ -866,7 +900,8 @@ Compact mixed if/for nesting
         (raw_text)
         (statement_tag_open)))
     (empty_statement))
-  (statement_tag_close))
+  (text_statement
+    (statement_tag_close)))
 
 ================================================================================
 Markup if / elif / else spanning tags
@@ -895,7 +930,8 @@ Markup if / elif / else spanning tags
         (statement_tag_close)
         (raw_text)
         (statement_tag_open))))
-  (statement_tag_close))
+  (text_statement
+    (statement_tag_close)))
 
 ================================================================================
 Trailing statements share the elif and endif tags (ucode statement stream)
@@ -924,7 +960,8 @@ Trailing statements share the elif and endif tags (ucode statement stream)
         (raw_text)
         (statement_tag_open))))
   (empty_statement)
-  (statement_tag_close))
+  (text_statement
+    (statement_tag_close)))
 
 ================================================================================
 Trailing statement shares the bare else tag
@@ -951,7 +988,8 @@ Trailing statement shares the bare else tag
         (statement_tag_close)
         (raw_text)
         (statement_tag_open))))
-  (statement_tag_close))
+  (text_statement
+    (statement_tag_close)))
 
 ================================================================================
 Trailing statement shares the function alt-declaration header tag
@@ -973,7 +1011,8 @@ Trailing statement shares the function alt-declaration header tag
       (statement_tag_close)
       (raw_text)
       (statement_tag_open)))
-  (statement_tag_close))
+  (text_statement
+    (statement_tag_close)))
 
 ================================================================================
 Trailing statement shares the compact double for-in end tag
@@ -1002,7 +1041,8 @@ Trailing statement shares the compact double for-in end tag
       function: (identifier)
       arguments: (arguments
         (number))))
-  (statement_tag_close))
+  (text_statement
+    (statement_tag_close)))
 
 ================================================================================
 Nested if_alt inside an elif body
@@ -1040,7 +1080,8 @@ Nested if_alt inside an elif body
         (statement_tag_close)
         (raw_text)
         (statement_tag_open))))
-  (statement_tag_close))
+  (text_statement
+    (statement_tag_close)))
 
 ================================================================================
 Nested if_alt inside an if body
@@ -1071,7 +1112,8 @@ Nested if_alt inside an if body
         (statement_tag_close)
         (raw_text)
         (statement_tag_open))))
-  (statement_tag_close))
+  (text_statement
+    (statement_tag_close)))
 
 ================================================================================
 Nested if_alt inside an else body
@@ -1102,7 +1144,8 @@ Nested if_alt inside an else body
       body: (text_statement
         (statement_tag_close)
         (statement_tag_open))))
-  (statement_tag_close))
+  (text_statement
+    (statement_tag_close)))
 
 ================================================================================
 Markup else before elif is rejected — produces ERROR
@@ -1148,7 +1191,8 @@ y = 2 %}
     (assignment_expression
       left: (identifier)
       right: (number)))
-  (statement_tag_close))
+  (text_statement
+    (statement_tag_close)))
 
 ================================================================================
 ASI before a statement-tag close, across a comment on its own line
@@ -1165,7 +1209,8 @@ ASI before a statement-tag close, across a comment on its own line
       left: (identifier)
       right: (number)))
   (comment)
-  (statement_tag_trim_close))
+  (text_statement
+    (statement_tag_trim_close)))
 
 ================================================================================
 Own-line comment after a brace-terminated statement in a tag stays a sibling
@@ -1186,7 +1231,8 @@ x = 1; %}
     (assignment_expression
       left: (identifier)
       right: (number)))
-  (statement_tag_close))
+  (text_statement
+    (statement_tag_close)))
 
 ================================================================================
 Single-quoted string starting with /* inside a statement tag is content
@@ -1201,7 +1247,8 @@ Single-quoted string starting with /* inside a statement tag is content
       left: (identifier)
       right: (string
         (string_fragment))))
-  (statement_tag_close))
+  (text_statement
+    (statement_tag_close)))
 
 ================================================================================
 Double-quoted string starting with // inside an expression tag is content
@@ -1230,7 +1277,8 @@ b'; %}
       left: (identifier)
       right: (string
         (string_fragment))))
-  (statement_tag_close))
+  (text_statement
+    (statement_tag_close)))
 
 ================================================================================
 Octal escape range-check applies inside a statement tag too — produces ERROR
@@ -1255,7 +1303,8 @@ b/; %}
       left: (identifier)
       right: (regex
         pattern: (regex_pattern))))
-  (statement_tag_close))
+  (text_statement
+    (statement_tag_close)))
 
 ================================================================================
 Unterminated block comment inside a statement tag is rejected — produces ERROR
@@ -1290,7 +1339,8 @@ Text in a switch case body (statement stream)
           (statement_tag_close)
           (raw_text)
           (statement_tag_open)))))
-  (statement_tag_close))
+  (text_statement
+    (statement_tag_close)))
 
 ================================================================================
 Arrow function body spanning tags
@@ -1323,7 +1373,8 @@ Arrow function body spanning tags
         (array
           (number))
         (identifier))))
-  (statement_tag_close))
+  (text_statement
+    (statement_tag_close)))
 
 ================================================================================
 Function expression body spanning tags
@@ -1347,7 +1398,8 @@ Function expression body spanning tags
     (call_expression
       function: (identifier)
       arguments: (arguments)))
-  (statement_tag_close))
+  (text_statement
+    (statement_tag_close)))
 
 ================================================================================
 Bare block spanning tags
@@ -1369,7 +1421,8 @@ Bare block spanning tags
         (identifier)
         close: (expression_tag_close))
       (statement_tag_open)))
-  (statement_tag_close))
+  (text_statement
+    (statement_tag_close)))
 
 ================================================================================
 Two braces opened in one tag, closed in another
@@ -1391,7 +1444,8 @@ Two braces opened in one tag, closed in another
             (statement_tag_close)
             (raw_text)
             (statement_tag_open))))))
-  (statement_tag_close))
+  (text_statement
+    (statement_tag_close)))
 
 ================================================================================
 Unbraced if body running into a tag close is an empty statement
@@ -1409,7 +1463,8 @@ Unbraced if body running into a tag close is an empty statement
     (statement_tag_close)
     (raw_text)
     (statement_tag_open))
-  (statement_tag_close))
+  (text_statement
+    (statement_tag_close)))
 
 ================================================================================
 Unbraced for body running into a tag close is an empty statement
@@ -1435,7 +1490,8 @@ Unbraced for body running into a tag close is an empty statement
     (raw_text)
     (statement_tag_open))
   (empty_statement)
-  (statement_tag_close))
+  (text_statement
+    (statement_tag_close)))
 
 ================================================================================
 Text after an empty unbraced if body cannot be followed by else — produces ERROR
@@ -1454,3 +1510,94 @@ Text is not an expression — tag split inside an array literal produces ERROR
 --------------------------------------------------------------------------------
 
 
+
+================================================================================
+Recovery: a block left open at end of input is one MISSING closing brace
+================================================================================
+
+head
+{% if (c) { %}
+body
+{% x = 1; %}
+tail {{ y }}
+
+--------------------------------------------------------------------------------
+
+(markup
+  (raw_text)
+  (statement_tag_open)
+  (if_statement
+    condition: (parenthesized_expression
+      (identifier))
+    consequence: (statement_block
+      (text_statement
+        (statement_tag_close)
+        (raw_text)
+        (statement_tag_open))
+      (expression_statement
+        (assignment_expression
+          left: (identifier)
+          right: (number)))
+      (text_statement
+        (statement_tag_close)
+        (raw_text)
+        (expression_tag
+          open: (expression_tag_open)
+          (identifier)
+          close: (expression_tag_close))
+        (raw_text))
+      (MISSING "}"))))
+
+================================================================================
+Recovery: an alt-syntax block left open at end of input is one MISSING end keyword
+================================================================================
+
+head
+{% for (x in xs): %}
+row {{ x }}
+
+--------------------------------------------------------------------------------
+
+(markup
+  (raw_text)
+  (statement_tag_open)
+  (for_in_alt_statement
+    left: (identifier)
+    right: (identifier)
+    body: (text_statement
+      (statement_tag_close)
+      (raw_text)
+      (expression_tag
+        open: (expression_tag_open)
+        (identifier)
+        close: (expression_tag_close))
+      (raw_text))
+    (MISSING "endfor")))
+
+================================================================================
+Recovery: a half-typed tag before the next tag stays a local error
+================================================================================
+
+a
+{% x = 1
+{% y = 2; %}
+b
+
+--------------------------------------------------------------------------------
+
+(markup
+  (raw_text)
+  (statement_tag_open)
+  (expression_statement
+    (assignment_expression
+      left: (identifier)
+      right: (number)))
+  (ERROR
+    (statement_tag_open))
+  (expression_statement
+    (assignment_expression
+      left: (identifier)
+      right: (number)))
+  (text_statement
+    (statement_tag_close)
+    (raw_text)))
