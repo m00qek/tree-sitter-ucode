@@ -272,8 +272,8 @@ directory, and `editors/helix/`) is newer than v0.8.0.
 4. Check with `hx --health ucode` (and `ucode-markup`, `ucdocs`).
 
 Highlights, locals, injections and text objects follow Helix's documented conventions, and CI
-checks that the Helix highlights cover every token. The indent queries are adapted from Helix's
-own ECMAScript ones but have not been exercised in Helix itself.
+checks that the Helix highlights cover every token. The queries are tested with Helix 25.07.1;
+its indents work like Helix's own JavaScript and C ones.
 
 Helix does not support content-based filetype detection for shared extensions. For
 `.uc` files that are templates, use `:set-language ucode-markup` in command mode,

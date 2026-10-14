@@ -14,10 +14,11 @@
  *   injections,  same conventions — copied unchanged.
  *   tags
  *   textobjects  `.inside` / `.around`, and a different set of objects
- *   indents      a different model (@indent / @outdent / @opaque, scope
+ *   indents      a different model (@indent / @outdent / @extend, scope
  *                settings) — neither translates mechanically, so both are
  *                written below for Helix, adapted from Helix's own ECMAScript
- *                queries to this grammar's node names. Untested in Helix.
+ *                and C queries to this grammar's node names. Indents are
+ *                checked in a real Helix by scripts/check-helix-indents.sh.
  *   folds        not used by Helix.
  *
  * Helix finds queries by LANGUAGE name (runtime/queries/<name>/), so the
@@ -165,6 +166,11 @@ const TEXTOBJECTS = `; Functions
   (_) @entry.inside) @entry.around
 `;
 
+// Uses only indent features of the current Helix release (25.07.1): its own
+// queries use `#not-kind-eq?` and the "all"/"tail" scopes. Newer idioms on
+// Helix's master branch (`#set! "scope" "header"`, `@opaque`) make 25.07.1
+// reject the WHOLE file ("Failed to compile indents.scm query"), silently.
+// Check changes with scripts/check-helix-indents.sh (see CONTRIBUTING).
 const INDENTS = `[
   (array)
   (object)
@@ -177,14 +183,12 @@ const INDENTS = `[
   (binary_expression)
   (return_statement)
   (template_substitution)
-  (member_expression)
-  (call_expression)
 ] @indent
 
 [
   (switch_case)
   (switch_default)
-] @indent
+] @indent @extend
 
 [
   "}"
@@ -213,32 +217,28 @@ const INDENTS = `[
 (elif_clause "elif" @outdent)
 (else_alt_clause "else" @outdent)
 
-; Single-statement bodies without braces (as in Helix's ECMAScript indents).
-(if_statement
-  consequence: (_) @_body
-  (#not-kind-eq? @_body "statement_block")
-  !alternative) @indent
+; Single-statement bodies without braces (as in Helix's C indents).
 (if_statement
   consequence: (_) @indent
   (#not-kind-eq? @indent "statement_block")
-  alternative: (_)
-  (#set! "scope" "header"))
+  (#set! "scope" "all"))
 (else_clause
-  (_) @_body
-  (#not-kind-eq? @_body "statement_block")
-  (#not-kind-eq? @_body "if_statement")) @indent
+  (_) @indent
+  (#not-kind-eq? @indent "statement_block")
+  (#not-kind-eq? @indent "if_statement")
+  (#set! "scope" "all"))
 (while_statement
-  body: (_) @_body
-  (#not-kind-eq? @_body "statement_block")) @indent
+  body: (_) @indent
+  (#not-kind-eq? @indent "statement_block")
+  (#set! "scope" "all"))
 (for_statement
-  body: (_) @_body
-  (#not-kind-eq? @_body "statement_block")) @indent
+  body: (_) @indent
+  (#not-kind-eq? @indent "statement_block")
+  (#set! "scope" "all"))
 (for_in_statement
-  body: (_) @_body
-  (#not-kind-eq? @_body "statement_block")) @indent
-
-; Template-literal bodies are literal content.
-(template_string) @opaque
+  body: (_) @indent
+  (#not-kind-eq? @indent "statement_block")
+  (#set! "scope" "all"))
 `;
 
 const written = [];

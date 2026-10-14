@@ -75,6 +75,11 @@ Every query applies to both grammars: edit the file under `ucode/queries/` and r
 copies under `editors/helix/queries/` come from `node scripts/generate-helix-queries.js` (also
 part of `npm run build`), which fails if a new capture name has no Helix equivalent in its
 mapping table. The few template-only highlight patterns (tag delimiters, `{# #}` comments) live in that script.
+The Helix indent queries are written by hand in that script, and no CLI check can catch an
+indent rule Helix rejects: Helix silently ignores an `indents.scm` it fails to compile. After
+changing them, or the scanner (node end positions drive indentation), run
+`scripts/check-helix-indents.sh <helix-release-dir>`, which needs tmux and an unpacked Helix
+release. It types into a real Helix and checks the indentation of each new line.
 
 The external lexer is hand-written and handles features that context-free grammars cannot express: automatic semicolon insertion, template string content, comment/prose terminators, and ternary-vs-nullish disambiguation. All of its logic lives in **`common/scanner.h`** — edit that file. `ucode/src/scanner.c` and `ucode_markup/src/scanner.c` are thin shims that only export the entry points and `#include "../../common/scanner.h"`, so a single implementation is shared by both the `ucode` and `ucode_markup` parsers. None of these are touched by `tree-sitter generate`.
 

@@ -13,14 +13,12 @@
   (binary_expression)
   (return_statement)
   (template_substitution)
-  (member_expression)
-  (call_expression)
 ] @indent
 
 [
   (switch_case)
   (switch_default)
-] @indent
+] @indent @extend
 
 [
   "}"
@@ -49,29 +47,25 @@
 (elif_clause "elif" @outdent)
 (else_alt_clause "else" @outdent)
 
-; Single-statement bodies without braces (as in Helix's ECMAScript indents).
-(if_statement
-  consequence: (_) @_body
-  (#not-kind-eq? @_body "statement_block")
-  !alternative) @indent
+; Single-statement bodies without braces (as in Helix's C indents).
 (if_statement
   consequence: (_) @indent
   (#not-kind-eq? @indent "statement_block")
-  alternative: (_)
-  (#set! "scope" "header"))
+  (#set! "scope" "all"))
 (else_clause
-  (_) @_body
-  (#not-kind-eq? @_body "statement_block")
-  (#not-kind-eq? @_body "if_statement")) @indent
+  (_) @indent
+  (#not-kind-eq? @indent "statement_block")
+  (#not-kind-eq? @indent "if_statement")
+  (#set! "scope" "all"))
 (while_statement
-  body: (_) @_body
-  (#not-kind-eq? @_body "statement_block")) @indent
+  body: (_) @indent
+  (#not-kind-eq? @indent "statement_block")
+  (#set! "scope" "all"))
 (for_statement
-  body: (_) @_body
-  (#not-kind-eq? @_body "statement_block")) @indent
+  body: (_) @indent
+  (#not-kind-eq? @indent "statement_block")
+  (#set! "scope" "all"))
 (for_in_statement
-  body: (_) @_body
-  (#not-kind-eq? @_body "statement_block")) @indent
-
-; Template-literal bodies are literal content.
-(template_string) @opaque
+  body: (_) @indent
+  (#not-kind-eq? @indent "statement_block")
+  (#set! "scope" "all"))
