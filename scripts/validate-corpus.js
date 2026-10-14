@@ -44,8 +44,8 @@ const TS_ROOT = path.dirname(__dirname);
 function soExt() {
   return process.platform === 'win32' ? 'dll' : 'so';
 }
-const LIB_UCODE        = path.join(TS_ROOT, 'build', 'parsers', `ucode.${soExt()}`);
-const LIB_UCODE_MARKUP = path.join(TS_ROOT, 'build', 'parsers', `ucode_markup.${soExt()}`);
+const LIB_UCODE        = path.join(TS_ROOT, '.build', 'parsers', `ucode.${soExt()}`);
+const LIB_UCODE_MARKUP = path.join(TS_ROOT, '.build', 'parsers', `ucode_markup.${soExt()}`);
 
 // Prefer the devDependency binary so the script works without a global install.
 const _tsLocal  = path.join(TS_ROOT, 'node_modules', '.bin', 'tree-sitter');

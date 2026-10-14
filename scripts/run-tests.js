@@ -1,6 +1,6 @@
 #!/usr/bin/env node
 // Builds and tests all three grammars (ucode, ucode_markup, ucdocs).
-// Each grammar's shared library goes to build/parsers/<name>.<ext> and is
+// Each grammar's shared library goes to .build/parsers/<name>.<ext> and is
 // rebuilt only when it is missing or older than its C sources; pass --force to
 // rebuild unconditionally, --build-only to build without testing. Uses .dll
 // on Windows, .so everywhere else, matching what CI does.
@@ -18,7 +18,7 @@ const ext   = process.platform === 'win32' ? 'dll' : 'so';
 const force  = process.argv.includes('--force');
 const update = process.argv.includes('--update');
 const buildOnly = process.argv.includes('--build-only');
-const LIB_DIR = path.join(ROOT, 'build', 'parsers');
+const LIB_DIR = path.join(ROOT, '.build', 'parsers');
 
 // A trivial source file for the query compile-check below. A query is compiled
 // when it loads (node names and structure are validated then), independent of
@@ -63,7 +63,7 @@ for (const g of grammars) {
     fs.mkdirSync(LIB_DIR, { recursive: true });
     execFileSync('tree-sitter', ['build', '--output', lib, g.name], { stdio: 'inherit', cwd: ROOT });
   } else {
-    console.log(`build/parsers/${g.name}.${ext} is up to date — skipping build (pass --force to rebuild)`);
+    console.log(`.build/parsers/${g.name}.${ext} is up to date — skipping build (pass --force to rebuild)`);
   }
   if (buildOnly) continue;
 

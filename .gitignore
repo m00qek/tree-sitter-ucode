@@ -13,6 +13,9 @@
 # Wasm builds
 *.wasm
 
+# Parsers built by scripts/run-tests.js (outside build/, which node-gyp wipes)
+.build/
+
 # Node
 build/
 prebuilds/

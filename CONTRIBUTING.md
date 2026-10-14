@@ -45,7 +45,7 @@ ucdocs/                 doc comments — standalone grammar, edit directly
   queries/  test/corpus/
 scripts/
   generate-markup-queries.js  derives ucode_markup/queries/*.scm from ucode/queries/
-  run-tests.js                builds (into build/parsers/) and tests all three grammars
+  run-tests.js                builds (into .build/parsers/) and tests all three grammars
   validate-corpus.js          validates the grammars against real ucode code
 ```
 
@@ -91,13 +91,13 @@ Descriptive test name
 To get the expected parse tree for a new input:
 
 ```sh
-node scripts/run-tests.js --build-only     # builds build/parsers/{ucode,ucode_markup,ucdocs}.so
+node scripts/run-tests.js --build-only     # builds .build/parsers/{ucode,ucode_markup,ucdocs}.so
 
 echo '<code>' > /tmp/test.uc
-npx tree-sitter parse --lib-path build/parsers/ucode.so --lang-name ucode /tmp/test.uc
-npx tree-sitter parse --lib-path build/parsers/ucode_markup.so --lang-name ucode_markup /tmp/test.uc
+npx tree-sitter parse --lib-path .build/parsers/ucode.so --lang-name ucode /tmp/test.uc
+npx tree-sitter parse --lib-path .build/parsers/ucode_markup.so --lang-name ucode_markup /tmp/test.uc
 echo '/** @param {int} n */' > /tmp/test.doc
-npx tree-sitter parse --lib-path build/parsers/ucdocs.so --lang-name ucdocs /tmp/test.doc
+npx tree-sitter parse --lib-path .build/parsers/ucdocs.so --lang-name ucdocs /tmp/test.doc
 ```
 
 Add the test to an existing file whose category matches (e.g. `expressions.txt`, `control_flow.txt`), or create a new file if no suitable one exists. Every new syntactic feature or deliberate removal should have at least one corpus test.

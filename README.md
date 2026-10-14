@@ -150,7 +150,7 @@ single ` * ` comment frame at the start of each line is stripped, so `**bold**`,
 
 ```sh
 npm install
-npm run build        # regenerate all three parsers, build them into build/parsers/,
+npm run build        # regenerate all three parsers, build them into .build/parsers/,
                      # and compile the Node.js binding
 ```
 
@@ -197,7 +197,7 @@ the `scope` back fixes routing but reintroduces the mis-route bug — so it stay
 documents the tradeoff rather than the fix.
 
 Until that upstream CLI issue moves, drive template files explicitly instead of relying on
-automatic routing: `tree-sitter parse --lib-path build/parsers/ucode_markup.so --lang-name
+automatic routing: `tree-sitter parse --lib-path .build/parsers/ucode_markup.so --lang-name
 ucode_markup file.ut` (pair `--lang-name` with `--lib-path` — the flag is silently ignored alone). Editors
 that manage their own filetype dispatch (Neovim, Helix) already need an explicit rule and are
 unaffected — see the editor sections below.
