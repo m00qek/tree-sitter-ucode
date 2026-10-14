@@ -212,9 +212,10 @@ which handles parser registration, filetype detection, and query setup automatic
 ## Use in Helix
 
 Helix needs the grammars, a `languages.toml` entry per language — including `ucdocs`, which
-Helix injects into `/** */` comments — and query files. Use one release tag of this repository
-for every `<tag>` below; the layout shown here (a `ucode/`, `ucode_markup/` and `ucdocs/`
-directory, and `editors/helix/`) is newer than v0.8.0.
+Helix injects into `/** */` comments — and query files. Use the same revision of this repository
+for the grammars and the queries. The layout below (`ucode/`, `ucode_markup/`, `ucdocs/` and
+`editors/helix/`) is newer than v0.8.0, so until the next release the instructions pin commit
+`cb05bb84e761`.
 
 1. Add to `~/.config/helix/languages.toml`:
 
@@ -246,15 +247,15 @@ directory, and `editors/helix/`) is newer than v0.8.0.
 
    [[grammar]]
    name   = "ucode"
-   source = { git = "https://github.com/m00qek/tree-sitter-ucode", rev = "<tag>", subpath = "ucode" }
+   source = { git = "https://github.com/m00qek/tree-sitter-ucode", rev = "cb05bb84e761ec63cadbd02c98e1c07995e0ec6b", subpath = "ucode" }
 
    [[grammar]]
    name   = "ucode_markup"
-   source = { git = "https://github.com/m00qek/tree-sitter-ucode", rev = "<tag>", subpath = "ucode_markup" }
+   source = { git = "https://github.com/m00qek/tree-sitter-ucode", rev = "cb05bb84e761ec63cadbd02c98e1c07995e0ec6b", subpath = "ucode_markup" }
 
    [[grammar]]
    name   = "ucdocs"
-   source = { git = "https://github.com/m00qek/tree-sitter-ucode", rev = "<tag>", subpath = "ucdocs" }
+   source = { git = "https://github.com/m00qek/tree-sitter-ucode", rev = "cb05bb84e761ec63cadbd02c98e1c07995e0ec6b", subpath = "ucdocs" }
    ```
 
 2. Build the grammars: `hx --grammar fetch && hx --grammar build`.
@@ -264,7 +265,8 @@ directory, and `editors/helix/`) is newer than v0.8.0.
    names (this repository's own `queries/` directories use Neovim's):
 
    ```sh
-   git clone --depth 1 --branch <tag> https://github.com/m00qek/tree-sitter-ucode /tmp/tree-sitter-ucode
+   git clone https://github.com/m00qek/tree-sitter-ucode /tmp/tree-sitter-ucode
+   git -C /tmp/tree-sitter-ucode checkout cb05bb84e761ec63cadbd02c98e1c07995e0ec6b
    mkdir -p ~/.config/helix/runtime/queries
    cp -r /tmp/tree-sitter-ucode/editors/helix/queries/* ~/.config/helix/runtime/queries/
    ```
