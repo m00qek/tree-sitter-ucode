@@ -103,12 +103,21 @@ jobs:
           # see README.md's "Targeted ucode version" section before bumping.
           ref: 85922056ef7abeace3cca3ab28bc1ac2d88e31b1
           path: ucode-lang
-          sparse-checkout: tests/custom
+          # tests/custom: the language test corpus; the C sources carry the
+          # stdlib's JSDoc, the canonical ucdocs corpus.
+          sparse-checkout: |
+            tests/custom
+            /*.c
+            /lib/*.c
+            /include/ucode/*.h
           sparse-checkout-cone-mode: false
           fetch-depth: 1
 
       - name: Validate grammar against ucode test corpus
         run: node scripts/validate-corpus.js corpus ucode-lang/tests/custom
+
+      - name: Validate ucdocs against ucode's stdlib doc comments
+        run: node scripts/validate-docs.js ucode-lang ucode-lang/lib ucode-lang/include/ucode
 
       - name: Checkout firewall4
         uses: actions/checkout@v6

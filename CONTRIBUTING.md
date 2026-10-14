@@ -47,6 +47,8 @@ scripts/
   generate-markup-queries.js  derives ucode_markup/queries/*.scm from ucode/queries/
   run-tests.js                builds (into .build/parsers/) and tests all three grammars
   validate-corpus.js          validates the grammars against real ucode code
+  validate-docs.js            validates ucdocs against real doc comments (ucode's stdlib)
+  checks.js                   structural checks run by run-tests.js
 ```
 
 ## Editing the grammar
@@ -134,6 +136,7 @@ CI validates the grammar against the upstream ucode test suite — pinned to the
 node scripts/run-tests.js --build-only
 git clone https://github.com/jow-/ucode /tmp/ucode && git -C /tmp/ucode checkout 85922056ef7abeace3cca3ab28bc1ac2d88e31b1
 node scripts/validate-corpus.js corpus /tmp/ucode/tests/custom
+node scripts/validate-docs.js /tmp/ucode /tmp/ucode/lib /tmp/ucode/include/ucode   # ucdocs vs the stdlib docs
 git clone --depth 1 https://github.com/openwrt/firewall4 /tmp/firewall4
 node scripts/validate-corpus.js project /tmp/firewall4
 ```
