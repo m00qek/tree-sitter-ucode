@@ -19,7 +19,7 @@
  *  10  EXPRESSION_TAG_TRIM_OPEN   $.expression_tag_trim_open   {{-
  *  11  EXPRESSION_TAG_CLOSE       $.expression_tag_close       }}
  *  12  EXPRESSION_TAG_TRIM_CLOSE  $.expression_tag_trim_close  -}}
- *  13  COMMENT_CHARS              $.comment_content            {# ... #} body
+ *  13  COMMENT_CONTENT              $.comment_content            {# ... #} body
  *  14  COMMENT                    $.comment                    line and block
  *  15  SINGLE_QUOTE_STRING_CONTENT $._single_quote_string_content  '...' body
  *  16  DOUBLE_QUOTE_STRING_CONTENT $._double_quote_string_content  "..." body
@@ -50,7 +50,7 @@ enum TokenType {
     EXPRESSION_TAG_TRIM_OPEN,
     EXPRESSION_TAG_CLOSE,
     EXPRESSION_TAG_TRIM_CLOSE,
-    COMMENT_CHARS,
+    COMMENT_CONTENT,
     COMMENT,
     SINGLE_QUOTE_STRING_CONTENT,
     DOUBLE_QUOTE_STRING_CONTENT,
@@ -276,7 +276,7 @@ static TagCloseResult scan_expression_tag_close(TSLexer *lexer) {
  * unmatched (it is optional in the grammar).
  */
 static bool scan_comment_chars(TSLexer *lexer) {
-    lexer->result_symbol = COMMENT_CHARS;
+    lexer->result_symbol = COMMENT_CONTENT;
     bool has_content = false;
     for (;;) {
         lexer->mark_end(lexer);
@@ -1039,7 +1039,7 @@ static bool ucode_scanner_scan(
      * Comment body: only valid inside {# ... #}, where no other external token
      * competes.  Scans up to the #}/-#} close marker.
      */
-    if (valid_symbols[COMMENT_CHARS])
+    if (valid_symbols[COMMENT_CONTENT])
         return scan_comment_chars(lexer);
 
     /*

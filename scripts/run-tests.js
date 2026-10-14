@@ -24,6 +24,16 @@ const LIB_DIR = path.join(ROOT, '.build', 'parsers');
 // when it loads (node names and structure are validated then), independent of
 // what it matches, so an empty file is enough.
 let tagsFailures = 0;
+let checkFailures = 0;
+const checks = require('./checks');
+
+// Report a check's problems (a list of strings); count a failure if any.
+function report(label, problems) {
+  if (!problems.length) { console.log(`${label} OK`); return; }
+  checkFailures++;
+  console.error(`${label} FAILED:\n${problems.slice(0, 20).map((p) => `  ${p}`).join('\n')}` +
+    (problems.length > 20 ? `\n  … and ${problems.length - 20} more` : ''));
+}
 
 const querySource = path.join(os.tmpdir(), 'ts-ucode-query-check.txt');
 fs.writeFileSync(querySource, '');
@@ -56,6 +66,8 @@ function needsBuild(lib, deps) {
   return deps.some((d) => !fs.existsSync(d) || fs.statSync(d).mtimeMs > libMtime);
 }
 
+if (!buildOnly) report('scanner TokenType enums match the grammars\' externals:', checks.checkExternals());
+
 for (const g of grammars) {
   const lib = path.join(LIB_DIR, `${g.name}.${ext}`);
 
@@ -85,12 +97,17 @@ for (const g of grammars) {
   console.log(`${g.name}: ${g.name}/queries/*.scm compile OK`);
 
   checkTagsFixtures(g, lib);
+  report(`${g.name}: no name-like node starts or ends with whitespace:`, checks.checkPositions(lib, g.name));
+  report(`${g.name}: every corpus token is highlighted:`, checks.checkHighlights(lib, g.name));
 }
 
 if (tagsFailures > 0) {
   console.error(`${tagsFailures} tags fixture(s) failed (rerun with --update to accept)`);
-  process.exit(1);
 }
+if (checkFailures > 0) {
+  console.error(`${checkFailures} structural check(s) failed (see scripts/checks.js)`);
+}
+if (tagsFailures > 0 || checkFailures > 0) process.exit(1);
 
 // ---------------------------------------------------------------------------
 // Tags fixtures: <grammar>/test/tag-docs/<case>.<ext> + <case>.<ext>.expected

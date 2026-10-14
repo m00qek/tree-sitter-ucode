@@ -23,6 +23,8 @@
 (type_identifier) @type
 (primitive_type) @type.builtin
 (anon_function_type "function" @type.builtin)
+(list_type "list" @type.builtin)
+(dict_type "dict" @type.builtin)
 (any_type) @type.builtin
 
 ; Lowercase names are parameters only in name positions — elsewhere they are
@@ -75,6 +77,7 @@
 (named_type "." @punctuation.delimiter)
 (record_field ":" @punctuation.delimiter)
 (function_param ":" @punctuation.delimiter)
+(rest_param ":" @punctuation.delimiter)
 (anon_function_type ":" @punctuation.delimiter)
 (namepath "#" @punctuation.delimiter)
 

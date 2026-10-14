@@ -117,6 +117,15 @@ npx tree-sitter test -p ucode --file-name control_flow.txt
 npx tree-sitter test -p ucode_markup --file-name markup.txt
 ```
 
+Besides the corpus tests, `npm test` runs structural checks (`scripts/checks.js`) that the
+corpus tests cannot see, because they compare tree shapes only:
+
+- each scanner's `TokenType` enum lists the grammar's external tokens in the same order;
+- no name-like node in a corpus input starts or ends with whitespace (a lexer bug can absorb a
+  space into a token without changing the tree's shape);
+- every token of every corpus input is highlighted by `highlights.scm`, except the deliberate
+  exceptions listed in `UNHIGHLIGHTED` (template `raw_text`, the ucdocs `/**` opener).
+
 ## Validating against real code
 
 CI validates the grammar against the upstream ucode test suite — pinned to the commit ucode ships at in OpenWrt 25.12, see README.md's "Targeted ucode version" — and the firewall4 project. To reproduce locally:

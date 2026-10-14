@@ -879,3 +879,23 @@ dotted JSDoc generic
         params: (nullable_type
           (module_type
             path: (module_path)))))))
+
+================================================================================
+record type right after @returns keeps field names free of surrounding spaces
+================================================================================
+
+/** @returns {{ name: string, count: int }} Person. */
+
+--------------------------------------------------------------------------------
+
+(document
+  (returns_tag
+    type: (type_expression
+      (record_type
+        (record_field
+          name: (identifier)
+          type: (primitive_type))
+        (record_field
+          name: (identifier)
+          type: (primitive_type))))
+    description: (description)))
