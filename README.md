@@ -225,37 +225,69 @@ which handles parser registration, filetype detection, and query setup automatic
 
 ## Use in Helix
 
-Add to `~/.config/helix/languages.toml`:
+Helix needs the grammars, a `languages.toml` entry per language — including `ucdocs`, which
+Helix injects into `/** */` comments — and query files. Use one release tag of this repository
+for every `<tag>` below; the layout shown here (a `ucode/`, `ucode_markup/` and `ucdocs/`
+directory, and `editors/helix/`) is newer than v0.8.0.
 
-```toml
-[[language]]
-name          = "ucode"
-scope         = "source.uc"
-file-types    = [{ glob = "*.uc" }, { glob = "*.ucode" }, { glob = "*.ut" }]
-comment-token = "//"
-indent        = { tab-width = 2, unit = "  " }
-grammar       = "ucode"
+1. Add to `~/.config/helix/languages.toml`:
 
-[[language]]
-name          = "ucode-markup"
-scope         = "source.ucode.markup"
-file-types    = [{ glob = "*.uc.tmpl" }]
-comment-token = "{#"
-indent        = { tab-width = 2, unit = "  " }
-grammar       = "ucode_markup"
+   ```toml
+   [[language]]
+   name                 = "ucode"
+   scope                = "source.uc"
+   file-types           = [{ glob = "*.uc" }, { glob = "*.ucode" }, { glob = "*.ut" }]
+   comment-tokens       = "//"
+   block-comment-tokens = { start = "/*", end = "*/" }
+   indent               = { tab-width = 2, unit = "  " }
+   grammar              = "ucode"
 
-[[grammar]]
-name   = "ucode"
-source = { git = "https://github.com/m00qek/tree-sitter-ucode", rev = "v0.8.0" }
+   [[language]]
+   name                 = "ucode-markup"
+   scope                = "source.ucode.markup"
+   file-types           = [{ glob = "*.uc.tmpl" }]
+   block-comment-tokens = { start = "{#", end = "#}" }
+   indent               = { tab-width = 2, unit = "  " }
+   grammar              = "ucode_markup"
 
-[[grammar]]
-name   = "ucode_markup"
-source = { git = "https://github.com/m00qek/tree-sitter-ucode", rev = "v0.8.0", subpath = "markup" }
+   # Doc comments; injected, never opened directly (Helix declares its jsdoc the same way).
+   [[language]]
+   name            = "ucdocs"
+   scope           = "source.ucdocs"
+   injection-regex = "^ucdocs$"
+   file-types      = ["ucdocs"]
+   grammar         = "ucdocs"
 
-[[grammar]]
-name   = "ucdocs"
-source = { git = "https://github.com/m00qek/tree-sitter-ucode", rev = "v0.8.0", subpath = "ucdocs" }
-```
+   [[grammar]]
+   name   = "ucode"
+   source = { git = "https://github.com/m00qek/tree-sitter-ucode", rev = "<tag>", subpath = "ucode" }
+
+   [[grammar]]
+   name   = "ucode_markup"
+   source = { git = "https://github.com/m00qek/tree-sitter-ucode", rev = "<tag>", subpath = "ucode_markup" }
+
+   [[grammar]]
+   name   = "ucdocs"
+   source = { git = "https://github.com/m00qek/tree-sitter-ucode", rev = "<tag>", subpath = "ucdocs" }
+   ```
+
+2. Build the grammars: `hx --grammar fetch && hx --grammar build`.
+
+3. Install the queries. Helix finds them by language name under its runtime directory;
+   `editors/helix/queries/` has one directory per language above, written for Helix's capture
+   names (this repository's own `queries/` directories use Neovim's):
+
+   ```sh
+   git clone --depth 1 --branch <tag> https://github.com/m00qek/tree-sitter-ucode /tmp/tree-sitter-ucode
+   mkdir -p ~/.config/helix/runtime/queries
+   cp -r /tmp/tree-sitter-ucode/editors/helix/queries/* ~/.config/helix/runtime/queries/
+   ```
+
+4. Check with `hx --health ucode` (and `ucode-markup`, `ucdocs`).
+
+Highlights, locals, injections and text objects follow Helix's documented conventions, and CI
+checks that the Helix highlights cover every token. The indent queries are adapted from Helix's
+own ECMAScript ones but have not been exercised in Helix itself.
 
 Helix does not support content-based filetype detection for shared extensions. For
 `.uc` files that are templates, use `:set-language ucode-markup` in command mode,

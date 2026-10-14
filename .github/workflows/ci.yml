@@ -11,6 +11,7 @@ on:
       - ucode/**
       - ucode_markup/**
       - ucdocs/**
+      - editors/**
       - bindings/**
       - binding.gyp
       - package.json
@@ -76,8 +77,9 @@ jobs:
 
       - name: Verify generated files are up to date
         run: |
-          gen_paths='ucode/src/ ucode_markup/src/ ucode_markup/queries/ ucdocs/src/'
+          gen_paths='ucode/src/ ucode_markup/src/ ucode_markup/queries/ ucdocs/src/ editors/helix/queries/'
           node scripts/generate-markup-queries.js
+          node scripts/generate-helix-queries.js
           npx tree-sitter generate ucode/grammar.js --output ucode/src
           npx tree-sitter generate ucode_markup/grammar.js --output ucode_markup/src
           npx tree-sitter generate ucdocs/grammar.js --output ucdocs/src

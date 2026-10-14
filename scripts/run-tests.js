@@ -95,11 +95,22 @@ for (const g of grammars) {
       { stdio: ['ignore', 'ignore', 'inherit'], cwd: ROOT },
     );
   }
-  console.log(`${g.name}: ${g.name}/queries/*.scm compile OK`);
+  const helixDir = path.join(ROOT, 'editors', 'helix', 'queries', g.name.replace('_', '-'));
+  for (const f of fs.readdirSync(helixDir).filter((f) => f.endsWith('.scm'))) {
+    execFileSync(
+      TREE_SITTER,
+      ['query', '--lib-path', lib, '--lang-name', g.name, path.join(helixDir, f), querySource],
+      { stdio: ['ignore', 'ignore', 'inherit'], cwd: ROOT },
+    );
+  }
+  console.log(`${g.name}: ${g.name}/queries/*.scm and the Helix queries compile OK`);
 
   checkTagsFixtures(g, lib);
   report(`${g.name}: no name-like node starts or ends with whitespace:`, checks.checkPositions(lib, g.name));
   report(`${g.name}: every corpus token is highlighted:`, checks.checkHighlights(lib, g.name));
+  const helix = path.join(ROOT, 'editors', 'helix', 'queries', g.name.replace('_', '-'), 'highlights.scm');
+  report(`${g.name}: every corpus token is highlighted by the Helix queries:`,
+    checks.checkHighlights(lib, g.name, helix));
 }
 
 if (tagsFailures > 0) {

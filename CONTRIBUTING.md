@@ -43,8 +43,11 @@ ucdocs/                 doc comments — standalone grammar, edit directly
   src/scanner.c         hand-written external lexer: star-runs in prose (vs the */ terminator)
   src/                  otherwise generated
   queries/  test/corpus/
+editors/helix/queries/  GENERATED query files for Helix (Helix's capture names) — do not edit
 scripts/
   generate-markup-queries.js  derives ucode_markup/queries/*.scm from ucode/queries/
+  generate-helix-queries.js   derives editors/helix/queries/ (highlights/locals renamed to
+                              Helix's names; Helix-style textobjects and indents inline)
   run-tests.js                builds (into .build/parsers/) and tests all three grammars
   validate-corpus.js          validates the grammars against real ucode code
   validate-docs.js            validates ucdocs against real doc comments (ucode's stdlib)
@@ -68,7 +71,10 @@ npx tree-sitter generate ucdocs/grammar.js --output ucdocs/src
 
 `npm run build` regenerates all three parsers (ucode, ucode_markup, ucdocs) in one step. Commit the regenerated files under `ucode/src/`, `ucode_markup/src/`, and `ucdocs/src/` together with your grammar change. CI verifies that generated files are up to date.
 
-Every query applies to both grammars: edit the file under `ucode/queries/` and run `node scripts/generate-markup-queries.js` (or `npm run build`) to regenerate its `ucode_markup/queries/` copy — do not edit the generated copies. The few template-only highlight patterns (tag delimiters, `{# #}` comments) live in that script.
+Every query applies to both grammars: edit the file under `ucode/queries/` and run `node scripts/generate-markup-queries.js` (or `npm run build`) to regenerate its `ucode_markup/queries/` copy — do not edit the generated copies. The Helix
+copies under `editors/helix/queries/` come from `node scripts/generate-helix-queries.js` (also
+part of `npm run build`), which fails if a new capture name has no Helix equivalent in its
+mapping table. The few template-only highlight patterns (tag delimiters, `{# #}` comments) live in that script.
 
 The external lexer is hand-written and handles features that context-free grammars cannot express: automatic semicolon insertion, template string content, comment/prose terminators, and ternary-vs-nullish disambiguation. All of its logic lives in **`common/scanner.h`** — edit that file. `ucode/src/scanner.c` and `ucode_markup/src/scanner.c` are thin shims that only export the entry points and `#include "../../common/scanner.h"`, so a single implementation is shared by both the `ucode` and `ucode_markup` parsers. None of these are touched by `tree-sitter generate`.
 

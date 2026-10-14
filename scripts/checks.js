@@ -235,13 +235,14 @@ const UNHIGHLIGHTED = {
 
 const CAPTURE = /capture: (?:\d+ - )?([\w.]+), start: \((\d+), (\d+)\), end: \((\d+), (\d+)\)/;
 
-function checkHighlights(lib, grammar) {
+// `queryFile` defaults to the grammar's own highlights.scm (the Helix copies
+// under editors/helix/ are checked with the same exceptions).
+function checkHighlights(lib, grammar, queryFile = path.join(ROOT, grammar, 'queries', 'highlights.scm')) {
   const { tests, tmp } = corpusInputs(grammar);
   const files = tests.map((t) => t.file);
   const trees = cst(lib, grammar, files);
   const list = path.join(tmp, 'clean.list');
-  const out = treeSitter(['query', '--lib-path', lib, '--lang-name', grammar,
-    path.join(ROOT, grammar, 'queries', 'highlights.scm'), '--paths', list]);
+  const out = treeSitter(['query', '--lib-path', lib, '--lang-name', grammar, queryFile, '--paths', list]);
   // Captures per file: the query output names each file before its captures.
   const byFile = new Map(files.map((f) => [f, []]));
   let current = null;
