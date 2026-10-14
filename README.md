@@ -151,7 +151,7 @@ single ` * ` comment frame at the start of each line is stripped, so `**bold**`,
 ```sh
 npm install
 npm run build        # regenerate all three parsers, build them into build/parsers/,
-                     # and compile the Node.js binding (ucode only)
+                     # and compile the Node.js binding
 ```
 
 To regenerate parsers after editing a grammar file (run from the repo root):
@@ -201,6 +201,21 @@ automatic routing: `tree-sitter parse --lib-path build/parsers/ucode_markup.so -
 ucode_markup file.ut` (pair `--lang-name` with `--lib-path` — the flag is silently ignored alone). Editors
 that manage their own filetype dispatch (Neovim, Helix) already need an explicit rule and are
 unaffected — see the editor sections below.
+
+## Use from Node.js
+
+The package needs the `tree-sitter` runtime 0.25 or newer (the parsers use ABI 15). The package
+itself is the `ucode` grammar; all three grammars are also exported by name:
+
+```js
+const Parser = require('tree-sitter');
+const ucode = require('tree-sitter-ucode');
+
+const parser = new Parser();
+parser.setLanguage(ucode);               // or ucode.ucode — plain scripts
+parser.setLanguage(ucode.ucode_markup);  // templates
+parser.setLanguage(ucode.ucdocs);        // /** */ doc comments
+```
 
 ## Use in Neovim
 

@@ -11,14 +11,13 @@
       "sources": [
         "bindings/node/binding.cc",
         "ucode/src/parser.c",
+        "ucode/src/scanner.c",
+        "ucode_markup/src/parser.c",
+        "ucode_markup/src/scanner.c",
+        "ucdocs/src/parser.c",
+        "ucdocs/src/scanner.c",
       ],
-      "variables": {
-        "has_scanner": "<!(node -p \"fs.existsSync('ucode/src/scanner.c')\")"
-      },
       "conditions": [
-        ["has_scanner=='true'", {
-          "sources+": ["ucode/src/scanner.c"],
-        }],
         ["OS!='win'", {
           "cflags_c": [
             "-std=c11",

@@ -5,6 +5,15 @@ module.exports =
     ? require(`../../prebuilds/${process.platform}-${process.arch}/tree-sitter-ucode.node`)
     : require("node-gyp-build")(root);
 
-try {
-  module.exports.nodeTypeInfo = require("../../ucode/src/node-types.json");
-} catch (_) {}
+function nodeTypeInfo(grammar) {
+  try {
+    return require(`../../${grammar}/src/node-types.json`);
+  } catch (_) {
+    return undefined;
+  }
+}
+
+module.exports.nodeTypeInfo = nodeTypeInfo("ucode");
+for (const grammar of ["ucode", "ucode_markup", "ucdocs"]) {
+  module.exports[grammar].nodeTypeInfo = nodeTypeInfo(grammar);
+}
