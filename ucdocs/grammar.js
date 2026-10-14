@@ -93,7 +93,7 @@ module.exports = grammar({
     _brace_text: $ => seq(
       '{',
       optional(seq(
-        choice(token(prec(-1, /[^{}@]/)), $._brace_text),
+        choice(token(prec(-1, /[^{}@\s]/)), $._brace_text),
         repeat(choice(
           /[^{}]+/,
           $._brace_text,
