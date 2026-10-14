@@ -6,18 +6,18 @@
         "<!(node -p \"require('node-addon-api').targets\"):node_addon_api_except",
       ],
       "include_dirs": [
-        "src",
+        "ucode/src",
       ],
       "sources": [
         "bindings/node/binding.cc",
-        "src/parser.c",
+        "ucode/src/parser.c",
       ],
       "variables": {
-        "has_scanner": "<!(node -p \"fs.existsSync('src/scanner.c')\")"
+        "has_scanner": "<!(node -p \"fs.existsSync('ucode/src/scanner.c')\")"
       },
       "conditions": [
         ["has_scanner=='true'", {
-          "sources+": ["src/scanner.c"],
+          "sources+": ["ucode/src/scanner.c"],
         }],
         ["OS!='win'", {
           "cflags_c": [

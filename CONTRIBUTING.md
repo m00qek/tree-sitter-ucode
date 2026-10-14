@@ -15,36 +15,38 @@ npm install
 
 ## Project layout
 
+The repo root holds only repo-level files (package, manifest, bindings, docs,
+CI). Each grammar is its own directory with the same four parts — `grammar.js`,
+`src/`, `queries/`, `test/` — and anything two grammars share lives in `common/`.
+
 ```
 common/
   define-grammar.js     THE grammar — one rule set for both ucode and ucode_markup
                         (edit this to add/change syntax)
-grammar.js              ucode entry point: defineGrammar('ucode')
-src/
-  scanner_impl.h        Hand-written external lexer — all scanner logic lives here
-  scanner.c             Thin shim: exports the entry points, #includes scanner_impl.h
-  parser.c              Generated — do not edit
-  grammar.json          Generated — do not edit
-markup/
-  grammar.js            ucode_markup entry point: defineGrammar('ucode_markup')
-  src/scanner.c         Second shim for the markup grammar — also #includes ../../src/scanner_impl.h
-  src/                  Generated parser for the markup grammar
-  queries/              Queries for ucode_markup — all GENERATED from queries/
-                        by scripts/generate-markup-queries.js (do not edit)
-ucdocs/
-  grammar.js            ucdocs (JSDoc) grammar — standalone, edit directly
-  src/scanner.c         Hand-written external lexer: star-runs in prose (vs the */ terminator)
-  src/                  Otherwise the generated parser for the ucdocs grammar
-  queries/              Queries for ucdocs (edit directly)
-  test/corpus/          Corpus tests for ucdocs
-queries/                Queries for ucode: highlights, locals, tags, folds,
-                        indents, textobjects, injections
-test/corpus/            Corpus tests for the ucode grammar
-markup/test/corpus/     Corpus tests for ucode_markup
+  scanner.h             THE external lexer for both code grammars — all scanner
+                        logic lives here (edit this)
+ucode/                  plain scripts
+  grammar.js            entry point: defineGrammar('ucode')
+  src/scanner.c         thin shim: exports the entry points, #includes ../../common/scanner.h
+  src/                  otherwise generated — do not edit
+  queries/              queries for ucode AND the source of ucode_markup's (edit these)
+  test/corpus/          corpus tests
+ucode_markup/           templates
+  grammar.js            entry point: defineGrammar('ucode_markup')
+  src/scanner.c         thin shim, same as ucode's
+  src/                  otherwise generated — do not edit
+  queries/              GENERATED from ucode/queries by scripts/generate-markup-queries.js
+  test/corpus/          corpus tests
+  test/tag-docs/        doc-attachment fixtures for tags.scm (see scripts/run-tests.js)
+ucdocs/                 doc comments — standalone grammar, edit directly
+  grammar.js
+  src/scanner.c         hand-written external lexer: star-runs in prose (vs the */ terminator)
+  src/                  otherwise generated
+  queries/  test/corpus/
 scripts/
-  generate-markup-queries.js  Derives markup/queries/*.scm from queries/
-  run-tests.js                Builds and tests all three grammars (npm test)
-  validate-corpus.js          Validates the grammar against real ucode projects
+  generate-markup-queries.js  derives ucode_markup/queries/*.scm from ucode/queries/
+  run-tests.js                builds (into build/parsers/) and tests all three grammars
+  validate-corpus.js          validates the grammars against real ucode code
 ```
 
 ## Editing the grammar
@@ -52,30 +54,27 @@ scripts/
 Both `.uc` grammars are built from `common/define-grammar.js` (the pattern tree-sitter-typescript uses for typescript/tsx). They differ only in the start rule and in the template-only `text_statement` rule; see the comment at the top of that file. After editing it, regenerate both parsers:
 
 ```sh
-# ucode grammar
-npx tree-sitter generate
-
-# ucode_markup grammar
-npx tree-sitter generate markup/grammar.js --output markup/src
+npx tree-sitter generate ucode/grammar.js --output ucode/src
+npx tree-sitter generate ucode_markup/grammar.js --output ucode_markup/src
 ```
 
-`ucdocs/grammar.js` is standalone (not derived from `grammar.js`). After editing it, regenerate its parser:
+`ucdocs/grammar.js` is standalone (not derived from `common/define-grammar.js`). After editing it, regenerate its parser:
 
 ```sh
 npx tree-sitter generate ucdocs/grammar.js --output ucdocs/src
 ```
 
-`npm run build` regenerates all three parsers (ucode, ucode_markup, ucdocs) in one step. Commit the regenerated files under `src/`, `markup/src/`, and `ucdocs/src/` together with your grammar change. CI verifies that generated files are up to date.
+`npm run build` regenerates all three parsers (ucode, ucode_markup, ucdocs) in one step. Commit the regenerated files under `ucode/src/`, `ucode_markup/src/`, and `ucdocs/src/` together with your grammar change. CI verifies that generated files are up to date.
 
-Every query applies to both grammars: edit the file under `queries/` and run `node scripts/generate-markup-queries.js` (or `npm run build`) to regenerate its `markup/queries/` copy — do not edit the generated copies. The few template-only highlight patterns (tag delimiters, `{# #}` comments) live in that script.
+Every query applies to both grammars: edit the file under `ucode/queries/` and run `node scripts/generate-markup-queries.js` (or `npm run build`) to regenerate its `ucode_markup/queries/` copy — do not edit the generated copies. The few template-only highlight patterns (tag delimiters, `{# #}` comments) live in that script.
 
-The external lexer is hand-written and handles features that context-free grammars cannot express: automatic semicolon insertion, template string content, comment/prose terminators, and ternary-vs-nullish disambiguation. All of its logic lives in **`src/scanner_impl.h`** — edit that file. `src/scanner.c` and `markup/src/scanner.c` are thin shims that only export the entry points and `#include "scanner_impl.h"`, so a single implementation is shared by both the `ucode` and `ucode_markup` parsers. None of these are touched by `tree-sitter generate`.
+The external lexer is hand-written and handles features that context-free grammars cannot express: automatic semicolon insertion, template string content, comment/prose terminators, and ternary-vs-nullish disambiguation. All of its logic lives in **`common/scanner.h`** — edit that file. `ucode/src/scanner.c` and `ucode_markup/src/scanner.c` are thin shims that only export the entry points and `#include "../../common/scanner.h"`, so a single implementation is shared by both the `ucode` and `ucode_markup` parsers. None of these are touched by `tree-sitter generate`.
 
-> **Stale-scanner gotcha:** `tree-sitter build` recompiles the scanner from source every time, so it always picks up `scanner_impl.h` edits. The staleness bites the *loader* cache instead: `tree-sitter test`/`parse` runs **without** `--lib-path` load a pre-built parser from `~/.cache/tree-sitter`, and that cache is keyed on `scanner.c` (not the `#include`d `scanner_impl.h`), so an edit to `scanner_impl.h` alone is not detected. After editing it, either `touch src/scanner.c markup/src/scanner.c` (bumps the key) or `rm -rf ~/.cache/tree-sitter` (nukes it) before running the CLI without `--lib-path` — otherwise the stale parser is reused and your change appears to have no effect. Passing `--lib-path` to a freshly `cc`-built `.so` sidesteps the cache entirely.
+> **Stale-scanner gotcha:** `tree-sitter build` recompiles the scanner from source every time, so it always picks up `common/scanner.h` edits. The staleness bites the *loader* cache instead: `tree-sitter test`/`parse` runs **without** `--lib-path` load a pre-built parser from `~/.cache/tree-sitter`, and that cache is keyed on `scanner.c` (not the `#include`d `common/scanner.h`), so an edit to `common/scanner.h` alone is not detected. After editing it, either `touch ucode/src/scanner.c ucode_markup/src/scanner.c` (bumps the key) or `rm -rf ~/.cache/tree-sitter` (nukes it) before running the CLI without `--lib-path` — otherwise the stale parser is reused and your change appears to have no effect. Passing `--lib-path` to a freshly `cc`-built `.so` sidesteps the cache entirely.
 
 ## Adding corpus tests
 
-Corpus tests live in `test/corpus/*.txt` (ucode), `markup/test/corpus/*.txt` (ucode_markup), and `ucdocs/test/corpus/*.txt` (ucdocs). Each test case follows this format:
+Corpus tests live in `<grammar>/test/corpus/*.txt`: `ucode/`, `ucode_markup/`, `ucdocs/`. Each test case follows this format:
 
 ```
 ================================================================================
@@ -92,19 +91,13 @@ Descriptive test name
 To get the expected parse tree for a new input:
 
 ```sh
-# ucode
+node scripts/run-tests.js --build-only     # builds build/parsers/{ucode,ucode_markup,ucdocs}.so
+
 echo '<code>' > /tmp/test.uc
-npx tree-sitter parse /tmp/test.uc
-
-# ucode_markup (build the shared library first)
-npx tree-sitter build --output ucode_markup.so ./markup
-echo '<code>' > /tmp/test.uc.tmpl
-npx tree-sitter parse --lib-path ucode_markup.so --lang-name ucode_markup /tmp/test.uc.tmpl
-
-# ucdocs
-npx tree-sitter build --output ucdocs.so ./ucdocs
-echo '/** @param {int} n */' > /tmp/test.uc
-npx tree-sitter parse --lib-path ucdocs.so --lang-name ucdocs /tmp/test.uc
+npx tree-sitter parse --lib-path build/parsers/ucode.so --lang-name ucode /tmp/test.uc
+npx tree-sitter parse --lib-path build/parsers/ucode_markup.so --lang-name ucode_markup /tmp/test.uc
+echo '/** @param {int} n */' > /tmp/test.doc
+npx tree-sitter parse --lib-path build/parsers/ucdocs.so --lang-name ucdocs /tmp/test.doc
 ```
 
 Add the test to an existing file whose category matches (e.g. `expressions.txt`, `control_flow.txt`), or create a new file if no suitable one exists. Every new syntactic feature or deliberate removal should have at least one corpus test.
@@ -115,18 +108,26 @@ Add the test to an existing file whose category matches (e.g. `expressions.txt`,
 npm test                               # all three grammars (recommended)
 
 # Individual grammars:
-npx tree-sitter test                                      # ucode only
-cd markup && npx tree-sitter test                         # ucode_markup only
-cd ucdocs && npx tree-sitter test                         # ucdocs only
+npx tree-sitter test -p ucode
+npx tree-sitter test -p ucode_markup
+npx tree-sitter test -p ucdocs
 
 # Filter by corpus file name (the .txt extension is required):
-npx tree-sitter test --file-name control_flow.txt
-cd markup && npx tree-sitter test --file-name markup.txt
+npx tree-sitter test -p ucode --file-name control_flow.txt
+npx tree-sitter test -p ucode_markup --file-name markup.txt
 ```
 
 ## Validating against real code
 
 CI validates the grammar against the upstream ucode test suite — pinned to the commit ucode ships at in OpenWrt 25.12, see README.md's "Targeted ucode version" — and the firewall4 project. To reproduce locally:
+
+```sh
+node scripts/run-tests.js --build-only
+git clone https://github.com/jow-/ucode /tmp/ucode && git -C /tmp/ucode checkout 85922056ef7abeace3cca3ab28bc1ac2d88e31b1
+node scripts/validate-corpus.js corpus /tmp/ucode/tests/custom
+git clone --depth 1 https://github.com/openwrt/firewall4 /tmp/firewall4
+node scripts/validate-corpus.js project /tmp/firewall4
+```
 
 ```sh
 git clone https://github.com/jow-/ucode /tmp/ucode
@@ -145,10 +146,10 @@ A small number of upstream test cases are intentionally skipped because they con
 - All corpus tests pass (`npm test`)
 - New syntax has at least one corpus test
 - For removed/unsupported JS features, a test in `js_differences.txt` documents the parse behaviour
-- Generated files (`src/`, `markup/src/`, `ucdocs/src/`) are committed
+- Generated files (`ucode/src/`, `ucode_markup/src/`, `ucdocs/src/`, `ucode_markup/queries/`) are committed
 
 ## Note on tree-sitter.json
 
-The `ucdocs` grammar entry in `tree-sitter.json` deliberately omits the `scope` field. On tree-sitter 0.26.9, giving a scope to a third grammar makes the CLI mis-route bulk `tree-sitter test` runs; omitting it for `ucdocs` is a required workaround, not an oversight. Leave it out.
+The `ucdocs` grammar entry in `tree-sitter.json` deliberately omits the `scope` field. On tree-sitter 0.26.9 — and still on 0.26.13 and 0.27.1, re-checked 2026-10-14, regardless of grammar order — giving a scope to a third grammar makes the CLI mis-route bulk `tree-sitter test` runs; omitting it for `ucdocs` is a required workaround, not an oversight. Leave it out.
 
 This has a real cost, not just the missing scope: on the pinned CLI, the omission makes the *entire* manifest fail to parse (`Failed to parse tree-sitter.json -- missing field 'scope'`), so none of `tree-sitter.json`'s manifest-driven features work when the CLI is pointed at this repo — no `content-regex` file routing, no file-type list, no automatic `ucdocs` injection (see the README's File-type detection section). Re-adding `scope` fixes that but reintroduces the bulk-test mis-route this note exists to avoid — confirmed both ways, so the omission stays. Don't try to "fix" the manifest without re-checking `tree-sitter test` across all three grammars first.

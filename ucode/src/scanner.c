@@ -1,12 +1,12 @@
 /*
  * External scanner for the ucode grammar.
  *
- * All implementation lives in scanner_impl.h (static functions).  This file
- * only exports the five tree_sitter_ucode_external_scanner_* entry points
+ * All implementation lives in common/scanner.h (static functions), shared
+ * with the ucode_markup grammar.  This file only exports the five tree_sitter_ucode_external_scanner_* entry points
  * that the generated parser expects.
  */
 
-#include "scanner_impl.h"
+#include "../../common/scanner.h"
 
 void *tree_sitter_ucode_external_scanner_create(void) { return ucode_scanner_create(); }
 void  tree_sitter_ucode_external_scanner_destroy(void *p) { ucode_scanner_destroy(p); }

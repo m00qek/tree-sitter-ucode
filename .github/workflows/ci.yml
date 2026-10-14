@@ -7,11 +7,9 @@ on:
   pull_request:
     branches: [main]
     paths:
-      - grammar.js
-      - src/**
-      - test/**
-      - queries/**
-      - markup/**
+      - common/**
+      - ucode/**
+      - ucode_markup/**
       - ucdocs/**
       - bindings/**
       - binding.gyp
@@ -75,10 +73,10 @@ jobs:
 
       - name: Verify generated files are up to date
         run: |
-          gen_paths='src/ markup/src/ markup/queries/ ucdocs/src/'
+          gen_paths='ucode/src/ ucode_markup/src/ ucode_markup/queries/ ucdocs/src/'
           node scripts/generate-markup-queries.js
-          npx tree-sitter generate
-          npx tree-sitter generate markup/grammar.js --output markup/src
+          npx tree-sitter generate ucode/grammar.js --output ucode/src
+          npx tree-sitter generate ucode_markup/grammar.js --output ucode_markup/src
           npx tree-sitter generate ucdocs/grammar.js --output ucdocs/src
           # Catch modified tracked files (with a helpful diff)...
           git diff --exit-code $gen_paths
@@ -92,9 +90,7 @@ jobs:
           fi
 
       - name: Build parsers
-        run: |
-          npx tree-sitter build --output ucode.so .
-          npx tree-sitter build --output ucode_markup.so markup/
+        run: node scripts/run-tests.js --build-only
 
       - name: Checkout ucode language test suite
         uses: actions/checkout@v6
@@ -150,8 +146,8 @@ jobs:
 
       - name: Build WASM
         run: |
-          npx tree-sitter build --wasm .
-          npx tree-sitter build --wasm markup
+          npx tree-sitter build --wasm ucode
+          npx tree-sitter build --wasm ucode_markup
           npx tree-sitter build --wasm ucdocs
 
       - name: Upload WASM artifact

@@ -68,7 +68,7 @@ module.exports = function defineGrammar(name) {
       // ASI does NOT fire before it (a continuation like `a\n// c\n.b`). It lets
       // the scanner decide ASI by peeking PAST the comment yet still emit the
       // comment on the next call at the same position \u2014 see scan_comment /
-      // scan_asi_before_comment in src/scanner_impl.h. Hidden and zero-width, so
+      // scan_asi_before_comment in common/scanner.h. Hidden and zero-width, so
       // it never appears in the tree; listed as an extra because it can occur at
       // any inter-statement position a comment can.
       $._asi_gap,
@@ -230,7 +230,7 @@ module.exports = function defineGrammar(name) {
           field('close',   choice('-#}', '#}')),
         ),
 
-        // comment_content is an external token (see src/scanner_impl.h): it scans
+        // comment_content is an external token (see common/scanner.h): it scans
         // everything up to but not including the first #} or -#}. A regex cannot do
         // this — maximal munch would consume the '#' of the terminator (e.g. the
         // second '#' of `{# x##}`), and tree-sitter regexes have no lookahead.
@@ -910,7 +910,7 @@ module.exports = function defineGrammar(name) {
       // Primitives
       //
 
-      // The string body is scanned by the external scanner (see scanner_impl.h),
+      // The string body is scanned by the external scanner (see common/scanner.h),
       // exactly like template_string's `_template_chars`. A regular internal
       // `token.immediate` fragment would lose to the external `comment` token,
       // which is a global `extra` and is offered by tree-sitter even inside a
@@ -946,7 +946,7 @@ module.exports = function defineGrammar(name) {
       // (aliased back to escape_sequence above and in template_string below),
       // not here: ucode range-checks octal escapes to <= 255 (\377), a check
       // that requires computing the value, not something a regex can express
-      // (see the doc comment on scan_octal_escape in scanner_impl.h for why a
+      // (see the doc comment on scan_octal_escape in common/scanner.h for why a
       // capped regex alternative like [0-3][0-7]{2}|[0-7]{1,2} does not work).
       escape_sequence: _ => token.immediate(seq(
         '\\',
@@ -958,7 +958,7 @@ module.exports = function defineGrammar(name) {
         ),
       )),
 
-      // `comment` is an external token (see externals / scanner_impl.h). A `//`
+      // `comment` is an external token (see externals / common/scanner.h). A `//`
       // line comment runs to the end of the line (or EOF), matching ucode — a
       // same-line `%}` inside a statement tag is swallowed as comment content, so
       // `{% x = 1; // note %}` on one line is an unterminated tag (ucode swallows
@@ -983,7 +983,7 @@ module.exports = function defineGrammar(name) {
       ),
 
       // The pattern body is the external token `_regex_content` (see externals /
-      // scanner_impl.h scan_regex_content), aliased back to `regex_pattern` so the
+      // common/scanner.h scan_regex_content), aliased back to `regex_pattern` so the
       // tree shape is unchanged.  ucode lexes regexes with parse_string(lex, '/')
       // (lexer.c parse_regexp) — the same routine as strings — so raw newlines are
       // ordinary content and only EOF makes the literal unterminated.  A grammar

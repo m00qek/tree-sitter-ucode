@@ -4,9 +4,9 @@ on:
   push:
     branches: [main]
     paths:
-      - src/scanner.c
-      - src/scanner_impl.h
-      - markup/src/scanner.c
+      - common/scanner.h
+      - ucode/src/scanner.c
+      - ucode_markup/src/scanner.c
       - ucdocs/src/scanner.c
 
 jobs:
@@ -18,9 +18,9 @@ jobs:
       matrix:
         include:
           - grammar: ucode
-            directory: ''
+            directory: ucode
           - grammar: ucode_markup
-            directory: markup
+            directory: ucode_markup
           - grammar: ucdocs
             directory: ucdocs
 

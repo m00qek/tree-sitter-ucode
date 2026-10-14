@@ -17,18 +17,20 @@
     "openwrt"
   ],
   "files": [
-    "grammar.js",
     "tree-sitter.json",
     "binding.gyp",
     "prebuilds/**",
     "bindings/node/*",
-    "queries/*",
-    "src/**",
-    "markup/grammar.js",
-    "markup/src/**",
-    "markup/queries/*",
-    "markup/test/corpus/**",
     "common/define-grammar.js",
+    "common/scanner.h",
+    "ucode/grammar.js",
+    "ucode/src/**",
+    "ucode/queries/*",
+    "ucode/test/corpus/**",
+    "ucode_markup/grammar.js",
+    "ucode_markup/src/**",
+    "ucode_markup/queries/*",
+    "ucode_markup/test/corpus/**",
     "scripts/generate-markup-queries.js",
     "scripts/run-tests.js",
     "scripts/validate-corpus.js",
@@ -36,7 +38,6 @@
     "ucdocs/src/**",
     "ucdocs/queries/*",
     "ucdocs/test/corpus/**",
-    "test/corpus/**",
     "*.wasm"
   ],
   "dependencies": {
@@ -57,9 +58,9 @@
   },
   "scripts": {
     "install": "node-gyp-build",
-    "build": "node scripts/generate-markup-queries.js && tree-sitter generate && tree-sitter generate markup/grammar.js --output markup/src && tree-sitter generate ucdocs/grammar.js --output ucdocs/src && node-gyp-build && tree-sitter build --output ucode.so . && tree-sitter build --output ucode_markup.so ./markup && tree-sitter build --output ucdocs.so ./ucdocs",
+    "build": "node scripts/generate-markup-queries.js && tree-sitter generate ucode/grammar.js --output ucode/src && tree-sitter generate ucode_markup/grammar.js --output ucode_markup/src && tree-sitter generate ucdocs/grammar.js --output ucdocs/src && node-gyp-build && node scripts/run-tests.js --build-only",
     "test": "node scripts/run-tests.js",
-    "prestart": "tree-sitter build --wasm",
-    "start": "tree-sitter playground"
+    "prestart": "tree-sitter build --wasm --output ucode/tree-sitter-ucode.wasm ucode",
+    "start": "tree-sitter playground --grammar-path ucode"
   }
 }

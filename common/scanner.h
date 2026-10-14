@@ -1,11 +1,11 @@
 /*
  * Shared external-scanner implementation for ucode and ucode_markup.
  *
- * Included by src/scanner.c and markup/src/scanner.c.  Every function here
- * is static so each compilation unit gets its own copy and no ucode_*
- * symbols leak into the markup shared library.
+ * Included by ucode/src/scanner.c and ucode_markup/src/scanner.c.  Every
+ * function here is static so each compilation unit gets its own copy and no
+ * ucode_* symbols leak into the markup shared library.
  *
- * Token order MUST match the `externals` array in grammar.js:
+ * Token order MUST match the `externals` array in common/define-grammar.js:
  *   0  AUTOMATIC_SEMICOLON        $._automatic_semicolon
  *   1  TEMPLATE_CHARS             $._template_chars
  *   2  TERNARY_QMARK              $._ternary_qmark
@@ -29,8 +29,8 @@
  *  20  TAG_SEMICOLON               $._tag_semicolon                zero-width ';' before %} (template unbraced body)
  */
 
-#ifndef UCODE_SCANNER_IMPL_H_
-#define UCODE_SCANNER_IMPL_H_
+#ifndef UCODE_COMMON_SCANNER_H_
+#define UCODE_COMMON_SCANNER_H_
 
 #include "tree_sitter/parser.h"
 #include <wctype.h>
@@ -570,7 +570,7 @@ static bool lookahead_is_in_keyword(TSLexer *lexer) {
  * endfunction/elif/else); it rejects a bare newline between two statements
  * (`x = 1\ny = 2`).  We keep full ECMAScript-style ASI here on purpose so that
  * incomplete, mid-edit code is not aggressively flagged as an error in editors.
- * See test/corpus and README for the (deliberate) divergence.
+ * See ucode/test/corpus and README for the (deliberate) divergence.
  *
  * Extended to allow ASI immediately before %} and -%} so that the last
  * statement in a statement tag does not need an explicit trailing semicolon:
@@ -1166,4 +1166,4 @@ static void ucode_scanner_deserialize(void *payload, const char *buffer, unsigne
     state->skip_asi_before_comment = (length > 0 && buffer[0] != 0);
 }
 
-#endif /* UCODE_SCANNER_IMPL_H_ */
+#endif /* UCODE_COMMON_SCANNER_H_ */

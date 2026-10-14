@@ -44,8 +44,8 @@ const TS_ROOT = path.dirname(__dirname);
 function soExt() {
   return process.platform === 'win32' ? 'dll' : 'so';
 }
-const LIB_UCODE        = path.join(TS_ROOT, `ucode.${soExt()}`);
-const LIB_UCODE_MARKUP = path.join(TS_ROOT, `ucode_markup.${soExt()}`);
+const LIB_UCODE        = path.join(TS_ROOT, 'build', 'parsers', `ucode.${soExt()}`);
+const LIB_UCODE_MARKUP = path.join(TS_ROOT, 'build', 'parsers', `ucode_markup.${soExt()}`);
 
 // Prefer the devDependency binary so the script works without a global install.
 const _tsLocal  = path.join(TS_ROOT, 'node_modules', '.bin', 'tree-sitter');
@@ -147,7 +147,7 @@ function assertLibsExist() {
     fatal(
       'grammar library not found:\n' +
       missing.map((p) => `  ${p}`).join('\n') +
-      '\nBuild the parsers first: `npm run build` (or `npm test`).',
+      '\nBuild the parsers first: `node scripts/run-tests.js --build-only` (or `npm test`).',
     );
   }
 }

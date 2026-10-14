@@ -1,8 +1,9 @@
 #!/usr/bin/env node
 // Builds and tests all three grammars (ucode, ucode_markup, ucdocs).
-// A grammar's shared library is rebuilt only when it is missing or older than
-// its C sources; pass --force to rebuild unconditionally. Uses .dll on
-// Windows, .so everywhere else, matching what CI does.
+// Each grammar's shared library goes to build/parsers/<name>.<ext> and is
+// rebuilt only when it is missing or older than its C sources; pass --force to
+// rebuild unconditionally, --build-only to build without testing. Uses .dll
+// on Windows, .so everywhere else, matching what CI does.
 'use strict';
 
 const fs   = require('fs');
@@ -16,6 +17,8 @@ const ROOT  = path.dirname(__dirname);
 const ext   = process.platform === 'win32' ? 'dll' : 'so';
 const force  = process.argv.includes('--force');
 const update = process.argv.includes('--update');
+const buildOnly = process.argv.includes('--build-only');
+const LIB_DIR = path.join(ROOT, 'build', 'parsers');
 
 // A trivial source file for the query compile-check below. A query is compiled
 // when it loads (node names and structure are validated then), independent of
@@ -25,8 +28,8 @@ let tagsFailures = 0;
 const querySource = path.join(os.tmpdir(), 'ts-ucode-query-check.txt');
 fs.writeFileSync(querySource, '');
 
-// The C/H sources in a generated `src` directory (parser.c, scanner.c,
-// scanner_impl.h, …) whose mtimes decide whether a rebuild is needed.
+// The top-level C/H sources in a grammar's `src` directory (parser.c,
+// scanner.c) whose mtimes decide whether a rebuild is needed.
 function srcFiles(dir) {
   const abs = path.join(ROOT, dir);
   return fs.readdirSync(abs)
@@ -35,17 +38,15 @@ function srcFiles(dir) {
 }
 
 // name:      passed to --lang-name (and names the <name>.<ext> library)
-// buildPath: directory `tree-sitter build` compiles (relative to ROOT)
-// project:   -p argument for `tree-sitter test` (null = run in the repo root)
-// deps:      source files whose mtime is compared against the built library.
-//            ucode_markup's scanner is a shim that #includes ../../src/
-//            scanner_impl.h, so that shared header is part of its deps too.
-// queryDir:  directory of *.scm query files compile-checked against the grammar
-const grammars = [
-  { name: 'ucode',        buildPath: '.',        project: null,     deps: srcFiles('src'), queryDir: 'queries', testDir: 'test' },
-  { name: 'ucode_markup', buildPath: './markup', project: 'markup', deps: srcFiles('markup/src').concat(path.join(ROOT, 'src/scanner_impl.h')), queryDir: 'markup/queries', testDir: 'markup/test' },
-  { name: 'ucdocs',       buildPath: './ucdocs', project: 'ucdocs', deps: srcFiles('ucdocs/src'), queryDir: 'ucdocs/queries', testDir: 'ucdocs/test' },
-];
+// Every grammar lives in its own <name>/ directory: grammar.js, src/, queries/
+// and test/. deps are the C sources whose mtime is compared against the built
+// library; both code grammars' scanners are shims that #include
+// common/scanner.h, so that shared header is part of their deps too.
+const SHARED_SCANNER = path.join(ROOT, 'common', 'scanner.h');
+const grammars = ['ucode', 'ucode_markup', 'ucdocs'].map((name) => ({
+  name,
+  deps: srcFiles(`${name}/src`).concat(name === 'ucdocs' ? [] : [SHARED_SCANNER]),
+}));
 
 // Rebuild when forced, when the library is missing, or when any source is
 // missing (a renamed/removed dep) or newer than the library.
@@ -56,23 +57,24 @@ function needsBuild(lib, deps) {
 }
 
 for (const g of grammars) {
-  const lib = path.join(ROOT, `${g.name}.${ext}`);
+  const lib = path.join(LIB_DIR, `${g.name}.${ext}`);
 
   if (needsBuild(lib, g.deps)) {
-    execFileSync('tree-sitter', ['build', '--output', lib, g.buildPath], { stdio: 'inherit', cwd: ROOT });
+    fs.mkdirSync(LIB_DIR, { recursive: true });
+    execFileSync('tree-sitter', ['build', '--output', lib, g.name], { stdio: 'inherit', cwd: ROOT });
   } else {
-    console.log(`${g.name}.${ext} is up to date — skipping build (pass --force to rebuild)`);
+    console.log(`build/parsers/${g.name}.${ext} is up to date — skipping build (pass --force to rebuild)`);
   }
+  if (buildOnly) continue;
 
-  const testArgs = ['test', '--lib-path', lib, '--lang-name', g.name];
-  if (g.project) testArgs.push('-p', g.project);
-  execFileSync('tree-sitter', testArgs, { stdio: 'inherit', cwd: ROOT });
+  execFileSync('tree-sitter', ['test', '--lib-path', lib, '--lang-name', g.name, '-p', g.name],
+    { stdio: 'inherit', cwd: ROOT });
 
   // Compile-check every query file against the freshly built grammar, so a
   // query that references a renamed/removed node (or has a syntax error) fails
   // here instead of silently in an editor. `tree-sitter query` compiles the
   // query when it loads; a non-zero exit throws and fails the run.
-  const queryAbs = path.join(ROOT, g.queryDir);
+  const queryAbs = path.join(ROOT, g.name, 'queries');
   for (const f of fs.readdirSync(queryAbs).filter((f) => f.endsWith('.scm'))) {
     execFileSync(
       'tree-sitter',
@@ -80,7 +82,7 @@ for (const g of grammars) {
       { stdio: ['ignore', 'ignore', 'inherit'], cwd: ROOT },
     );
   }
-  console.log(`${g.name}: ${g.queryDir}/*.scm compile OK`);
+  console.log(`${g.name}: ${g.name}/queries/*.scm compile OK`);
 
   checkTagsFixtures(g, lib);
 }
@@ -91,7 +93,7 @@ if (tagsFailures > 0) {
 }
 
 // ---------------------------------------------------------------------------
-// Tags fixtures: <test dir>/tag-docs/<case>.<ext> + <case>.<ext>.expected
+// Tags fixtures: <grammar>/test/tag-docs/<case>.<ext> + <case>.<ext>.expected
 //
 // The CLI's `tree-sitter tags` cannot load these grammars (tree-sitter.json
 // fails to parse; see CONTRIBUTING), so this reproduces the part of
@@ -102,12 +104,12 @@ if (tagsFailures > 0) {
 // ---------------------------------------------------------------------------
 
 function checkTagsFixtures(g, lib) {
-  const dir = path.join(ROOT, g.testDir, 'tag-docs');
+  const dir = path.join(ROOT, g.name, 'test', 'tag-docs');
   if (!fs.existsSync(dir)) return;
   for (const f of fs.readdirSync(dir).filter((f) => !f.endsWith('.expected'))) {
     const out = execFileSync(
       'tree-sitter',
-      ['query', '--lib-path', lib, '--lang-name', g.name, path.join(ROOT, g.queryDir, 'tags.scm'), path.join(dir, f)],
+      ['query', '--lib-path', lib, '--lang-name', g.name, path.join(ROOT, g.name, 'queries', 'tags.scm'), path.join(dir, f)],
       { cwd: ROOT, encoding: 'utf8' },
     );
     const best = new Map();   // name position -> { pattern, line }

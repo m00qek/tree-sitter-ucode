@@ -4,30 +4,32 @@
       "name": "ucode",
       "camelcase": "Ucode",
       "scope": "source.uc",
-      "path": ".",
+      "path": "ucode",
       "file-types": [
-        "ucode", "uc", "ut"
+        "ucode",
+        "uc",
+        "ut"
       ],
       "highlights": [
-        "queries/highlights.scm"
+        "ucode/queries/highlights.scm"
       ],
       "locals": [
-        "queries/locals.scm"
+        "ucode/queries/locals.scm"
       ],
       "injections": [
-        "queries/injections.scm"
+        "ucode/queries/injections.scm"
       ],
       "tags": [
-        "queries/tags.scm"
+        "ucode/queries/tags.scm"
       ],
       "folds": [
-        "queries/folds.scm"
+        "ucode/queries/folds.scm"
       ],
       "indents": [
-        "queries/indents.scm"
+        "ucode/queries/indents.scm"
       ],
       "textobjects": [
-        "queries/textobjects.scm"
+        "ucode/queries/textobjects.scm"
       ],
       "injection-regex": "^ucode$"
     },
@@ -35,38 +37,40 @@
       "name": "ucode_markup",
       "camelcase": "UcodeMarkup",
       "scope": "source.ucode.markup",
-      "path": "./markup",
+      "path": "ucode_markup",
       "file-types": [
-        "ucode", "uc", "ut"
+        "ucode",
+        "uc",
+        "ut"
       ],
       "content-regex": "(?m)^\\s*\\{[%{#]",
       "highlights": [
-        "markup/queries/highlights.scm"
+        "ucode_markup/queries/highlights.scm"
       ],
       "locals": [
-        "markup/queries/locals.scm"
+        "ucode_markup/queries/locals.scm"
       ],
       "injections": [
-        "markup/queries/injections.scm"
+        "ucode_markup/queries/injections.scm"
       ],
       "tags": [
-        "markup/queries/tags.scm"
+        "ucode_markup/queries/tags.scm"
       ],
       "folds": [
-        "markup/queries/folds.scm"
+        "ucode_markup/queries/folds.scm"
       ],
       "indents": [
-        "markup/queries/indents.scm"
+        "ucode_markup/queries/indents.scm"
       ],
       "textobjects": [
-        "markup/queries/textobjects.scm"
+        "ucode_markup/queries/textobjects.scm"
       ],
       "injection-regex": "^ucode_markup$"
     },
     {
       "name": "ucdocs",
       "camelcase": "Ucdocs",
-      "path": "./ucdocs",
+      "path": "ucdocs",
       "file-types": null,
       "highlights": [
         "ucdocs/queries/highlights.scm"
