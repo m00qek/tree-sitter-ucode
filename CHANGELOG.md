@@ -52,6 +52,8 @@ Notable changes to tree-sitter-ucode. Releases up to v0.8.0 are described in the
 - ucdocs: dotted and `[optional=default]` names with any default value, namepath `@typedef` names,
   rest parameters in function types, `Array.<T>`, `{{ name }}` as brace text, and markdown
   (`**bold**`, bullets) in prose. Of 1327 real doc comments, 8 fail to parse instead of 160.
+- Scripts are recognised by a `#!` line naming `ucode` (`first-line-regex` in tree-sitter.json,
+  `shebangs` in the README's Helix setup).
 
 ### Fixed
 
@@ -74,6 +76,8 @@ Notable changes to tree-sitter-ucode. Releases up to v0.8.0 are described in the
   inside the file are now errors, as in ucode; a byte order mark at the very start is still
   skipped by tree-sitter itself. The scanner no longer depends on the host's locale.
 - `tree-sitter tags` works for all three grammars (see the locals and ucdocs tags changes above).
+- `.ut` files are templates: they go to `ucode_markup` only (the `ucode` grammar claimed them
+  too), and the README's Helix setup maps `*.ut` to `ucode-markup` instead of `*.uc.tmpl`.
 - Locals: alt-syntax `if` / `elif` / `else` / `while` bodies and `switch` bodies are scopes, as
   they are in ucode.
 - Tags: every exported `const` / `let` that is not a function is tagged, with its doc comment;

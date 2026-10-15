@@ -6,14 +6,14 @@ Three grammars are provided:
 
 | Grammar | Scope | File types | Purpose |
 |---------|-------|------------|---------|
-| `ucode` | `source.uc` | `.uc`, `.ucode`, `.ut` | Plain ucode source files |
-| `ucode_markup` | `source.ucode.markup` | `.uc`, `.ucode`, `.ut` (template files — detected by content) | Ucode template files mixing raw text and code tags |
-| `ucdocs` | — | injected | JSDoc-style `/** */` doc comment blocks |
+| `ucode` | `source.uc` | `.uc`, `.ucode`, `#!…ucode` scripts | Plain ucode source files |
+| `ucode_markup` | `source.ucode.markup` | `.ut`; `.uc` / `.ucode` detected by content | Ucode template files mixing raw text and code tags |
+| `ucdocs` | `source.ucdocs` | injected | JSDoc-style `/** */` doc comment blocks |
 
-`ucode` and `ucode_markup` share file extensions. Template files are distinguished from plain
-code files by content: any file containing a tag opener (`{%`, `{{`, or `{#`) at the start
-of a line (with optional leading whitespace) is automatically parsed by `ucode_markup`. Plain
-code files fall back to `ucode`. See [File-type detection](#file-type-detection) below.
+`.ut` files are templates. `.uc` and `.ucode` files can be either, so they are told apart by
+content: one with a tag opener (`{%`, `{{`, or `{#`) at the start of a line (with optional
+leading whitespace) is parsed by `ucode_markup`, and any other falls back to `ucode`. See
+[File-type detection](#file-type-detection) below.
 
 `ucdocs` is not a standalone file grammar — it is automatically injected by the `ucode` and
 `ucode_markup` grammars into every `/** */` doc comment block. Tools that load grammars from
@@ -177,10 +177,11 @@ npx tree-sitter test -p ucdocs --file-name tags.txt
 
 ## File-type detection
 
-Both `ucode` and `ucode_markup` claim the same file extensions. Tools that read
-`tree-sitter.json` and respect its `content-regex` field route template files to
-`ucode_markup` when a tag opener (`{%`, `{{`, or `{#`) appears at the start of a line (with
-optional leading whitespace) — `tree-sitter highlight` run in this repository does.
+`.ut` belongs to `ucode_markup` alone. `ucode` and `ucode_markup` both claim `.uc` and
+`.ucode`; tools that read `tree-sitter.json` and respect its `content-regex` field route such a
+file to `ucode_markup` when a tag opener (`{%`, `{{`, or `{#`) appears at the start of a line
+(with optional leading whitespace) — `tree-sitter highlight` run in this repository does. An
+extensionless script whose first line is a `#!` naming `ucode` goes to `ucode`.
 
 `tree-sitter parse` picks a grammar by file extension alone, so name the template grammar
 explicitly: `tree-sitter parse --lib-path .build/parsers/ucode_markup.so --lang-name
@@ -239,7 +240,8 @@ for the grammars and the queries. The layout below (`ucode/`, `ucode_markup/`, `
    [[language]]
    name                 = "ucode"
    scope                = "source.uc"
-   file-types           = [{ glob = "*.uc" }, { glob = "*.ucode" }, { glob = "*.ut" }]
+   file-types           = [{ glob = "*.uc" }, { glob = "*.ucode" }]
+   shebangs             = ["ucode"]
    comment-tokens       = "//"
    block-comment-tokens = { start = "/*", end = "*/" }
    indent               = { tab-width = 2, unit = "  " }
@@ -248,7 +250,7 @@ for the grammars and the queries. The layout below (`ucode/`, `ucode_markup/`, `
    [[language]]
    name                 = "ucode-markup"
    scope                = "source.ucode.markup"
-   file-types           = [{ glob = "*.uc.tmpl" }]
+   file-types           = [{ glob = "*.ut" }]
    block-comment-tokens = { start = "{#", end = "#}" }
    indent               = { tab-width = 2, unit = "  " }
    grammar              = "ucode_markup"

@@ -11,9 +11,9 @@
       ],
       "file-types": [
         "ucode",
-        "uc",
-        "ut"
+        "uc"
       ],
+      "first-line-regex": "^#!.*\\bucode\\b",
       "highlights": [
         "ucode/queries/highlights.scm"
       ],
