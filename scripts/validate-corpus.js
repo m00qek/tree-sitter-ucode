@@ -38,14 +38,9 @@ const { spawnSync } = require('node:child_process');
 
 const TS_ROOT = path.dirname(__dirname);
 
-// Match what `npm run build` / scripts/run-tests.js actually emit: .dll on
-// Windows, .so everywhere else. tree-sitter build does not produce .dylib on
-// macOS, so returning 'dylib' there pointed at a file that never exists.
-function soExt() {
-  return process.platform === 'win32' ? 'dll' : 'so';
-}
-const LIB_UCODE        = path.join(TS_ROOT, '.build', 'parsers', `ucode.${soExt()}`);
-const LIB_UCODE_MARKUP = path.join(TS_ROOT, '.build', 'parsers', `ucode_markup.${soExt()}`);
+const { libPath } = require('./parsers');
+const LIB_UCODE        = libPath('ucode');
+const LIB_UCODE_MARKUP = libPath('ucode_markup');
 
 const TREE_SITTER = require('./tree-sitter-cli');
 

@@ -59,6 +59,8 @@ scripts/
   validate-corpus.js          validates the grammars against real ucode code
   validate-docs.js            validates ucdocs against real doc comments (ucode's stdlib)
   checks.js                   structural checks run by run-tests.js
+  parsers.js                  where the built parsers live (.build/parsers/)
+  tree-sitter-cli.js          the tree-sitter CLI the scripts run (the pinned one if installed)
 ```
 
 ## Editing the grammar

@@ -15,7 +15,9 @@
 //                      deliberate exceptions.
 //
 // All three use only the tree-sitter CLI (`parse --cst`, `query`), like the
-// rest of the test runner, so the test job needs no npm dependencies.
+// rest of the test runner, so the test job needs no npm dependencies. The
+// corpus is extracted and parsed once per grammar (loadCorpus) and shared by
+// checkPositions and checkHighlights.
 
 const fs = require('fs');
 const os = require('os');
@@ -74,16 +76,18 @@ function checkExternals() {
 // ---------------------------------------------------------------------------
 
 // Every non-:error test input of a grammar's corpus, written to a temp dir.
+// Inputs keep their line endings (crlf.txt tests \r\n), as `tree-sitter test`
+// does.
 function corpusInputs(grammar) {
   const dir = path.join(ROOT, grammar, 'test', 'corpus');
   const out = [];
   for (const f of fs.readdirSync(dir).filter((f) => f.endsWith('.txt')).sort()) {
-    const text = fs.readFileSync(path.join(dir, f), 'utf8').replace(/\r\n/g, '\n');
-    const re = /^={3,}\n(.*)\n((?::\S+\n)*)={3,}\n([\s\S]*?)\n-{3,}\n/gm;
+    const text = fs.readFileSync(path.join(dir, f), 'utf8');
+    const re = /^={3,}\r?\n(.*?)\r?\n((?::\S+\r?\n)*)={3,}\r?\n([\s\S]*?)\r?\n-{3,}\r?\n/gm;
     let m;
     while ((m = re.exec(text))) {
-      if (/^:error$/m.test(m[2])) continue;
-      out.push({ name: `${f}: ${m[1].trim()}`, source: m[3].replace(/^\n/, '') });
+      if (/^:error\r?$/m.test(m[2])) continue;
+      out.push({ name: `${f}: ${m[1].trim()}`, source: m[3].replace(/^\r?\n/, '') });
     }
   }
   const tmp = fs.mkdtempSync(path.join(os.tmpdir(), `ts-ucode-${grammar}-`));
@@ -159,28 +163,47 @@ function treeSitter(args) {
   }
 }
 
-// CST node lists for `files`, or null for a file whose tree contains an error.
-// Error trees are skipped by every check, and are filtered out before asking
-// for CST output: the CLI prints a `•` path-to-error marker there that shifts
-// some lines' indentation, which would make depths unrecoverable.
-function cst(lib, grammar, files) {
-  const tmp = path.dirname(files[0]);
+// A grammar's corpus inputs and their CST node lists, parsed once for all the
+// checks. A test whose tree contains an error gets null and is skipped by
+// every check. Error trees are filtered out before asking for CST output: the
+// CLI prints a `•` path-to-error marker there that shifts some lines'
+// indentation, which would make depths unrecoverable. cleanList is a --paths
+// file of the inputs that do have trees.
+function loadCorpus(lib, grammar) {
+  const { tests, tmp } = corpusInputs(grammar);
+  const cleanup = () => fs.rmSync(tmp, { recursive: true, force: true });
+  try {
+    return { ...parseCorpus(lib, grammar, tests, tmp), cleanup };
+  } catch (e) {
+    cleanup();
+    throw e;
+  }
+}
+
+function parseCorpus(lib, grammar, tests, tmp) {
+  const files = tests.map((t) => t.file);
   const all = path.join(tmp, 'all.list');
   fs.writeFileSync(all, files.join('\n'));
   const quiet = treeSitter(['parse', '--lib-path', lib, '--lang-name', grammar, '--quiet', '--paths', all]);
   const broken = new Set(files.filter((f) => quiet.includes(f)));
   const clean = files.filter((f) => !broken.has(f));
-  const list = path.join(tmp, 'clean.list');
-  fs.writeFileSync(list, clean.join('\n'));
-  const trees = parseCst(
-    treeSitter(['parse', '--lib-path', lib, '--lang-name', grammar, '--cst', '--paths', list]),
+  const cleanList = path.join(tmp, 'clean.list');
+  fs.writeFileSync(cleanList, clean.join('\n'));
+  const parsed = parseCst(
+    treeSitter(['parse', '--lib-path', lib, '--lang-name', grammar, '--cst', '--paths', cleanList]),
     grammar,
   );
-  if (trees.length !== clean.length) {
-    throw new Error(`${grammar}: expected ${clean.length} CST trees, parsed ${trees.length}`);
+  if (parsed.length !== clean.length) {
+    throw new Error(`${grammar}: expected ${clean.length} CST trees, parsed ${parsed.length}`);
   }
   let k = 0;
-  return files.map((f) => (broken.has(f) ? null : trees[k++]));
+  return {
+    lib,
+    grammar,
+    tests,
+    trees: files.map((f) => (broken.has(f) ? null : parsed[k++])),
+    cleanList,
+  };
 }
 
 // Byte offset of (row, column) in a UTF-8 buffer.
@@ -211,9 +234,7 @@ const CONTENT_NODES = new Set([
 // text_statement (raw text after a tag close).
 const MAY_END_WITH_SPACE = new Set(['program', 'markup', 'document', 'text_statement']);
 
-function checkPositions(lib, grammar) {
-  const { tests, tmp } = corpusInputs(grammar);
-  const trees = cst(lib, grammar, tests.map((t) => t.file));
+function checkPositions({ tests, trees }) {
   const problems = [];
   tests.forEach((t, i) => {
     const nodes = trees[i];
@@ -229,7 +250,6 @@ function checkPositions(lib, grammar) {
       }
     }
   });
-  fs.rmSync(tmp, { recursive: true, force: true });
   return problems;
 }
 
@@ -248,14 +268,11 @@ const CAPTURE = /capture: (?:\d+ - )?([\w.]+), start: \((\d+), (\d+)\), end: \((
 
 // `queryFile` defaults to the grammar's own highlights.scm (the Helix copies
 // under editors/helix/ are checked with the same exceptions).
-function checkHighlights(lib, grammar, queryFile = path.join(ROOT, grammar, 'queries', 'highlights.scm')) {
-  const { tests, tmp } = corpusInputs(grammar);
-  const files = tests.map((t) => t.file);
-  const trees = cst(lib, grammar, files);
-  const list = path.join(tmp, 'clean.list');
-  const out = treeSitter(['query', '--lib-path', lib, '--lang-name', grammar, queryFile, '--paths', list]);
+function checkHighlights(corpus, queryFile = path.join(ROOT, corpus.grammar, 'queries', 'highlights.scm')) {
+  const { lib, grammar, tests, trees, cleanList } = corpus;
+  const out = treeSitter(['query', '--lib-path', lib, '--lang-name', grammar, queryFile, '--paths', cleanList]);
   // Captures per file: the query output names each file before its captures.
-  const byFile = new Map(files.map((f) => [f, []]));
+  const byFile = new Map(tests.map((t) => [t.file, []]));
   let current = null;
   for (const line of out.split(/\r?\n/)) {
     if (byFile.has(line.trim())) { current = byFile.get(line.trim()); continue; }
@@ -277,8 +294,7 @@ function checkHighlights(lib, grammar, queryFile = path.join(ROOT, grammar, 'que
       if (!covered) problems.push(`${t.name}: ${n.named ? n.type : JSON.stringify(n.type)} at ${n.sr}:${n.sc} has no highlight`);
     }
   });
-  fs.rmSync(tmp, { recursive: true, force: true });
   return problems;
 }
 
-module.exports = { checkExternals, checkPositions, checkHighlights };
+module.exports = { checkExternals, loadCorpus, checkPositions, checkHighlights };

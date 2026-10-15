@@ -1,9 +1,8 @@
 #!/usr/bin/env node
 // Builds and tests all three grammars (ucode, ucode_markup, ucdocs).
-// Each grammar's shared library goes to .build/parsers/<name>.<ext> and is
-// rebuilt only when it is missing or older than its C sources; pass --force to
-// rebuild unconditionally, --build-only to build without testing. Uses .dll
-// on Windows, .so everywhere else, matching what CI does.
+// Each grammar's shared library goes to .build/parsers/ (see parsers.js) and
+// is rebuilt only when it is missing or older than its C sources; pass --force
+// to rebuild unconditionally, --build-only to build without testing.
 'use strict';
 
 const fs   = require('fs');
@@ -14,15 +13,11 @@ const { execFileSync } = require('child_process');
 // Anchor every path on the repo root (this script lives in scripts/) so the
 // runner works regardless of the caller's working directory.
 const ROOT  = path.dirname(__dirname);
-const ext   = process.platform === 'win32' ? 'dll' : 'so';
 const force  = process.argv.includes('--force');
 const update = process.argv.includes('--update');
 const buildOnly = process.argv.includes('--build-only');
-const LIB_DIR = path.join(ROOT, '.build', 'parsers');
+const { LIB_DIR, libPath } = require('./parsers');
 
-// A trivial source file for the query compile-check below. A query is compiled
-// when it loads (node names and structure are validated then), independent of
-// what it matches, so an empty file is enough.
 let tagsFailures = 0;
 let checkFailures = 0;
 const checks = require('./checks');
@@ -36,7 +31,12 @@ function report(label, problems) {
     (problems.length > 20 ? `\n  … and ${problems.length - 20} more` : ''));
 }
 
-const querySource = path.join(os.tmpdir(), 'ts-ucode-query-check.txt');
+// A trivial source file for the query compile-check below. A query is compiled
+// when it loads (node names and structure are validated then), independent of
+// what it matches, so an empty file is enough.
+const tmpDir = fs.mkdtempSync(path.join(os.tmpdir(), 'ucode-run-tests-'));
+process.on('exit', () => fs.rmSync(tmpDir, { recursive: true, force: true }));
+const querySource = path.join(tmpDir, 'empty.txt');
 fs.writeFileSync(querySource, '');
 
 // The top-level C/H sources in a grammar's `src` directory (parser.c,
@@ -70,13 +70,13 @@ function needsBuild(lib, deps) {
 if (!buildOnly) report('scanner TokenType enums match the grammars\' externals:', checks.checkExternals());
 
 for (const g of grammars) {
-  const lib = path.join(LIB_DIR, `${g.name}.${ext}`);
+  const lib = libPath(g.name);
 
   if (needsBuild(lib, g.deps)) {
     fs.mkdirSync(LIB_DIR, { recursive: true });
     execFileSync(TREE_SITTER, ['build', '--output', lib, g.name], { stdio: 'inherit', cwd: ROOT });
   } else {
-    console.log(`.build/parsers/${g.name}.${ext} is up to date — skipping build (pass --force to rebuild)`);
+    console.log(`${path.relative(ROOT, lib)} is up to date — skipping build (pass --force to rebuild)`);
   }
   if (buildOnly) continue;
 
@@ -106,11 +106,16 @@ for (const g of grammars) {
   console.log(`${g.name}: ${g.name}/queries/*.scm and the Helix queries compile OK`);
 
   checkTagsFixtures(g, lib);
-  report(`${g.name}: no name-like node starts or ends with whitespace:`, checks.checkPositions(lib, g.name));
-  report(`${g.name}: every corpus token is highlighted:`, checks.checkHighlights(lib, g.name));
-  const helix = path.join(ROOT, 'editors', 'helix', 'queries', g.name.replace('_', '-'), 'highlights.scm');
-  report(`${g.name}: every corpus token is highlighted by the Helix queries:`,
-    checks.checkHighlights(lib, g.name, helix));
+  const corpus = checks.loadCorpus(lib, g.name);
+  try {
+    report(`${g.name}: no name-like node starts or ends with whitespace:`, checks.checkPositions(corpus));
+    report(`${g.name}: every corpus token is highlighted:`, checks.checkHighlights(corpus));
+    const helix = path.join(ROOT, 'editors', 'helix', 'queries', g.name.replace('_', '-'), 'highlights.scm');
+    report(`${g.name}: every corpus token is highlighted by the Helix queries:`,
+      checks.checkHighlights(corpus, helix));
+  } finally {
+    corpus.cleanup();
+  }
 }
 
 // Highlight and tags assertion tests (test/highlight/, test/tags/: `// ^ capture`

@@ -21,7 +21,7 @@ const { execFileSync } = require('child_process');
 const TREE_SITTER = require('./tree-sitter-cli');
 
 const ROOT = path.dirname(__dirname);
-const LIB = path.join(ROOT, '.build', 'parsers', `ucdocs.${process.platform === 'win32' ? 'dll' : 'so'}`);
+const LIB = require('./parsers').libPath('ucdocs');
 
 // Doc comments that are genuinely malformed upstream — not grammar gaps.
 // Matched by file name and a snippet of the comment, so line shifts elsewhere

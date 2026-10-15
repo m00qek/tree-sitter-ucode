@@ -33,6 +33,7 @@
     "ucode_markup/test/corpus/**",
     "scripts/generate-markup-queries.js",
     "scripts/checks.js",
+    "scripts/parsers.js",
     "scripts/run-tests.js",
     "scripts/tree-sitter-cli.js",
     "scripts/validate-corpus.js",
