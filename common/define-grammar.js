@@ -290,7 +290,8 @@ module.exports = function defineGrammar(name) {
           'export',
           field('declaration', $.lexical_declaration),
         ),
-        // `export function f() {}` requires an explicit trailing `;` in ucode.
+        // ucode requires the `;` after `export function f() {}` and `export
+        // default …`; kept strict on purpose, unlike lenient ASI (see README).
         seq(
           'export',
           field('declaration', $.function_declaration),
@@ -713,6 +714,9 @@ module.exports = function defineGrammar(name) {
         ']',
       ),
 
+      // ucode lexes `?.[` and `?.(` as single tokens, so nothing — not even
+      // whitespace or a comment — may separate the `?.` from the bracket
+      // (`a?. [1]` is an error). Before a property name it may (`a?. b`).
       optional_chain: _ => '?.',
 
       call_expression: $ => choice(
@@ -723,8 +727,14 @@ module.exports = function defineGrammar(name) {
         prec('member', seq(
           field('function', $.primary_expression),
           field('optional_chain', $.optional_chain),
-          field('arguments', $.arguments),
+          field('arguments', alias($._immediate_arguments, $.arguments)),
         )),
+      ),
+
+      _immediate_arguments: $ => seq(
+        token.immediate('('),
+        commaSep(choice($.expression, $.spread_element)),
+        ')',
       ),
 
       member_expression: $ => prec('member', seq(
@@ -735,8 +745,11 @@ module.exports = function defineGrammar(name) {
 
       subscript_expression: $ => prec.right('member', seq(
         field('object', choice($.expression, $.primary_expression)),
-        optional(field('optional_chain', $.optional_chain)),
-        '[', field('index', $._expressions), ']',
+        choice(
+          '[',
+          seq(field('optional_chain', $.optional_chain), alias(token.immediate('['), '[')),
+        ),
+        field('index', $._expressions), ']',
       )),
 
       // Assignment targets. ucode rejects a parenthesized whole target
