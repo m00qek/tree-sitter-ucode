@@ -916,13 +916,9 @@
         ]
       },
       "condition": {
-        "multiple": true,
+        "multiple": false,
         "required": true,
         "types": [
-          {
-            "type": ";",
-            "named": false
-          },
           {
             "type": "empty_statement",
             "named": true
@@ -1238,13 +1234,9 @@
         ]
       },
       "condition": {
-        "multiple": true,
+        "multiple": false,
         "required": true,
         "types": [
-          {
-            "type": ";",
-            "named": false
-          },
           {
             "type": "empty_statement",
             "named": true

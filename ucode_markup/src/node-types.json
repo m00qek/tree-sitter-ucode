@@ -619,12 +619,12 @@
         "required": true,
         "types": [
           {
-            "type": "#}",
-            "named": false
+            "type": "comment_tag_close",
+            "named": true
           },
           {
-            "type": "-#}",
-            "named": false
+            "type": "comment_tag_trim_close",
+            "named": true
           }
         ]
       },
@@ -643,12 +643,12 @@
         "required": true,
         "types": [
           {
-            "type": "{#",
-            "named": false
+            "type": "comment_tag_open",
+            "named": true
           },
           {
-            "type": "{#-",
-            "named": false
+            "type": "comment_tag_trim_open",
+            "named": true
           }
         ]
       }
@@ -1012,13 +1012,9 @@
         ]
       },
       "condition": {
-        "multiple": true,
+        "multiple": false,
         "required": true,
         "types": [
-          {
-            "type": ";",
-            "named": false
-          },
           {
             "type": "empty_statement",
             "named": true
@@ -1334,13 +1330,9 @@
         ]
       },
       "condition": {
-        "multiple": true,
+        "multiple": false,
         "required": true,
         "types": [
-          {
-            "type": ";",
-            "named": false
-          },
           {
             "type": "empty_statement",
             "named": true
@@ -2598,10 +2590,6 @@
     "named": false
   },
   {
-    "type": "#}",
-    "named": false
-  },
-  {
     "type": "${",
     "named": false
   },
@@ -2675,10 +2663,6 @@
   },
   {
     "type": "-",
-    "named": false
-  },
-  {
-    "type": "-#}",
     "named": false
   },
   {
@@ -2816,6 +2800,22 @@
   },
   {
     "type": "comment_content",
+    "named": true
+  },
+  {
+    "type": "comment_tag_close",
+    "named": true
+  },
+  {
+    "type": "comment_tag_open",
+    "named": true
+  },
+  {
+    "type": "comment_tag_trim_close",
+    "named": true
+  },
+  {
+    "type": "comment_tag_trim_open",
     "named": true
   },
   {
@@ -3004,14 +3004,6 @@
   },
   {
     "type": "{",
-    "named": false
-  },
-  {
-    "type": "{#",
-    "named": false
-  },
-  {
-    "type": "{#-",
     "named": false
   },
   {

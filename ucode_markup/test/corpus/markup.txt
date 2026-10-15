@@ -110,7 +110,9 @@ Comment tag
 
 (markup
   (comment_tag
-    content: (comment_content)))
+    open: (comment_tag_open)
+    content: (comment_content)
+    close: (comment_tag_close)))
 
 ================================================================================
 Comment ending with a hash before the close (#} boundary)
@@ -120,7 +122,9 @@ Comment ending with a hash before the close (#} boundary)
 
 (markup
   (comment_tag
-    content: (comment_content))
+    open: (comment_tag_open)
+    content: (comment_content)
+    close: (comment_tag_close))
   (raw_text))
 
 ================================================================================
@@ -623,7 +627,9 @@ Comment tag with open-trim marker
 
 (markup
   (comment_tag
-    content: (comment_content)))
+    open: (comment_tag_trim_open)
+    content: (comment_content)
+    close: (comment_tag_close)))
 
 ================================================================================
 Comment tag with close-trim marker
@@ -633,7 +639,9 @@ Comment tag with close-trim marker
 
 (markup
   (comment_tag
-    content: (comment_content)))
+    open: (comment_tag_open)
+    content: (comment_content)
+    close: (comment_tag_trim_close)))
 
 ================================================================================
 Comment tag with both trim markers
@@ -643,7 +651,9 @@ Comment tag with both trim markers
 
 (markup
   (comment_tag
-    content: (comment_content)))
+    open: (comment_tag_trim_open)
+    content: (comment_content)
+    close: (comment_tag_trim_close)))
 
 ================================================================================
 Statement tag with trim-right close marker

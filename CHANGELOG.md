@@ -45,6 +45,9 @@ Notable changes to tree-sitter-ucode. Releases up to v0.8.0 are described in the
   `consequence` and `alternative` (was `body` and `else_body`), `elif_clause` has `condition` and
   `consequence` (was `body`), and `else_alt_clause`'s body has no field name, like
   `else_clause`'s.
+- **`for_statement`'s `condition` field no longer includes the `;`** after the condition.
+- **`{#` / `#}` are named nodes** (`comment_tag_open`, `comment_tag_trim_open`,
+  `comment_tag_close`, `comment_tag_trim_close`), like the delimiters of the other tags.
 
 ### Added
 

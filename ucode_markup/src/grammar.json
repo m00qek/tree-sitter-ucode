@@ -168,12 +168,22 @@
             "type": "CHOICE",
             "members": [
               {
-                "type": "STRING",
-                "value": "{#-"
+                "type": "ALIAS",
+                "content": {
+                  "type": "STRING",
+                  "value": "{#-"
+                },
+                "named": true,
+                "value": "comment_tag_trim_open"
               },
               {
-                "type": "STRING",
-                "value": "{#"
+                "type": "ALIAS",
+                "content": {
+                  "type": "STRING",
+                  "value": "{#"
+                },
+                "named": true,
+                "value": "comment_tag_open"
               }
             ]
           }
@@ -201,12 +211,22 @@
             "type": "CHOICE",
             "members": [
               {
-                "type": "STRING",
-                "value": "-#}"
+                "type": "ALIAS",
+                "content": {
+                  "type": "STRING",
+                  "value": "-#}"
+                },
+                "named": true,
+                "value": "comment_tag_trim_close"
               },
               {
-                "type": "STRING",
-                "value": "#}"
+                "type": "ALIAS",
+                "content": {
+                  "type": "STRING",
+                  "value": "#}"
+                },
+                "named": true,
+                "value": "comment_tag_close"
               }
             ]
           }
@@ -1426,30 +1446,34 @@
               ]
             },
             {
-              "type": "FIELD",
-              "name": "condition",
-              "content": {
-                "type": "CHOICE",
-                "members": [
-                  {
-                    "type": "SEQ",
-                    "members": [
-                      {
+              "type": "CHOICE",
+              "members": [
+                {
+                  "type": "SEQ",
+                  "members": [
+                    {
+                      "type": "FIELD",
+                      "name": "condition",
+                      "content": {
                         "type": "SYMBOL",
                         "name": "_expressions"
-                      },
-                      {
-                        "type": "STRING",
-                        "value": ";"
                       }
-                    ]
-                  },
-                  {
+                    },
+                    {
+                      "type": "STRING",
+                      "value": ";"
+                    }
+                  ]
+                },
+                {
+                  "type": "FIELD",
+                  "name": "condition",
+                  "content": {
                     "type": "SYMBOL",
                     "name": "empty_statement"
                   }
-                ]
-              }
+                }
+              ]
             },
             {
               "type": "FIELD",
@@ -1550,30 +1574,34 @@
               ]
             },
             {
-              "type": "FIELD",
-              "name": "condition",
-              "content": {
-                "type": "CHOICE",
-                "members": [
-                  {
-                    "type": "SEQ",
-                    "members": [
-                      {
+              "type": "CHOICE",
+              "members": [
+                {
+                  "type": "SEQ",
+                  "members": [
+                    {
+                      "type": "FIELD",
+                      "name": "condition",
+                      "content": {
                         "type": "SYMBOL",
                         "name": "_expressions"
-                      },
-                      {
-                        "type": "STRING",
-                        "value": ";"
                       }
-                    ]
-                  },
-                  {
+                    },
+                    {
+                      "type": "STRING",
+                      "value": ";"
+                    }
+                  ]
+                },
+                {
+                  "type": "FIELD",
+                  "name": "condition",
+                  "content": {
                     "type": "SYMBOL",
                     "name": "empty_statement"
                   }
-                ]
-              }
+                }
+              ]
             },
             {
               "type": "FIELD",

@@ -254,9 +254,9 @@ module.exports = function defineGrammar(name) {
 
         // {# ... #}  with optional whitespace-stripping markers
         comment_tag: $ => seq(
-          field('open',    choice('{#-', '{#')),
+          field('open',    choice(alias('{#-', $.comment_tag_trim_open), alias('{#', $.comment_tag_open))),
           optional(field('content', $.comment_content)),
-          field('close',   choice('-#}', '#}')),
+          field('close',   choice(alias('-#}', $.comment_tag_trim_close), alias('#}', $.comment_tag_close))),
         ),
 
         // comment_content is an external token (see common/scanner.h): it scans
@@ -1173,10 +1173,10 @@ function forHeader($) {
       seq(field('initializer', $._expressions), ';'),
       field('initializer', $.empty_statement),
     ),
-    field('condition', choice(
-      seq($._expressions, ';'),
-      $.empty_statement,
-    )),
+    choice(
+      seq(field('condition', $._expressions), ';'),
+      field('condition', $.empty_statement),
+    ),
     field('increment', optional($._expressions)),
     ')',
   );
