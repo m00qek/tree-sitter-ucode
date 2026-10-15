@@ -112,26 +112,24 @@ typedef enum {
     ASI_DECLINE,      /* no semicolon; an operator ('-' '%' '/') was consumed */
 } AsiResult;
 
-/* The four ECMAScript line terminators: LF, CR, and the Unicode LS / PS. */
+/* Line terminators.  ucode has only LF and CR — not JavaScript's U+2028 /
+   U+2029, which its lexer rejects as "Unexpected character". */
 static inline bool is_line_terminator(int32_t c) {
-    return c == '\n' || c == '\r' || c == 0x2028 || c == 0x2029;
+    return c == '\n' || c == '\r';
 }
 
 /*
- * Inline (non-line-terminating) whitespace: iswspace() minus the line
- * terminators, which are handled separately wherever a newline is significant
- * (ASI, block-comment newline detection).  This is the single predicate for
- * "blank that does not end a line".
- *
- * iswspace() is narrower than the grammar's `extras` regex (which also skips
- * \p{Zs}, NBSP, ZWSP, …); in the C locale it covers only ' ' \t \v \f plus the
- * terminators.  Those exotic blanks are consumed by tree-sitter's own extras
- * handling, not here — this predicate exists so scan_comment's leading skip
- * eats the ordinary blanks (space, tab, \f, \v) between a newline and the next
- * token instead of stranding the ASI decision on one of them.
+ * Inline (non-line-terminating) whitespace: the rest of C isspace(), which is
+ * what ucode's lexer skips and what the grammar's `extras` regex matches.
+ * Listed explicitly rather than calling iswspace(), whose answer depends on
+ * the host process's locale (an editor that calls setlocale() would see NBSP
+ * as a blank), so a file would parse differently from one program to the
+ * next.  This is the single predicate for "blank that does not end a line";
+ * scan_comment's leading skip uses it so the ASI decision is not stranded on
+ * one of them.
  */
 static inline bool is_inline_ws(int32_t c) {
-    return iswspace(c) && !is_line_terminator(c);
+    return c == ' ' || c == '\t' || c == '\v' || c == '\f';
 }
 
 /* -------------------------------------------------------------------------
@@ -940,7 +938,7 @@ static CommentResult scan_comment(TSLexer *lexer, Scanner *state,
        after lexing that whitespace internally, so a comment reached only across
        whitespace would otherwise be lexed as division or a regex.  is_inline_ws
        matches everything the grammar's `extras` treat as whitespace except line
-       terminators, so exotic blanks (form feed, vertical tab, NBSP, …) between a
+       terminators, so the less common blanks (form feed, vertical tab) between a
        newline and the next token are consumed here rather than derailing the ASI
        decision that follows.
        Line terminators need care: skipping one destroys the newline that

@@ -62,6 +62,10 @@ Notable changes to tree-sitter-ucode. Releases up to v0.8.0 are described in the
   `let set = …` used to produce ERROR nodes. The anonymous `get` / `set` node types are gone.
 - `return` followed by a line break returns the next line's expression, as in ucode
   (`return⏎ a + b;`). It used to parse as an empty `return` followed by a separate statement.
+- Only ucode's whitespace (space, tab, line feed, carriage return, form feed, vertical tab) is
+  whitespace. No-break space, U+2028 / U+2029, zero-width space, word joiner and a byte order mark
+  inside the file are now errors, as in ucode; a byte order mark at the very start is still
+  skipped by tree-sitter itself. The scanner no longer depends on the host's locale.
 - ucdocs: a record field after a tag no longer starts with the preceding space; a name followed
   by a full stop keeps its name; an `@` inside a word is prose.
 

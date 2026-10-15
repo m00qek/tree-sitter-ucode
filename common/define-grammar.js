@@ -81,7 +81,10 @@ module.exports = function defineGrammar(name) {
       // it never appears in the tree; listed as an extra because it can occur at
       // any inter-statement position a comment can.
       $._asi_gap,
-      /[\s\p{Zs}\uFEFF\u2028\u2029\u2060\u200B]/,
+      // Exactly C isspace(), which is what ucode's lexer skips. Not `\s`: in a
+      // tree-sitter regex that is Unicode-aware and would also accept NBSP,
+      // U+2028/2029, BOM and friends, all "Unexpected character" in ucode.
+      /[ \t\n\r\f\v]/,
     ],
 
     reserved: {
@@ -968,7 +971,7 @@ module.exports = function defineGrammar(name) {
           /[^xu0-7]/,
           /x[0-9a-fA-F]{2}/,
           /u[0-9a-fA-F]{4}/,
-          /\r[\n\u2028\u2029]/,
+          /\r\n/,
         ),
       )),
 
