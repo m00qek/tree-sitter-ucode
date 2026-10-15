@@ -1,6 +1,6 @@
 [build-system]
 build-backend = "setuptools.build_meta"
-requires = [ "setuptools>=62.4.0", "wheel" ]
+requires = [ "setuptools>=77", "wheel" ]
 
 [project]
 authors = [ { name = "António Mora" } ]
@@ -12,7 +12,8 @@ classifiers = [
 ]
 description = "Ucode grammars for tree-sitter: scripts, templates and doc comments"
 keywords = [ "incremental", "parsing", "tree-sitter", "ucode" ]
-license.text = "MIT"
+license = "MIT"
+license-files = [ "LICENSE" ]
 name = "tree-sitter-ucode"
 readme = "README.md"
 requires-python = ">=3.10"
