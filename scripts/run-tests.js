@@ -113,6 +113,17 @@ for (const g of grammars) {
     checks.checkHighlights(lib, g.name, helix));
 }
 
+// Highlight and tags assertion tests (test/highlight/, test/tags/: `// ^ capture`
+// comments under the token they check). Run from the repo root, where the CLI
+// picks each file's grammar through tree-sitter.json and runs the real
+// tree-sitter-highlight and tree-sitter-tags (injections, locals and #strip!
+// included); the per-grammar `test -p` runs above can't, because there is no
+// tree-sitter.json inside a grammar directory. It warns that the root has no
+// test/corpus; that is expected.
+if (!buildOnly) {
+  execFileSync(TREE_SITTER, ['test'], { stdio: 'inherit', cwd: ROOT });
+}
+
 if (tagsFailures > 0) {
   console.error(`${tagsFailures} tags fixture(s) failed (rerun with --update to accept)`);
 }

@@ -3,6 +3,12 @@
 
 ; Locals queries for ucode.
 ; Used by editors for rename, go-to-definition, and scope-aware highlight.
+;
+; Definitions use the plain @local.definition capture, the only one
+; tree-sitter-highlight and tree-sitter-tags accept; what kind of name it
+; defines is metadata, (#set! local.kind <function|var|parameter|import>).
+; scripts/generate-helix-queries.js turns that into Helix's
+; @local.definition.<scope>.
 
 ; -------------------------------------------------------------------------
 ; Scopes
@@ -21,6 +27,15 @@
 (for_in_alt_statement) @local.scope
 ; catch clause scopes its parameter to the handler body
 (catch_clause) @local.scope
+; ucode also scopes declarations to alt-syntax bodies and to a switch. The
+; `if` body of an alt-syntax if has no container node of its own, so the whole
+; statement is its scope (it encloses the elif/else clauses, which get their
+; own scopes inside it).
+(if_alt_statement) @local.scope
+(elif_clause) @local.scope
+(else_alt_clause) @local.scope
+(while_alt_statement) @local.scope
+(switch_body) @local.scope
 
 ; -------------------------------------------------------------------------
 ; Definitions — functions
@@ -36,8 +51,7 @@
 ; scope -> definitions map by structural nesting alone will misplace this
 ; definition: it will end up invisible to callers outside the function body.
 (function_declaration
-  name: (identifier) @local.definition.function
-)
+  name: (identifier) @local.definition.function)
 
 ; Named function expressions (let f = function foo() {}) keep their name
 ; *inside* the expression scope — foo is only visible for self-recursion,
@@ -56,9 +70,12 @@
 ; Definitions — parameters
 ; -------------------------------------------------------------------------
 
-(formal_parameters (identifier) @local.definition.variable.parameter)
-(rest_element (identifier) @local.definition.variable.parameter)
-(arrow_function parameter: (identifier) @local.definition.variable.parameter)
+(formal_parameters
+  (identifier) @local.definition.variable.parameter)
+(rest_element
+  (identifier) @local.definition.variable.parameter)
+(arrow_function
+  parameter: (identifier) @local.definition.variable.parameter)
 
 ; catch clause binding
 (catch_clause
@@ -90,10 +107,12 @@
 ; -------------------------------------------------------------------------
 
 ; import def from "./mod.uc"
-(import_clause (identifier) @local.definition.variable)
+(import_clause
+  (identifier) @local.definition.variable)
 
 ; import * as ns from "./mod.uc"
-(namespace_import (identifier) @local.definition.variable)
+(namespace_import
+  (identifier) @local.definition.variable)
 
 ; import { a } from "./mod.uc"  — name IS the local binding (no alias)
 (import_specifier

@@ -1,5 +1,11 @@
 ; Locals queries for ucode.
 ; Used by editors for rename, go-to-definition, and scope-aware highlight.
+;
+; Definitions use the plain @local.definition capture, the only one
+; tree-sitter-highlight and tree-sitter-tags accept; what kind of name it
+; defines is metadata, (#set! local.kind <function|var|parameter|import>).
+; scripts/generate-helix-queries.js turns that into Helix's
+; @local.definition.<scope>.
 
 ; -------------------------------------------------------------------------
 ; Scopes
@@ -18,6 +24,15 @@
 (for_in_alt_statement) @local.scope
 ; catch clause scopes its parameter to the handler body
 (catch_clause) @local.scope
+; ucode also scopes declarations to alt-syntax bodies and to a switch. The
+; `if` body of an alt-syntax if has no container node of its own, so the whole
+; statement is its scope (it encloses the elif/else clauses, which get their
+; own scopes inside it).
+(if_alt_statement) @local.scope
+(elif_clause) @local.scope
+(else_alt_clause) @local.scope
+(while_alt_statement) @local.scope
+(switch_body) @local.scope
 
 ; -------------------------------------------------------------------------
 ; Definitions — functions
@@ -33,33 +48,43 @@
 ; scope -> definitions map by structural nesting alone will misplace this
 ; definition: it will end up invisible to callers outside the function body.
 (function_declaration
-  name: (identifier) @local.definition.function
+  name: (identifier) @local.definition
+  (#set! local.kind function)
   (#set! definition.function.scope parent))
 
 ; Named function expressions (let f = function foo() {}) keep their name
 ; *inside* the expression scope — foo is only visible for self-recursion,
 ; not to the surrounding block.  No (#set! parent) here.
 (function_expression
-  name: (identifier) @local.definition.function)
+  name: (identifier) @local.definition
+  (#set! local.kind function))
 
 ; -------------------------------------------------------------------------
 ; Definitions — variables
 ; -------------------------------------------------------------------------
 
 (variable_declarator
-  name: (identifier) @local.definition.var)
+  name: (identifier) @local.definition
+  (#set! local.kind var))
 
 ; -------------------------------------------------------------------------
 ; Definitions — parameters
 ; -------------------------------------------------------------------------
 
-(formal_parameters (identifier) @local.definition.parameter)
-(rest_element (identifier) @local.definition.parameter)
-(arrow_function parameter: (identifier) @local.definition.parameter)
+(formal_parameters
+  (identifier) @local.definition
+  (#set! local.kind parameter))
+(rest_element
+  (identifier) @local.definition
+  (#set! local.kind parameter))
+(arrow_function
+  parameter: (identifier) @local.definition
+  (#set! local.kind parameter))
 
 ; catch clause binding
 (catch_clause
-  parameter: (identifier) @local.definition.var)
+  parameter: (identifier) @local.definition
+  (#set! local.kind var))
 
 ; -------------------------------------------------------------------------
 ; Definitions — for-in loop variables
@@ -71,35 +96,45 @@
 
 (for_in_statement
   kind: _
-  left: (identifier) @local.definition.var)
+  left: (identifier) @local.definition
+  (#set! local.kind var))
 (for_in_statement
   kind: _
-  value: (identifier) @local.definition.var)
+  value: (identifier) @local.definition
+  (#set! local.kind var))
 (for_in_alt_statement
   kind: _
-  left: (identifier) @local.definition.var)
+  left: (identifier) @local.definition
+  (#set! local.kind var))
 (for_in_alt_statement
   kind: _
-  value: (identifier) @local.definition.var)
+  value: (identifier) @local.definition
+  (#set! local.kind var))
 
 ; -------------------------------------------------------------------------
 ; Definitions — imports
 ; -------------------------------------------------------------------------
 
 ; import def from "./mod.uc"
-(import_clause (identifier) @local.definition.import)
+(import_clause
+  (identifier) @local.definition
+  (#set! local.kind import))
 
 ; import * as ns from "./mod.uc"
-(namespace_import (identifier) @local.definition.import)
+(namespace_import
+  (identifier) @local.definition
+  (#set! local.kind import))
 
 ; import { a } from "./mod.uc"  — name IS the local binding (no alias)
 (import_specifier
-  name: (identifier) @local.definition.import
-  !alias)
+  name: (identifier) @local.definition
+  !alias
+  (#set! local.kind import))
 
 ; import { a as x } from "./mod.uc"  — only the alias is the local binding
 (import_specifier
-  alias: (identifier) @local.definition.import)
+  alias: (identifier) @local.definition
+  (#set! local.kind import))
 
 ; -------------------------------------------------------------------------
 ; References

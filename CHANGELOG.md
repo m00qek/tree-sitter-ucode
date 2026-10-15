@@ -29,6 +29,13 @@ Notable changes to tree-sitter-ucode. Releases up to v0.8.0 are described in the
   `@typedef` type, name and description are each optional; the JSDoc ` - ` separator is no longer
   part of a description; `number`, `integer`, `double`, `object`, `array`, `regexp` and `resource`
   are `primitive_type` nodes (they were user type references).
+- **Locals use the plain `@local.definition` capture.** `@local.definition.function`, `.var`,
+  `.parameter` and `.import` made `tree-sitter tags` fail outright and were ignored by
+  tree-sitter-highlight. The kind is now metadata on each pattern, `(#set! local.kind …)`; the
+  Helix queries still get Helix's `@local.definition.<scope>` names.
+- **`ucdocs/queries/tags.scm` is a tags query.** It was a field-extraction query (`@param.type`,
+  `@template.param`, …) registered as tags, which tree-sitter-tags rejected. It now tags `@typedef`
+  names as type definitions and named and module types as references.
 
 ### Added
 
@@ -66,6 +73,11 @@ Notable changes to tree-sitter-ucode. Releases up to v0.8.0 are described in the
   whitespace. No-break space, U+2028 / U+2029, zero-width space, word joiner and a byte order mark
   inside the file are now errors, as in ucode; a byte order mark at the very start is still
   skipped by tree-sitter itself. The scanner no longer depends on the host's locale.
+- `tree-sitter tags` works for all three grammars (see the locals and ucdocs tags changes above).
+- Locals: alt-syntax `if` / `elif` / `else` / `while` bodies and `switch` bodies are scopes, as
+  they are in ucode.
+- Tags: every exported `const` / `let` that is not a function is tagged, with its doc comment;
+  calls to ucode's builtins are not references; doc text no longer ends with `*/`.
 - ucdocs: a record field after a tag no longer starts with the preceding space; a name followed
   by a full stop keeps its name; an `@` inside a word is prose.
 

@@ -68,7 +68,7 @@ const TAGS_TEMPLATE_EXTRA = String.raw`
   (function_declaration
     name: (identifier) @name) @definition.function
   (#match? @_gap "^-?%\\}\\s*\\{%[-+]?$")
-  (#strip! @doc "^[\\s\\*/]+|^[\\s\\*/]$")
+  (#strip! @doc "^[\\s\\*/]+|[\\s\\*/]+$")
   (#select-adjacent! @doc @definition.function)
 )
 
@@ -82,7 +82,7 @@ const TAGS_TEMPLATE_EXTRA = String.raw`
       name: (identifier) @name
       value: [(function_expression) (arrow_function)])) @definition.function
   (#match? @_gap "^-?%\\}\\s*\\{%[-+]?$")
-  (#strip! @doc "^[\\s\\*/]+|^[\\s\\*/]$")
+  (#strip! @doc "^[\\s\\*/]+|[\\s\\*/]+$")
   (#select-adjacent! @doc @definition.function)
 )
 `;
