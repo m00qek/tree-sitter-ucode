@@ -16,8 +16,9 @@ npm install
 ## Project layout
 
 The repo root holds only repo-level files (package, manifest, bindings, docs,
-CI). Each grammar is its own directory with the same four parts — `grammar.js`,
-`src/`, `queries/`, `test/` — and anything two grammars share lives in `common/`.
+CI) and the query assertion tests in `test/`. Each grammar is its own directory
+with the same four parts — `grammar.js`, `src/`, `queries/`, `test/` — and
+anything two grammars share lives in `common/`.
 
 ```
 common/
@@ -43,6 +44,8 @@ ucdocs/                 doc comments — standalone grammar, edit directly
   src/scanner.c         hand-written external lexer: star-runs in prose (vs the */ terminator)
   src/                  otherwise generated
   queries/  test/corpus/
+test/highlight/         highlight assertion tests (.uc → ucode, .ut → ucode_markup)
+test/tags/              tags assertion tests
 editors/helix/queries/  GENERATED query files for Helix (Helix's capture names) — do not edit
 bindings/               one directory per language (c, go, node, python, rust, swift), each
                         exposing all three grammars; the build files they need sit at the
@@ -142,6 +145,19 @@ corpus tests cannot see, because they compare tree shapes only:
   space into a token without changing the tree's shape);
 - every token of every corpus input is highlighted by `highlights.scm`, except the deliberate
   exceptions listed in `UNHIGHLIGHTED` (template `raw_text`, the ucdocs `/**` opener).
+
+It then runs the query assertion tests in `test/highlight/` and `test/tags/` with `tree-sitter
+test` from the repo root, where each file reaches its grammar through `tree-sitter.json` and is
+checked by tree-sitter-highlight and tree-sitter-tags themselves. A comment under a line asserts
+the capture of the token above its caret:
+
+```
+let r = /ab+/g;
+//      ^ string.regexp
+```
+
+`// <- name` asserts the token at the comment's own column. In templates `//` is raw text, so
+assertions are `{# ^ name #}` comments, with the caret placed under its token.
 
 ## Validating against real code
 

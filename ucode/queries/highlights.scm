@@ -21,7 +21,10 @@
 ; Comments
 ; -------------------------------------------------------------------------
 
-(comment) @comment @spell
+; @spell first: tree-sitter-highlight keeps the LAST capture of a node, so
+; `(comment) @comment @spell` would leave comments with no highlight there.
+(comment) @spell
+(comment) @comment
 
 ; -------------------------------------------------------------------------
 ; Shebang
@@ -41,7 +44,6 @@
 (template_string) @string
 (template_string (escape_sequence) @string.escape)
 (template_substitution "${" @punctuation.special)
-(template_substitution "}" @punctuation.special)
 
 (regex) @string.regexp
 
@@ -172,6 +174,12 @@
 
 ["," ";" "."] @punctuation.delimiter
 ["(" ")" "[" "]" "{" "}"] @punctuation.bracket
+
+; Overrides of the generic lists above, so they must come after them (the
+; later pattern wins): the `}` closing `${…}` pairs with its `${`, and a
+; regex's delimiting slashes are part of the regex, not division.
+(template_substitution "}" @punctuation.special)
+(regex "/" @string.regexp)
 
 ; `:` after an object key, a case label, or an alt-syntax header (`if (c):`,
 ; `function f():`). Listed by parent so these never touch the ternary `:`,

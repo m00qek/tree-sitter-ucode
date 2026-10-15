@@ -1,0 +1,20 @@
+{# Highlight assertions for the ucode_markup grammar (run by `npm test`). #}
+{# Each assertion is a comment whose caret sits under its token. #}
+<ul>
+    {% for (let item in items): %}
+ {# ^ punctuation.special #}
+    {# ^ keyword.repeat #}
+         {# ^ keyword.storage #}
+                  {# ^ keyword.operator #}
+                             {# ^ punctuation.special #}
+      <li>{{ item.name }}</li>
+       {# ^ punctuation.special #}
+               {# ^ variable.member #}
+                    {# ^ punctuation.special #}
+    {% endfor %}
+    {# ^ keyword.repeat #}
+</ul>
+    {% let r = /a+/; %}
+            {# ^ string.regexp #}
+    {# a note #}
+    {# ^ comment #}

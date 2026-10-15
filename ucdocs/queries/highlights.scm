@@ -88,9 +88,8 @@
 
 ; ── Descriptions ─────────────────────────────────────────────────────────────
 
-(description) @comment
-
 ; @spell only on prose-bearing tags; @example descriptions contain code.
+; Before @comment: tree-sitter-highlight keeps the LAST capture of a node.
 (document          (description) @spell)
 (param_tag         description: (description) @spell)
 (returns_tag       description: (description) @spell)
@@ -100,3 +99,5 @@
 (deprecated_tag    description: (description) @spell)
 (since_tag         description: (description) @spell)
 (see_tag           description: (description) @spell)
+
+(description) @comment
