@@ -86,6 +86,10 @@ Notable changes to tree-sitter-ucode. Releases up to v0.8.0 are described in the
   `{`, alt-syntax body or object literal gets its MISSING closer at the end of input, in scripts
   as in templates. A script used to become one ERROR from the open construct on, and a template
   recovered only from a single open block.
+- Templates: `{{` and `}}` are tag delimiters anywhere in code, as in ucode. `{% x = {a:{b:1}}; %}`,
+  `{{ {a:{b:1}} }}` and a `{{` inside a `{% … %}` tag were accepted as braces; they are errors now.
+  A broken expression tag (`{{ obj. }}`) is a local error instead of running into the text and
+  tags after it.
 - `tree-sitter tags` works for all three grammars (see the locals and ucdocs tags changes above).
 - With tree-sitter-highlight (the CLI, GitHub): comments and doc-comment descriptions are
   highlighted again (`@spell` came last and replaced `@comment`), parameters keep their highlight

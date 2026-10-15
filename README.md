@@ -371,11 +371,17 @@ empty: `{% if (a) %}text{% %}` is `if (a) ;` (an `empty_statement` consequence)
 followed by the text as the next statement. A later `{% else %}` is then an
 error, just as in ucode. Use braces or the `:` form when the text is the body.
 
-While a template is being edited, errors stay local. A block or alt-syntax body
-that is not closed yet ends in a single zero-width `(MISSING "}")` /
-`(MISSING "endif")` node instead of an ERROR around it, and a half-typed tag
-followed by the next `{%` becomes a small ERROR around the stray delimiter
-rather than swallowing the rest of the file.
+As in ucode, `{{` and `}}` are tag delimiters anywhere in template code, not
+just in text: `{% x = {a:{b:1}}; %}` is an error (separate the braces: `{a:{b:1} }`), and so is
+a `{{` inside a `{% … %}` tag. Inside strings, regexes and template-literal text
+they are ordinary characters.
+
+While a file is being edited, errors stay local. Blocks and alt-syntax bodies
+that are not closed yet at the end of the file each end in a zero-width
+`(MISSING "}")` / `(MISSING "endif")` node instead of an ERROR around them, in
+scripts and templates alike. A half-typed or broken tag (`{% if (co`,
+`{{ obj. }}`) becomes a small ERROR, bounded by the next tag delimiter, rather
+than swallowing the rest of the file.
 
 ## License
 

@@ -1512,6 +1512,126 @@ Text is not an expression — tag split inside an array literal produces ERROR
 
 
 ================================================================================
+`}}` inside code closes the expression tag, so a nested object literal is an error
+:error
+================================================================================
+{{ {a:{b:1}} }}
+--------------------------------------------------------------------------------
+
+
+
+================================================================================
+`}}` inside a statement tag is an expression tag close, not two braces
+:error
+================================================================================
+{% x = {a:{b:1}}; %}
+--------------------------------------------------------------------------------
+
+
+
+================================================================================
+`{{` inside a statement tag is a nested tag, not two braces
+:error
+================================================================================
+{% if (1) {{ print(1); }} %}
+--------------------------------------------------------------------------------
+
+
+
+================================================================================
+`}}` closing a template-literal substitution closes the expression tag
+:error
+================================================================================
+{{ `${a}}` }}
+--------------------------------------------------------------------------------
+
+
+
+================================================================================
+Tag delimiters inside strings, regexes and template-literal text are content
+================================================================================
+
+{% x = "}}"; y = /{{/; z = `a}}b{{c`; %}
+
+--------------------------------------------------------------------------------
+
+(markup
+  (raw_text)
+  (statement_tag_open)
+  (expression_statement
+    (assignment_expression
+      left: (identifier)
+      right: (string
+        (string_fragment))))
+  (expression_statement
+    (assignment_expression
+      left: (identifier)
+      right: (regex
+        pattern: (regex_pattern))))
+  (expression_statement
+    (assignment_expression
+      left: (identifier)
+      right: (template_string
+        (string_fragment))))
+  (text_statement
+    (statement_tag_close)
+    (raw_text)))
+
+================================================================================
+Recovery: an expression tag broken mid-expression stays a local error
+================================================================================
+
+<p>{{ obj. }}</p>
+<b>after</b>
+
+--------------------------------------------------------------------------------
+
+(markup
+  (raw_text)
+  (expression_tag
+    open: (expression_tag_open)
+    (identifier)
+    (ERROR)
+    close: (expression_tag_close))
+  (raw_text))
+
+================================================================================
+Recovery: a broken expression tag does not swallow the next statement tag
+================================================================================
+
+{{ fs. }}
+{% for (x in xs): %}
+row {{ x }}
+{% endfor %}
+
+--------------------------------------------------------------------------------
+
+(markup
+  (raw_text)
+  (expression_tag
+    open: (expression_tag_open)
+    (identifier)
+    (ERROR)
+    close: (expression_tag_close))
+  (raw_text)
+  (statement_tag_open)
+  (for_in_alt_statement
+    left: (identifier)
+    right: (identifier)
+    body: (text_statement
+      (statement_tag_close)
+      (raw_text)
+      (expression_tag
+        open: (expression_tag_open)
+        (identifier)
+        close: (expression_tag_close))
+      (raw_text)
+      (statement_tag_open)))
+  (text_statement
+    (statement_tag_close)
+    (raw_text)))
+
+================================================================================
 Recovery: a block left open at end of input is one MISSING closing brace
 ================================================================================
 

@@ -44,8 +44,8 @@
 /*
  * 1 when compiled into the ucode_markup scanner (its shim defines it before
  * including this file), 0 for the plain ucode scanner. Enables the template-
- * only error-recovery aids below (see lookahead_is_stmt_open and
- * scan_stray_tag_delimiter); valid input parses identically either way.
+ * only lexing of tag delimiters inside code (see lookahead_is_tag_open and
+ * scan_stray_tag_delimiter).
  */
 #ifndef UCODE_SCANNER_TEMPLATE
 #define UCODE_SCANNER_TEMPLATE 0
@@ -551,13 +551,14 @@ static bool lookahead_is_stmt_close(TSLexer *lexer) {
 }
 
 /*
- * Return true if the lookahead is the start of `{%` (a statement tag open, in
- * any variant). Like lookahead_is_stmt_close, it peeks by advancing.
+ * Return true if the lookahead is the start of `{%` or `{{` (a statement or
+ * expression tag open, in any variant). Like lookahead_is_stmt_close, it
+ * peeks by advancing.
  */
-static bool lookahead_is_stmt_open(TSLexer *lexer) {
+static bool lookahead_is_tag_open(TSLexer *lexer) {
     if (lexer->lookahead != '{') return false;
     advance(lexer);
-    return lexer->lookahead == '%';
+    return lexer->lookahead == '%' || lexer->lookahead == '{';
 }
 
 /*
@@ -654,14 +655,14 @@ static AsiResult asi_same_line_decision(TSLexer *lexer) {
     if (lexer->lookahead == '}' || lexer->lookahead == 0)
         return ASI_INSERT;
 
-    /* Template only: a `{%` inside a tag is always an error in ucode ("Template
-       blocks may not be nested") — typically a half-typed tag followed by the
-       next real one. End the statement here, so error recovery only has to
-       supply the missing `%}` (see scan_stray_tag_delimiter) instead of
-       swallowing the rest of the file. '{' consumed and not `{%` → DECLINE so
-       it is re-lexed. */
+    /* Template only: a `{%` or `{{` inside a tag is always an error in ucode
+       ("Template blocks may not be nested") — typically a half-typed tag
+       followed by the next real one. End the statement here, so error
+       recovery only has to supply the missing `%}` (see
+       scan_stray_tag_delimiter) instead of swallowing the rest of the file.
+       '{' consumed and not a tag open → DECLINE so it is re-lexed. */
     if (UCODE_SCANNER_TEMPLATE && lexer->lookahead == '{')
-        return lookahead_is_stmt_open(lexer) ? ASI_INSERT : ASI_DECLINE;
+        return lookahead_is_tag_open(lexer) ? ASI_INSERT : ASI_DECLINE;
 
     /* Ucode extension: %} / -%} closing a statement tag → insert (see
        asi_dash_or_percent). */
@@ -712,7 +713,7 @@ static AsiResult asi_after_newline_decision(TSLexer *lexer, bool after_return) {
         if (lexer->lookahead == '%' || lexer->lookahead == '-')
             return asi_dash_or_percent(lexer);
         if (UCODE_SCANNER_TEMPLATE && lexer->lookahead == '{')
-            return lookahead_is_stmt_open(lexer) ? ASI_INSERT : ASI_DECLINE;
+            return lookahead_is_tag_open(lexer) ? ASI_INSERT : ASI_DECLINE;
         return lookahead_is_end_keyword(lexer) ? ASI_INSERT : ASI_DECLINE;
     }
 
@@ -1057,29 +1058,56 @@ static CommentResult scan_comment(TSLexer *lexer, Scanner *state,
  * ---------------------------------------------------------------------- */
 
 /*
- * Template only, error recovery: a `{%` or `%}` (any variant) where no tag
- * delimiter is valid — a half-typed tag (`{% if (co` followed by the next
- * `{%`), or a tag closed mid-expression (`{% x = 1 + %}`). ucode rejects both
- * ("Template blocks may not be nested" / a `;` where an operand is expected).
- * Emit the delimiter token anyway, though it is invalid here: tree-sitter then
- * recovers around a tag boundary — typically by inserting the one missing
- * `%}` before a stray `{%` — instead of re-lexing the characters as `{`, `%`
- * and `}` operators and keeping the error region open until some unrelated
- * token happens to fit. Valid input never reaches this: a delimiter that is
- * valid has already been matched above.
+ * Template only: a tag delimiter — `{%`, `%}`, `{{`, `}}`, in any variant —
+ * where none is valid. ucode's lexer reads these as tag delimiters anywhere in
+ * template code outside strings, comments, regexes and template-literal text,
+ * so `{% x = {a:{b:1}}; %}` or `{% if (a) {{ … }} %}` is a syntax error there,
+ * not nested braces. Typically it is a half-typed tag (`{% if (co` or
+ * `{{ obj.` followed by the next tag), or a tag closed mid-expression
+ * (`{% x = 1 + %}`, `{{ obj. }}`). Emit the delimiter token anyway, though it
+ * is invalid here: tree-sitter then reports the error and recovers around the
+ * tag boundary — typically by inserting the one missing token — instead of
+ * re-lexing the characters as `{`, `%` and `}` operators and keeping the
+ * error region open until some unrelated token happens to fit. Valid input
+ * never reaches this: a delimiter that is valid has already been matched
+ * above.
  */
 static bool scan_stray_tag_delimiter(TSLexer *lexer) {
     if (lexer->lookahead == '{') {
-        if (!lookahead_is_stmt_open(lexer)) return false;
-        advance(lexer);
-        if (lexer->lookahead == '-' || lexer->lookahead == '+') {
-            lexer->result_symbol = lexer->lookahead == '-' ? STATEMENT_TAG_TRIM_OPEN
-                                                           : STATEMENT_TAG_LSTRIP_OPEN;
+        if (!lookahead_is_tag_open(lexer)) return false;
+        if (lexer->lookahead == '{') {
             advance(lexer);
+            if (lexer->lookahead == '-') {
+                lexer->result_symbol = EXPRESSION_TAG_TRIM_OPEN;
+                advance(lexer);
+            } else {
+                lexer->result_symbol = EXPRESSION_TAG_OPEN;
+            }
         } else {
-            lexer->result_symbol = STATEMENT_TAG_OPEN;
+            advance(lexer);
+            if (lexer->lookahead == '-' || lexer->lookahead == '+') {
+                lexer->result_symbol = lexer->lookahead == '-' ? STATEMENT_TAG_TRIM_OPEN
+                                                               : STATEMENT_TAG_LSTRIP_OPEN;
+                advance(lexer);
+            } else {
+                lexer->result_symbol = STATEMENT_TAG_OPEN;
+            }
         }
         lexer->mark_end(lexer);
+        return true;
+    }
+    if (lexer->lookahead == '}')
+        return scan_expression_tag_close(lexer) == TAG_CLOSE_MATCHED;
+    /* '%' or '-': `%}`, `-%}` or `-}}`. */
+    if (lexer->lookahead == '-') {
+        advance(lexer);
+        if (lexer->lookahead != '%' && lexer->lookahead != '}') return false;
+        bool expression = lexer->lookahead == '}';
+        advance(lexer);
+        if (lexer->lookahead != '}') return false;
+        advance(lexer);
+        lexer->mark_end(lexer);
+        lexer->result_symbol = expression ? EXPRESSION_TAG_TRIM_CLOSE : STATEMENT_TAG_TRIM_CLOSE;
         return true;
     }
     return scan_statement_tag_close(lexer) == TAG_CLOSE_MATCHED;
@@ -1288,8 +1316,8 @@ static bool ucode_scanner_scan(
     if (valid_symbols[AUTOMATIC_SEMICOLON])
         return dispatch_asi(scan_automatic_semicolon(lexer), lexer, valid_symbols);
 
-    if (UCODE_SCANNER_TEMPLATE && (lexer->lookahead == '{' || lexer->lookahead == '%' ||
-                                   lexer->lookahead == '-'))
+    if (UCODE_SCANNER_TEMPLATE && (lexer->lookahead == '{' || lexer->lookahead == '}' ||
+                                   lexer->lookahead == '%' || lexer->lookahead == '-'))
         return scan_stray_tag_delimiter(lexer);
 
     if (valid_symbols[TERNARY_QMARK])
