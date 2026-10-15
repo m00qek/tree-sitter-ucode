@@ -5,9 +5,12 @@ on:
     branches: [main]
     paths:
       - common/scanner.h
-      - ucode/src/scanner.c
-      - ucode_markup/src/scanner.c
-      - ucdocs/src/scanner.c
+      - '*/src/scanner.c'
+      # A grammar change can reach scanner states no earlier input did.
+      - '*/src/parser.c'
+  schedule:
+    - cron: '17 4 * * 1'   # weekly, Monday
+  workflow_dispatch:
 
 jobs:
   fuzz:

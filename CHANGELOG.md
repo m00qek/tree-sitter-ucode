@@ -141,4 +141,7 @@ Notable changes to tree-sitter-ucode. Releases up to v0.8.0 are described in the
   tree; CRLF line endings are tested.
 - `tree-sitter.json` validates against the official schema, and declares `common/scanner.h` as
   an external file so the CLI rebuilds its cached parsers when the shared scanner changes.
-- `scripts/check-helix-indents.sh` checks the Helix indent queries in a real Helix.
+- `scripts/check-helix-indents.sh` checks the Helix indent queries in a real Helix; CI runs it.
+- CI: a tag must match all nine version strings before anything is published, and publishing waits
+  for every binding job. firewall4 is pinned; fuzzing also runs on parser changes and weekly;
+  Python is tested on 3.10 too.

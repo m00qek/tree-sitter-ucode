@@ -2,8 +2,8 @@
 # Drive a real Helix through the indent cases below and check the indentation
 # it gives a new line — the only way to test editors/helix/queries/*/indents.scm
 # (Helix silently ignores an indents.scm it cannot compile, and `hx --health`
-# still shows it as found). Manual, not part of CI: needs tmux and a Helix
-# release, e.g. the x86_64-linux tarball from
+# still shows it as found). CI runs it (the helix job); locally it needs tmux,
+# a C compiler and a Helix release, e.g. the x86_64-linux tarball from
 # https://github.com/helix-editor/helix/releases.
 #
 #   scripts/check-helix-indents.sh <helix-release-dir>

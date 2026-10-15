@@ -15,11 +15,13 @@ on:
       - bindings/**
       - binding.gyp
       - package.json
+      - package-lock.json
       - scripts/**
       - tree-sitter.json
       - CMakeLists.txt
       - Makefile
       - Cargo.toml
+      - Cargo.lock
       - go.mod
       - go.sum
       - pyproject.toml
@@ -136,6 +138,9 @@ jobs:
         uses: actions/checkout@v6
         with:
           repository: openwrt/firewall4
+          # Pinned so an upstream change cannot turn CI red on its own;
+          # bump it deliberately (upstream HEAD of 2026-08-27).
+          ref: c2ae8c8940a89407da32fbd662d4010ee2c9bbe6
           path: firewall4
           fetch-depth: 1
 
@@ -172,14 +177,20 @@ jobs:
       - name: Set up Python
         uses: actions/setup-python@v6
         with:
-          python-version: '3.12'
+          # 3.10 is the oldest the cp310-abi3 wheel supports.
+          python-version: |
+            3.10
+            3.12
 
       - name: Python — build the sdist and a wheel from it, then test the wheel
         run: |
           pip install build
           python -m build --outdir dist .
-          pip install "$(ls dist/*.whl)[core]"
-          python -m unittest discover -v -s bindings/python/tests
+          for py in python3.10 python3.12; do
+            "$py" -m venv "venv-$py"
+            "venv-$py/bin/pip" install "$(ls dist/*.whl)[core]"
+            "venv-$py/bin/python" -m unittest discover -v -s bindings/python/tests
+          done
 
   bindings-swift:
     name: Bindings — Swift
@@ -191,6 +202,26 @@ jobs:
 
       - name: Swift — test
         run: swift test
+
+  helix:
+    name: Helix indents
+    runs-on: ubuntu-latest
+
+    steps:
+      - name: Checkout repository
+        uses: actions/checkout@v6
+
+      - name: Install Helix 25.07.1 and tmux
+        run: |
+          sudo apt-get update -q
+          sudo apt-get install -y tmux
+          curl -fsSLo helix.tar.xz https://github.com/helix-editor/helix/releases/download/25.07.1/helix-25.07.1-x86_64-linux.tar.xz
+          echo "3f08e63ecd388fff657ad39722f88bb03dcf326f1f2da2700d99e1dc40ab2e8b  helix.tar.xz" | sha256sum -c
+          tar -xJf helix.tar.xz -C "$RUNNER_TEMP"
+
+      # Types into a real Helix and checks the new line's indentation.
+      - name: Check the Helix indent queries
+        run: scripts/check-helix-indents.sh "$RUNNER_TEMP/helix-25.07.1-x86_64-linux"
 
   wasm:
     name: Build WASM
@@ -235,7 +266,8 @@ jobs:
       fail-fast: false
       matrix:
         include:
-          - { os: ubuntu-latest, arch: x64   }
+          # Pinned: the aarch64 cross-compiler step is tested on 24.04.
+          - { os: ubuntu-24.04,  arch: x64   }
           - { os: macos-latest,  arch: arm64 }
           - { os: windows-2022,  arch: x64   }
 
@@ -252,18 +284,18 @@ jobs:
           cache: npm
 
       - name: Install cross-compiler (Linux only)
-        if: matrix.os == 'ubuntu-latest'
+        if: matrix.os == 'ubuntu-24.04'
         run: sudo apt-get install -y gcc-aarch64-linux-gnu g++-aarch64-linux-gnu
 
       - name: Install dependencies
         run: npm ci --ignore-scripts
 
       - name: Build linux-x64
-        if: matrix.os == 'ubuntu-latest'
+        if: matrix.os == 'ubuntu-24.04'
         run: npx prebuildify --napi --strip --arch x64
 
       - name: Build linux-arm64
-        if: matrix.os == 'ubuntu-latest'
+        if: matrix.os == 'ubuntu-24.04'
         run: |
           npx prebuildify --napi --arch arm64
           aarch64-linux-gnu-strip prebuilds/linux-arm64/*.node
@@ -272,7 +304,7 @@ jobs:
           CXX: aarch64-linux-gnu-g++
 
       - name: Build prebuilt binary
-        if: matrix.os != 'ubuntu-latest'
+        if: matrix.os != 'ubuntu-24.04'
         run: npx prebuildify --napi --strip
 
       - name: Upload prebuild artifact
@@ -281,9 +313,39 @@ jobs:
           name: prebuilds-${{ matrix.os }}-${{ matrix.arch }}
           path: prebuilds/
 
+  version:
+    name: Tag matches every version string
+    if: startsWith(github.ref, 'refs/tags/v')
+    runs-on: ubuntu-latest
+
+    steps:
+      - name: Checkout repository
+        uses: actions/checkout@v6
+
+      - name: Compare the tag with each manifest and lockfile
+        run: |
+          want="${GITHUB_REF_NAME#v}"
+          bad=0
+          check() {
+            if [ "$2" != "$want" ]; then
+              echo "::error file=$1::$1 says version '$2', the tag says $want"
+              bad=1
+            fi
+          }
+          check package.json      "$(jq -r .version package.json)"
+          check package-lock.json "$(jq -r .version package-lock.json)"
+          check package-lock.json "$(jq -r '.packages[""].version' package-lock.json)"
+          check tree-sitter.json  "$(jq -r .metadata.version tree-sitter.json)"
+          check Cargo.toml        "$(sed -n 's/^version = "\(.*\)"$/\1/p' Cargo.toml | head -1)"
+          check Cargo.lock        "$(grep -A1 '^name = "tree-sitter-ucode"$' Cargo.lock | sed -n 's/^version = "\(.*\)"$/\1/p')"
+          check pyproject.toml    "$(sed -n 's/^version = "\(.*\)"$/\1/p' pyproject.toml)"
+          check CMakeLists.txt    "$(sed -n 's/^ *VERSION "\(.*\)"$/\1/p' CMakeLists.txt)"
+          check Makefile          "$(sed -n 's/^VERSION := //p' Makefile)"
+          exit $bad
+
   publish:
     name: Publish to npm
-    needs: [wasm, prebuild]
+    needs: [version, wasm, prebuild, bindings, bindings-swift, helix]
     runs-on: ubuntu-latest
     if: startsWith(github.ref, 'refs/tags/v')
     permissions:

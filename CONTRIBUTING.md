@@ -86,9 +86,10 @@ part of `npm run build`), which fails if a new capture name has no Helix equival
 mapping table. The few template-only highlight patterns (tag delimiters, `{# #}` comments) live in that script.
 The Helix indent queries are written by hand in that script, and no CLI check can catch an
 indent rule Helix rejects: Helix silently ignores an `indents.scm` it fails to compile. After
-changing them, or the scanner (node end positions drive indentation), run
+changing them, the scanner (node end positions drive indentation) or error recovery, run
 `scripts/check-helix-indents.sh <helix-release-dir>`, which needs tmux and an unpacked Helix
-release. It types into a real Helix and checks the indentation of each new line.
+release. It types into a real Helix and checks the indentation of each new line. CI runs it too
+(the `helix` job, Helix 25.07.1).
 
 The external lexer is hand-written and handles features that context-free grammars cannot express: automatic semicolon insertion, template string, string and regex content, comment terminators, template tag delimiters, and zero-width tokens for error recovery. All of its logic lives in **`common/scanner.h`** — edit that file. `ucode/src/scanner.c` and `ucode_markup/src/scanner.c` are thin shims that only export the entry points and `#include "../../common/scanner.h"`, so a single implementation is shared by both the `ucode` and `ucode_markup` parsers. None of these are touched by `tree-sitter generate`.
 
