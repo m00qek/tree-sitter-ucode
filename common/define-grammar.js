@@ -60,15 +60,18 @@ module.exports = function defineGrammar(name) {
       $._octal_escape,                 // 18  \NNN octal escape in a string/template, range-checked to <= 255
       $._asi_gap,                      // 19  zero-width no-op emitted before an own-line comment when ASI declines (see scanner)
       $._tag_semicolon,                // 20  zero-width ';' before %} / -%} in an unbraced-body position (template only; see scanner)
-      $._text_end,                     // 21  zero-width end of input (template only; see scanner)
+      $._text_end,                     // 21  zero-width end of input (see scanner)
       // Never emitted: offered only right after `return`, so the scanner can
       // tell that state apart and keep a following line's expression as the
       // return value instead of ending the statement at the newline.
       $._return_marker,                // 22
+      // Zero-width end of input at the end of a statement list (see
+      // statements() below and BLOCK_END in common/scanner.h).
+      $._block_end,                    // 23
       // Used by no rule, so tree-sitter marks it valid only during error
       // recovery (when it marks every external token valid) — the scanner's
       // documented way to detect that mode. Keep it last.
-      $._error_sentinel,               // 23
+      $._error_sentinel,               // 24
     ],
 
     extras: $ => [
@@ -191,15 +194,21 @@ module.exports = function defineGrammar(name) {
             $._stmt_open,
             repeat($.statement),
           )),
+          // The end of the statement list, or of leading text that never
+          // opened a `{%` (see statements() below).
+          optional($._block_end),
           // Zero-width end of input. Hidden and only ever at the very end, so
           // it never shows in a tree; it exists for error recovery — see
-          // text_statement below and TEXT_END in common/scanner.h.
+          // statements() below and TEXT_END in common/scanner.h.
           optional($._text_end),
         ),
       } : {
         program: $ => seq(
           optional($.hash_bang_line),
-          repeat($.statement),
+          statements($),
+          // Zero-width end of input, as in the markup root above. See
+          // statements() below.
+          optional($._text_end),
         ),
       }),
 
@@ -218,9 +227,9 @@ module.exports = function defineGrammar(name) {
         // The text after a template's last `%}` is a text_statement too, the
         // only one with no `{%` after it: the end of input closes it. (The `{%`
         // is optional only there — mid-file, the text always runs into the
-        // next `{%`.) With the root's zero-width _text_end, a file that ends
-        // inside an open block — a block still being typed — recovers with
-        // the one missing `}` instead of an ERROR around the whole block.
+        // next `{%`.) A file that ends inside open blocks — a block still
+        // being typed — recovers with the missing `}` / `endif` / … instead
+        // of an ERROR around the whole block; see statements() below.
         text_statement: $ => seq(
           $._stmt_close,
           optional($._text),
@@ -457,7 +466,7 @@ module.exports = function defineGrammar(name) {
 
       statement_block: $ => prec.right(seq(
         '{',
-        repeat($.statement),
+        statements($),
         '}',
         optional($._automatic_semicolon),
       )),
@@ -516,7 +525,7 @@ module.exports = function defineGrammar(name) {
         'if',
         field('condition', $.parenthesized_expression),
         ':',
-        field('body', repeat($.statement)),
+        field('body', statements($)),
         repeat(field('elif_clause', $.elif_clause)),
         optional(field('else_body', $.else_alt_clause)),
         'endif',
@@ -526,12 +535,12 @@ module.exports = function defineGrammar(name) {
         'elif',
         field('condition', $.parenthesized_expression),
         ':',
-        field('body', repeat($.statement)),
+        field('body', statements($)),
       ),
 
       else_alt_clause: $ => seq(
         'else',
-        field('body', repeat($.statement)),
+        field('body', statements($)),
       ),
 
       switch_statement: $ => seq(
@@ -548,7 +557,7 @@ module.exports = function defineGrammar(name) {
       for_alt_statement: $ => seq(
         forHeader($),
         ':',
-        field('body', repeat($.statement)),
+        field('body', statements($)),
         'endfor',
       ),
 
@@ -562,7 +571,7 @@ module.exports = function defineGrammar(name) {
         'for',
         $._for_header,
         ':',
-        field('body', repeat($.statement)),
+        field('body', statements($)),
         'endfor',
       ),
 
@@ -589,7 +598,7 @@ module.exports = function defineGrammar(name) {
         'while',
         field('condition', $.parenthesized_expression),
         ':',
-        field('body', repeat($.statement)),
+        field('body', statements($)),
         'endwhile',
       ),
 
@@ -643,13 +652,13 @@ module.exports = function defineGrammar(name) {
         'case',
         field('value', $._expressions),
         ':',
-        field('body', repeat($.statement)),
+        field('body', statements($)),
       ),
 
       switch_default: $ => seq(
         'default',
         ':',
-        field('body', repeat($.statement)),
+        field('body', statements($)),
       ),
 
       catch_clause: $ => seq(
@@ -886,7 +895,7 @@ module.exports = function defineGrammar(name) {
         $._call_signature,
         field('body', choice(
           $.statement_block,
-          seq(':', repeat($.statement), 'endfunction'),
+          seq(':', statements($), 'endfunction'),
         )),
         optional($._automatic_semicolon),
       )),
@@ -1132,7 +1141,10 @@ module.exports = function defineGrammar(name) {
         field('value', $.expression),
       ),
 
-      _semicolon: $ => choice($._automatic_semicolon, ';'),
+      // _block_end: the end of input ends a statement, as it does for ASI;
+      // during EOF recovery this lets `return {` / `foo(a,` close with one
+      // MISSING token (see statements() below).
+      _semicolon: $ => choice($._automatic_semicolon, ';', $._block_end),
     },
   });
 };
@@ -1164,6 +1176,15 @@ function forHeader($) {
     field('increment', optional($._expressions)),
     ')',
   );
+}
+
+// A statement list. It may end with the zero-width _block_end, which only the
+// end of input produces: in a file that ends inside open blocks (one still
+// being typed), the scanner emits it once per open block, and the parser
+// inserts each block's missing `}` / `endif` / … instead of turning the whole
+// block into an ERROR. See BLOCK_END in common/scanner.h.
+function statements($) {
+  return seq(repeat($.statement), optional($._block_end));
 }
 
 function commaSep1(rule) {

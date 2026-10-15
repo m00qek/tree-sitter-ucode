@@ -27,9 +27,10 @@
  *  18  OCTAL_ESCAPE                $._octal_escape                 \NNN in a string/template
  *  19  ASI_GAP                     $._asi_gap                      zero-width no-op (extra)
  *  20  TAG_SEMICOLON               $._tag_semicolon                zero-width ';' before %} (template unbraced body)
- *  21  TEXT_END                    $._text_end                     zero-width end of input (template)
+ *  21  TEXT_END                    $._text_end                     zero-width end of input
  *  22  RETURN_MARKER               $._return_marker                never emitted; valid only right after `return`
- *  23  ERROR_SENTINEL              $._error_sentinel               never emitted; valid only in error recovery
+ *  23  BLOCK_END                   $._block_end                    zero-width end of input, closing one statement list
+ *  24  ERROR_SENTINEL              $._error_sentinel               never emitted; valid only in error recovery
  */
 
 #ifndef UCODE_COMMON_SCANNER_H_
@@ -74,19 +75,26 @@ enum TokenType {
     TAG_SEMICOLON,
     TEXT_END,
     RETURN_MARKER,
+    BLOCK_END,
     ERROR_SENTINEL,
 };
 
 /*
- * Persistent scanner state.  A single flag, carried across exactly two
- * consecutive scans: when the ASI-before-comment path emits its zero-width
- * marker (a real ASI or a no-op ASI_GAP), it sets skip_asi_before_comment so
- * the very next scan re-scans the comment itself instead of re-deciding the
- * ASI (which would loop, and would misplace the marker).  Serialized because a
- * GLR fork between the two scans must carry the flag to each branch.
+ * Persistent scanner state, serialized because a GLR fork must carry it to
+ * each branch.
+ *
+ * skip_asi_before_comment is carried across exactly two consecutive scans:
+ * when the ASI-before-comment path emits its zero-width marker (a real ASI or
+ * a no-op ASI_GAP), it sets the flag so the very next scan re-scans the
+ * comment itself instead of re-deciding the ASI (which would loop, and would
+ * misplace the marker).
+ *
+ * text_end_emitted is set once the root's TEXT_END has been emitted, so no
+ * BLOCK_END follows it (see the end of ucode_scanner_scan).
  */
 typedef struct {
     bool skip_asi_before_comment;
+    bool text_end_emitted;
 } Scanner;
 
 static inline void advance(TSLexer *lexer) { lexer->advance(lexer, false); }
@@ -1095,12 +1103,21 @@ static bool ucode_scanner_scan(
         return false;
 
     /*
-     * Template only: the zero-width end of input that ends the markup root.
-     * (Also emitted below when it is NOT valid — see the end of this function.)
-     * RAW_TEXT declines at EOF, so nothing competes.
+     * The zero-width end of input that ends the root. (Also emitted below
+     * when it is NOT valid — see the end of this function.) RAW_TEXT declines
+     * at EOF, so nothing competes.
      */
     if (valid_symbols[TEXT_END] && lexer->eof(lexer)) {
+        state->text_end_emitted = true;
         lexer->result_symbol = TEXT_END;
+        lexer->mark_end(lexer);
+        return true;
+    }
+
+    /* The zero-width end of input that ends a statement list. (Also emitted
+       below when it is NOT valid.) */
+    if (valid_symbols[BLOCK_END] && lexer->eof(lexer)) {
+        lexer->result_symbol = BLOCK_END;
         lexer->mark_end(lexer);
         return true;
     }
@@ -1279,20 +1296,26 @@ static bool ucode_scanner_scan(
         return scan_ternary_qmark(lexer);
 
     /*
-     * Template only, error recovery: end of input where the root's TEXT_END is
-     * not valid yet — inside a block or alt-syntax body that was never closed
-     * (typically one still being typed). tree-sitter only inserts a MISSING
-     * token if the lookahead can then be SHIFTED, and the real end of input is
-     * accepted, never shifted, so no MISSING `}` could ever be inserted before
-     * it: the whole open construct became an ERROR. Emitting the (here invalid)
-     * TEXT_END gives it a shiftable lookahead: it inserts the missing `}` /
-     * `endif` / …, reduces up to the root, and shifts TEXT_END there.
+     * Error recovery: end of input inside a block or alt-syntax body that was
+     * never closed (typically one still being typed). tree-sitter only
+     * inserts a MISSING token if the lookahead can then be SHIFTED, and the
+     * real end of input is accepted, never shifted, so no MISSING `}` could
+     * ever be inserted before it: the whole open construct became an ERROR.
+     *
+     * Every statement list may end with a zero-width BLOCK_END, which the
+     * scanner emits (above) at end of input. After it, the list's own closer
+     * is due; emitting the (here invalid) BLOCK_END again gives the parser a
+     * lookahead that the ENCLOSING list accepts, so it inserts the one
+     * missing `}` / `endif` / … and shifts it there. Repeated, that closes
+     * every open block from the innermost out, up to the root, which ends
+     * with TEXT_END.
+     *
+     * Never after the root has shifted its TEXT_END, where the scanner is
+     * called once more at end of input. During the error recovery this
+     * starts, the ERROR_SENTINEL guard above keeps the scanner quiet.
      */
-    /* Only in a statement list (where a `%}` could start a text_statement):
-       never after the root has already shifted its TEXT_END, where the
-       scanner is called once more at end of input. */
-    if (UCODE_SCANNER_TEMPLATE && lexer->eof(lexer) && valid_symbols[STATEMENT_TAG_CLOSE]) {
-        lexer->result_symbol = TEXT_END;
+    if (lexer->eof(lexer) && !state->text_end_emitted) {
+        lexer->result_symbol = BLOCK_END;
         lexer->mark_end(lexer);
         return true;
     }
@@ -1315,12 +1338,14 @@ static void ucode_scanner_destroy(void *payload) {
 static unsigned ucode_scanner_serialize(void *payload, char *buffer) {
     Scanner *state = (Scanner *)payload;
     buffer[0] = state->skip_asi_before_comment ? 1 : 0;
-    return 1;
+    buffer[1] = state->text_end_emitted ? 1 : 0;
+    return 2;
 }
 
 static void ucode_scanner_deserialize(void *payload, const char *buffer, unsigned length) {
     Scanner *state = (Scanner *)payload;
     state->skip_asi_before_comment = (length > 0 && buffer[0] != 0);
+    state->text_end_emitted = (length > 1 && buffer[1] != 0);
 }
 
 #endif /* UCODE_COMMON_SCANNER_H_ */

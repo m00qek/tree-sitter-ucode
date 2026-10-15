@@ -82,6 +82,10 @@ Notable changes to tree-sitter-ucode. Releases up to v0.8.0 are described in the
   whitespace. No-break space, U+2028 / U+2029, zero-width space, word joiner and a byte order mark
   inside the file are now errors, as in ucode; a byte order mark at the very start is still
   skipped by tree-sitter itself. The scanner no longer depends on the host's locale.
+- A file that ends inside open blocks (one still being typed) keeps its structure: each open
+  `{`, alt-syntax body or object literal gets its MISSING closer at the end of input, in scripts
+  as in templates. A script used to become one ERROR from the open construct on, and a template
+  recovered only from a single open block.
 - `tree-sitter tags` works for all three grammars (see the locals and ucdocs tags changes above).
 - With tree-sitter-highlight (the CLI, GitHub): comments and doc-comment descriptions are
   highlighted again (`@spell` came last and replaced `@comment`), parameters keep their highlight

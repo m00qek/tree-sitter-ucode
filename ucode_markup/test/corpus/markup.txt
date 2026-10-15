@@ -1575,6 +1575,52 @@ row {{ x }}
     (MISSING "endfor")))
 
 ================================================================================
+Recovery: nested blocks left open at end of input each get their closer
+================================================================================
+
+head
+{% for (x in xs): %}
+{% if (x) { %}
+row {{ x }}
+{% let y = x; %}
+text
+
+--------------------------------------------------------------------------------
+
+(markup
+  (raw_text)
+  (statement_tag_open)
+  (for_in_alt_statement
+    left: (identifier)
+    right: (identifier)
+    body: (text_statement
+      (statement_tag_close)
+      (raw_text)
+      (statement_tag_open))
+    body: (if_statement
+      condition: (parenthesized_expression
+        (identifier))
+      consequence: (statement_block
+        (text_statement
+          (statement_tag_close)
+          (raw_text)
+          (expression_tag
+            open: (expression_tag_open)
+            (identifier)
+            close: (expression_tag_close))
+          (raw_text)
+          (statement_tag_open))
+        (lexical_declaration
+          (variable_declarator
+            name: (identifier)
+            value: (identifier)))
+        (text_statement
+          (statement_tag_close)
+          (raw_text))
+        (MISSING "}")))
+    (MISSING "endfor")))
+
+================================================================================
 Recovery: a half-typed tag before the next tag stays a local error
 ================================================================================
 
