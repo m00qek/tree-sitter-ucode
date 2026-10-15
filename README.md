@@ -78,7 +78,10 @@ The grammar tracks ucode's parser closely, with a few deliberate divergences:
   comment's own closing line: `x = 1` `/* c */ y = 2` (with `y = 2` after the `*/`)
   errors, matching ucode. Conversely, a comment does **not** break an expression that
   continues on the next line — `a\n// note\n.b` stays a single member access and
-  `a\n/* note */\n+ b` a single addition, also matching ucode.
+  `a\n/* note */\n+ b` a single addition, also matching ucode. Two statements are
+  exempt and always need their `;`, as in ucode: `export default …;` and
+  `export function f() {};`. Leaving it off is a JavaScript habit that ucode rejects
+  when it loads the module, so the grammar flags it.
 - **Some constructs ucode rejects only at compile time still parse.** The grammar
   describes ucode's *syntax*; semantic rejections the compiler makes after parsing are
   left to the compiler (and to linters), not enforced here — matching how tree-sitter
