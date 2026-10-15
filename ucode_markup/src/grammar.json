@@ -2006,15 +2006,6 @@
           "name": "_identifier"
         },
         {
-          "type": "ALIAS",
-          "content": {
-            "type": "SYMBOL",
-            "name": "_reserved_identifier"
-          },
-          "named": true,
-          "value": "identifier"
-        },
-        {
           "type": "SYMBOL",
           "name": "this"
         },
@@ -2101,17 +2092,8 @@
                           {
                             "type": "ALIAS",
                             "content": {
-                              "type": "CHOICE",
-                              "members": [
-                                {
-                                  "type": "SYMBOL",
-                                  "name": "identifier"
-                                },
-                                {
-                                  "type": "SYMBOL",
-                                  "name": "_reserved_identifier"
-                                }
-                              ]
+                              "type": "SYMBOL",
+                              "name": "identifier"
                             },
                             "named": true,
                             "value": "shorthand_property_identifier"
@@ -2141,17 +2123,8 @@
                                 {
                                   "type": "ALIAS",
                                   "content": {
-                                    "type": "CHOICE",
-                                    "members": [
-                                      {
-                                        "type": "SYMBOL",
-                                        "name": "identifier"
-                                      },
-                                      {
-                                        "type": "SYMBOL",
-                                        "name": "_reserved_identifier"
-                                      }
-                                    ]
+                                    "type": "SYMBOL",
+                                    "name": "identifier"
                                   },
                                   "named": true,
                                   "value": "shorthand_property_identifier"
@@ -2469,15 +2442,6 @@
         {
           "type": "SYMBOL",
           "name": "_identifier"
-        },
-        {
-          "type": "ALIAS",
-          "content": {
-            "type": "SYMBOL",
-            "name": "_reserved_identifier"
-          },
-          "named": true,
-          "value": "identifier"
         }
       ]
     },
@@ -3739,22 +3703,8 @@
               "type": "FIELD",
               "name": "parameter",
               "content": {
-                "type": "CHOICE",
-                "members": [
-                  {
-                    "type": "ALIAS",
-                    "content": {
-                      "type": "SYMBOL",
-                      "name": "_reserved_identifier"
-                    },
-                    "named": true,
-                    "value": "identifier"
-                  },
-                  {
-                    "type": "SYMBOL",
-                    "name": "identifier"
-                  }
-                ]
+                "type": "SYMBOL",
+                "name": "identifier"
               }
             },
             {
@@ -4755,17 +4705,8 @@
           {
             "type": "ALIAS",
             "content": {
-              "type": "CHOICE",
-              "members": [
-                {
-                  "type": "SYMBOL",
-                  "name": "identifier"
-                },
-                {
-                  "type": "SYMBOL",
-                  "name": "_reserved_identifier"
-                }
-              ]
+              "type": "SYMBOL",
+              "name": "identifier"
             },
             "named": true,
             "value": "property_identifier"
@@ -4821,19 +4762,6 @@
             "type": "SYMBOL",
             "name": "expression"
           }
-        }
-      ]
-    },
-    "_reserved_identifier": {
-      "type": "CHOICE",
-      "members": [
-        {
-          "type": "STRING",
-          "value": "get"
-        },
-        {
-          "type": "STRING",
-          "value": "set"
         }
       ]
     },
@@ -5130,7 +5058,6 @@
     "_expressions",
     "_semicolon",
     "_identifier",
-    "_reserved_identifier",
     "_lhs_expression",
     "_stmt_open",
     "_stmt_close",

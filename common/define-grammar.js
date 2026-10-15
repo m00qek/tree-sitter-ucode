@@ -126,7 +126,6 @@ module.exports = function defineGrammar(name) {
       $._expressions,
       $._semicolon,
       $._identifier,
-      $._reserved_identifier,
       $._lhs_expression,
       ...(isTemplate ? [$._stmt_open, $._stmt_close, $._expr_open, $._expr_close] : []),
     ],
@@ -678,7 +677,6 @@ module.exports = function defineGrammar(name) {
         $.member_expression,
         $.parenthesized_expression,
         $._identifier,
-        alias($._reserved_identifier, $.identifier),
         $.this,
         $.number,
         $.string,
@@ -701,10 +699,7 @@ module.exports = function defineGrammar(name) {
           commaSep1(choice(
             $.pair,
             $.spread_element,
-            alias(
-              choice($.identifier, $._reserved_identifier),
-              $.shorthand_property_identifier,
-            ),
+            alias($.identifier, $.shorthand_property_identifier),
           )),
           optional(','),
         )),
@@ -759,7 +754,6 @@ module.exports = function defineGrammar(name) {
         $.member_expression,
         $.subscript_expression,
         $._identifier,
-        alias($._reserved_identifier, $.identifier),
       ),
 
       assignment_expression: $ => prec.right('assign', seq(
@@ -887,10 +881,7 @@ module.exports = function defineGrammar(name) {
 
       arrow_function: $ => seq(
         choice(
-          field('parameter', choice(
-            alias($._reserved_identifier, $.identifier),
-            $.identifier,
-          )),
+          field('parameter', $.identifier),
           $._call_signature,
         ),
         '=>',
@@ -1116,10 +1107,7 @@ module.exports = function defineGrammar(name) {
       // compiler.c uc_compiler_compile_object) even after the 8d7d15e method-
       // shorthand change, which uses the same key check.
       _property_name: $ => reserved('properties', choice(
-        alias(
-          choice($.identifier, $._reserved_identifier),
-          $.property_identifier,
-        ),
+        alias($.identifier, $.property_identifier),
         $.string,
         $.computed_property_name,
       )),
@@ -1130,11 +1118,6 @@ module.exports = function defineGrammar(name) {
         field('key', $._property_name),
         ':',
         field('value', $.expression),
-      ),
-
-      _reserved_identifier: _ => choice(
-        'get',
-        'set',
       ),
 
       _semicolon: $ => choice($._automatic_semicolon, ';'),

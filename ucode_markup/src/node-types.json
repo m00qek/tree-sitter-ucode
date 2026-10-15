@@ -2889,10 +2889,6 @@
     "named": false
   },
   {
-    "type": "get",
-    "named": false
-  },
-  {
     "type": "hash_bang_line",
     "named": true
   },
@@ -2946,10 +2942,6 @@
   },
   {
     "type": "return",
-    "named": false
-  },
-  {
-    "type": "set",
     "named": false
   },
   {

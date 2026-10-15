@@ -58,6 +58,8 @@ Notable changes to tree-sitter-ucode. Releases up to v0.8.0 are described in the
   alt-syntax headers, and the ucdocs `function` type keyword, commas and `.<`.
 - ucdocs: a description, and the tag holding it, ends at its last visible character instead of
   running on through trailing spaces before `*/` or a line end.
+- `get` and `set` are ordinary identifiers, as in ucode: `for (get in o)`, `(get, set) => …` and
+  `let set = …` used to produce ERROR nodes. The anonymous `get` / `set` node types are gone.
 - ucdocs: a record field after a tag no longer starts with the preceding space; a name followed
   by a full stop keeps its name; an `@` inside a word is prose.
 
