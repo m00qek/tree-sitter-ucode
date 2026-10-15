@@ -60,6 +60,8 @@ Notable changes to tree-sitter-ucode. Releases up to v0.8.0 are described in the
   running on through trailing spaces before `*/` or a line end.
 - `get` and `set` are ordinary identifiers, as in ucode: `for (get in o)`, `(get, set) => …` and
   `let set = …` used to produce ERROR nodes. The anonymous `get` / `set` node types are gone.
+- `return` followed by a line break returns the next line's expression, as in ucode
+  (`return⏎ a + b;`). It used to parse as an empty `return` followed by a separate statement.
 - ucdocs: a record field after a tag no longer starts with the preceding space; a name followed
   by a full stop keeps its name; an `@` inside a word is prose.
 

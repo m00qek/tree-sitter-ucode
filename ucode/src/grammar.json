@@ -1528,6 +1528,18 @@
           "members": [
             {
               "type": "SYMBOL",
+              "name": "_return_marker"
+            },
+            {
+              "type": "BLANK"
+            }
+          ]
+        },
+        {
+          "type": "CHOICE",
+          "members": [
+            {
+              "type": "SYMBOL",
               "name": "_expressions"
             },
             {
@@ -4804,6 +4816,10 @@
     {
       "type": "SYMBOL",
       "name": "_text_end"
+    },
+    {
+      "type": "SYMBOL",
+      "name": "_return_marker"
     },
     {
       "type": "SYMBOL",

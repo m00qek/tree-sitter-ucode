@@ -28,7 +28,8 @@
  *  19  ASI_GAP                     $._asi_gap                      zero-width no-op (extra)
  *  20  TAG_SEMICOLON               $._tag_semicolon                zero-width ';' before %} (template unbraced body)
  *  21  TEXT_END                    $._text_end                     zero-width end of input (template)
- *  22  ERROR_SENTINEL              $._error_sentinel               never emitted; valid only in error recovery
+ *  22  RETURN_MARKER               $._return_marker                never emitted; valid only right after `return`
+ *  23  ERROR_SENTINEL              $._error_sentinel               never emitted; valid only in error recovery
  */
 
 #ifndef UCODE_COMMON_SCANNER_H_
@@ -37,6 +38,7 @@
 #include "tree_sitter/parser.h"
 #include <wctype.h>
 #include <stdlib.h>   /* calloc / free for the scanner state */
+#include <string.h>   /* strcmp in lookahead_is_end_keyword */
 
 /*
  * 1 when compiled into the ucode_markup scanner (its shim defines it before
@@ -71,6 +73,7 @@ enum TokenType {
     ASI_GAP,
     TAG_SEMICOLON,
     TEXT_END,
+    RETURN_MARKER,
     ERROR_SENTINEL,
 };
 
@@ -586,6 +589,35 @@ static bool lookahead_is_in_keyword(TSLexer *lexer) {
 }
 
 /*
+ * Return true if the lookahead is a keyword that ends a statement list
+ * (alt-syntax `else`/`elif`/`end*`, or a switch `case`/`default`) at a word
+ * boundary.  Peeks by advancing, like lookahead_is_in_keyword.
+ */
+static bool lookahead_is_end_keyword(TSLexer *lexer) {
+    static const char *const words[] = {
+        "case", "default", "elif", "else",
+        "endfor", "endfunction", "endif", "endwhile",
+    };
+    char word[12];
+    unsigned len = 0;
+
+    while (len < sizeof(word) - 1 &&
+           ((lexer->lookahead >= 'a' && lexer->lookahead <= 'z') ||
+            (lexer->lookahead >= 'A' && lexer->lookahead <= 'Z') ||
+            (lexer->lookahead >= '0' && lexer->lookahead <= '9') ||
+            lexer->lookahead == '_')) {
+        word[len++] = (char)lexer->lookahead;
+        advance(lexer);
+    }
+    word[len] = '\0';
+
+    for (unsigned i = 0; i < sizeof(words) / sizeof(words[0]); i++)
+        if (strcmp(word, words[i]) == 0)
+            return true;
+    return false;
+}
+
+/*
  * Automatic Semicolon Insertion (ECMA-262 §12.10).
  *
  * NOTE: This is intentionally MORE lenient than the ucode compiler.  ucode only
@@ -661,7 +693,23 @@ static AsiResult scan_automatic_semicolon(TSLexer *lexer) {
  * default arm via lookahead_is_in_keyword) is the one continuation token that
  * isn't punctuation.
  */
-static AsiResult asi_after_newline_decision(TSLexer *lexer) {
+static AsiResult asi_after_newline_decision(TSLexer *lexer, bool after_return) {
+    /* Right after `return`, ucode reads the next line as the return value
+       (`return\n\ta + b;` returns a + b), so end the statement only where no
+       expression can follow: '}', EOF, a tag close or `{%`, or a keyword that
+       ends the statement list.  Anything else — including '{', an object
+       literal — is the operand; nothing worth keeping was consumed, so
+       DECLINE and let the grammar lex it. */
+    if (after_return) {
+        if (lexer->lookahead == '}' || lexer->eof(lexer))
+            return ASI_INSERT;
+        if (lexer->lookahead == '%' || lexer->lookahead == '-')
+            return asi_dash_or_percent(lexer);
+        if (UCODE_SCANNER_TEMPLATE && lexer->lookahead == '{')
+            return lookahead_is_stmt_open(lexer) ? ASI_INSERT : ASI_DECLINE;
+        return lookahead_is_end_keyword(lexer) ? ASI_INSERT : ASI_DECLINE;
+    }
+
     switch (lexer->lookahead) {
         case '(': case '[': case '`':
         case '.': case ',': case ';':
@@ -690,7 +738,7 @@ static AsiResult asi_after_newline_decision(TSLexer *lexer) {
  * (scan_comment stopped at the first non-whitespace char, and a comment there
  * would have been emitted as its own token).
  */
-static AsiResult asi_after_newline(TSLexer *lexer) {
+static AsiResult asi_after_newline(TSLexer *lexer, bool after_return) {
     /* No mark_end here: it stays at the scan's ENTRY position, before the
        whitespace and newline scan_comment skipped, so the zero-width ';' sits
        right after the statement's last token. Marking here would stretch the
@@ -698,7 +746,7 @@ static AsiResult asi_after_newline(TSLexer *lexer) {
        lines to the next token — editors then treat the line after a `}` as
        still inside the block (Helix indented it). */
     lexer->result_symbol = AUTOMATIC_SEMICOLON;
-    return asi_after_newline_decision(lexer);
+    return asi_after_newline_decision(lexer, after_return);
 }
 
 static bool scan_ternary_qmark(TSLexer *lexer) {
@@ -803,7 +851,7 @@ typedef enum { CMT_NONE, CMT_NONE_NEWLINE, CMT_FOUND, CMT_ABORT } CommentResult;
  * function only advance()s (never mark_end), so the emitted token stays
  * zero-width at entry.
  */
-static bool scan_asi_before_comment(TSLexer *lexer) {
+static bool scan_asi_before_comment(TSLexer *lexer, bool after_return) {
     bool newline_before_next = true;  /* a newline precedes this first comment */
 
     for (;;) {
@@ -866,14 +914,15 @@ static bool scan_asi_before_comment(TSLexer *lexer) {
        an error, matching ucode, while allowing ASI before a `%}` on the
        comment's own line. */
     AsiResult r = newline_before_next
-        ? asi_after_newline_decision(lexer)
+        ? asi_after_newline_decision(lexer, after_return)
         : asi_same_line_decision(lexer);
     lexer->result_symbol = (r == ASI_INSERT) ? AUTOMATIC_SEMICOLON : ASI_GAP;
     return r == ASI_INSERT;
 }
 
 static CommentResult scan_comment(TSLexer *lexer, Scanner *state,
-                                  bool asi_valid, bool gap_valid) {
+                                  bool asi_valid, bool gap_valid,
+                                  bool after_return) {
     bool crossed_newline = false;
 
     /* The previous scan emitted an ASI/ASI_GAP marker before this comment (see
@@ -927,7 +976,7 @@ static CommentResult scan_comment(TSLexer *lexer, Scanner *state,
         advance(lexer);
         advanced_slash = true;
         if (lexer->lookahead == '/' || lexer->lookahead == '*') {
-            bool inserted = scan_asi_before_comment(lexer);
+            bool inserted = scan_asi_before_comment(lexer, after_return);
             /* Only the GAP (decline) case needs the follow-up flag; see the
                note on scan_asi_before_comment.  INSERT reduces the statement,
                so ASI is no longer valid next call and the path self-limits. */
@@ -1151,7 +1200,8 @@ static bool ucode_scanner_scan(
      */
     bool crossed_newline = false;
     if (valid_symbols[COMMENT]) {
-        switch (scan_comment(lexer, state, valid_symbols[AUTOMATIC_SEMICOLON], valid_symbols[ASI_GAP])) {
+        switch (scan_comment(lexer, state, valid_symbols[AUTOMATIC_SEMICOLON], valid_symbols[ASI_GAP],
+                             valid_symbols[RETURN_MARKER])) {
             case CMT_FOUND:        return true;
             case CMT_ABORT:        return false;
             case CMT_NONE_NEWLINE: crossed_newline = valid_symbols[AUTOMATIC_SEMICOLON]; break;
@@ -1188,7 +1238,8 @@ static bool ucode_scanner_scan(
     }
 
     if (crossed_newline)
-        return dispatch_asi(asi_after_newline(lexer), lexer, valid_symbols);
+        return dispatch_asi(asi_after_newline(lexer, valid_symbols[RETURN_MARKER]),
+                            lexer, valid_symbols);
 
     /*
      * Tag close tokens.  Checked before ASI so that %} / -%} / }} / -}}

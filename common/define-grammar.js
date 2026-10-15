@@ -61,10 +61,14 @@ module.exports = function defineGrammar(name) {
       $._asi_gap,                      // 19  zero-width no-op emitted before an own-line comment when ASI declines (see scanner)
       $._tag_semicolon,                // 20  zero-width ';' before %} / -%} in an unbraced-body position (template only; see scanner)
       $._text_end,                     // 21  zero-width end of input (template only; see scanner)
+      // Never emitted: offered only right after `return`, so the scanner can
+      // tell that state apart and keep a following line's expression as the
+      // return value instead of ending the statement at the newline.
+      $._return_marker,                // 22
       // Used by no rule, so tree-sitter marks it valid only during error
       // recovery (when it marks every external token valid) — the scanner's
       // documented way to detect that mode. Keep it last.
-      $._error_sentinel,               // 22
+      $._error_sentinel,               // 23
     ],
 
     extras: $ => [
@@ -609,8 +613,13 @@ module.exports = function defineGrammar(name) {
         $._semicolon,
       ),
 
+      // ucode never inserts semicolons, so `return` followed by a newline
+      // still returns the next line's expression. _return_marker (never
+      // emitted) tells the scanner it is right after `return`, where the
+      // lenient newline ASI applies only if no expression can follow.
       return_statement: $ => seq(
         'return',
+        optional($._return_marker),
         optional($._expressions),
         $._semicolon,
       ),

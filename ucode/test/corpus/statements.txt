@@ -361,6 +361,67 @@ function f() { return; }
       (return_statement))))
 
 ================================================================================
+Return value on the next line
+================================================================================
+
+function f(a, b) {
+  return
+    a + b;
+}
+function g() {
+  return // the config
+    { a: 1 };
+}
+
+--------------------------------------------------------------------------------
+
+(program
+  (function_declaration
+    name: (identifier)
+    parameters: (formal_parameters
+      (identifier)
+      (identifier))
+    body: (statement_block
+      (return_statement
+        (binary_expression
+          left: (identifier)
+          right: (identifier)))))
+  (function_declaration
+    name: (identifier)
+    parameters: (formal_parameters)
+    body: (statement_block
+      (return_statement
+        (comment)
+        (object
+          (pair
+            key: (property_identifier)
+            value: (number)))))))
+
+================================================================================
+Bare return before a closing brace or end keyword (lenient)
+================================================================================
+
+function f() {
+  return
+}
+function g():
+  return
+endfunction
+
+--------------------------------------------------------------------------------
+
+(program
+  (function_declaration
+    name: (identifier)
+    parameters: (formal_parameters)
+    body: (statement_block
+      (return_statement)))
+  (function_declaration
+    name: (identifier)
+    parameters: (formal_parameters)
+    body: (return_statement)))
+
+================================================================================
 All augmented assignment operators
 ================================================================================
 
