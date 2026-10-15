@@ -195,12 +195,18 @@ single-grammar templates back, convert the Node package to ESM, and rewrite `tre
 
 ```sh
 make && cmake -S . -B cmake-build && cmake --build cmake-build    # C
+make test-c                                                          # C: install, link, load, compile queries
 cargo test                                                           # Rust
-go test ./bindings/go/                                               # Go
+go test -a ./bindings/go/                                            # Go (-a: see below)
 python -m build && pip install dist/*.whl && python -m unittest discover -s bindings/python/tests
 swift test                                                           # Swift (macOS, or the swift Docker image)
 npm run test:bindings                                                # Node
 ```
+
+Every binding test parses a sample per grammar and compiles the shipped queries. `make test-c`
+needs the tree-sitter runtime (0.25 or newer) through pkg-config, or `TS_CFLAGS` / `TS_LIBS`.
+Go's build cache does not notice a regenerated `parser.c` (cgo `#include`s it from outside the
+package), so without `-a` `go test` can run against a stale parser.
 
 The version lives in `package.json`, `tree-sitter.json`, `Cargo.toml`, `pyproject.toml`,
 `CMakeLists.txt`, `Makefile`, `package-lock.json` and `Cargo.lock`; bump them together:

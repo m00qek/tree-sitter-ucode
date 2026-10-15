@@ -124,6 +124,8 @@ Notable changes to tree-sitter-ucode. Releases up to v0.8.0 are described in the
 - ucdocs: bare `{list}` and `{dict}` types, a lowercase `@template t` and a bare `@module` parse,
   and so does a `}` in prose with no `{` before it; all were errors. Identifiers no longer accept
   `$`, which ucode does not have.
+- C: `make install PREFIX=…` after a plain `make` installed pkg-config files that still pointed at
+  `/usr/local`; the `.pc` files are now generated at install time.
 - Nothing may separate `?.` from a following `[` or `(`: `a?. [1]` and `a?.⏎(1)` are errors, as
   in ucode, which reads `?.[` and `?.(` as single tokens. `a?. b` is still fine.
 
@@ -142,6 +144,10 @@ Notable changes to tree-sitter-ucode. Releases up to v0.8.0 are described in the
 - `tree-sitter.json` validates against the official schema, and declares `common/scanner.h` as
   an external file so the CLI rebuilds its cached parsers when the shared scanner changes.
 - `scripts/check-helix-indents.sh` checks the Helix indent queries in a real Helix; CI runs it.
+- Every binding test (C, Rust, Go, Python, Swift, Node) parses a sample per grammar and compiles the
+  shipped queries. `make test-c` installs the C libraries into a temporary prefix and builds a
+  program against the installed headers, pkg-config files and shared libraries; CI runs it with
+  the oldest supported runtime, 0.25.
 - CI: a tag must match all nine version strings before anything is published, and publishing waits
   for every binding job. firewall4 is pinned; fuzzing also runs on parser changes and weekly;
   Python is tested on 3.10 too.

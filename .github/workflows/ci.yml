@@ -192,6 +192,23 @@ jobs:
             "venv-$py/bin/python" -m unittest discover -v -s bindings/python/tests
           done
 
+      # Last, so the runtime checkout cannot leak into the steps above.
+      # The oldest supported runtime (ABI 15 needs 0.25), built from source:
+      # Ubuntu's libtree-sitter is too old.
+      - name: C — check out the tree-sitter 0.25 runtime
+        uses: actions/checkout@v6
+        with:
+          repository: tree-sitter/tree-sitter
+          ref: v0.25.10
+          path: tree-sitter-runtime
+          fetch-depth: 1
+
+      - name: C — install, link and load
+        run: |
+          make -C tree-sitter-runtime libtree-sitter.a
+          make test-c TS_CFLAGS="-I$PWD/tree-sitter-runtime/lib/include" \
+            TS_LIBS="$PWD/tree-sitter-runtime/libtree-sitter.a"
+
   bindings-swift:
     name: Bindings — Swift
     runs-on: macos-latest
