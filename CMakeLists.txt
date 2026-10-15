@@ -2,7 +2,7 @@ cmake_minimum_required(VERSION 3.13)
 
 project(tree-sitter-ucode
         VERSION "0.8.0"
-        DESCRIPTION "Ucode grammars for tree-sitter"
+        DESCRIPTION "Ucode grammars for tree-sitter: scripts, templates and doc comments"
         HOMEPAGE_URL "https://github.com/m00qek/tree-sitter-ucode"
         LANGUAGES C)
 

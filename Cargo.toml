@@ -4,6 +4,7 @@ autoexamples = false
 categories = [ "parser-implementations", "parsing", "text-editors" ]
 description = "Ucode grammars for tree-sitter: scripts, templates and doc comments"
 edition = "2024"
+rust-version = "1.85"   # the first with edition 2024
 keywords = [ "incremental", "parsing", "tree-sitter", "ucode" ]
 license = "MIT"
 name = "tree-sitter-ucode"

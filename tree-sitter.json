@@ -73,7 +73,7 @@
   "metadata": {
     "version": "0.8.0",
     "license": "MIT",
-    "description": "Ucode grammar for tree-sitter",
+    "description": "Ucode grammars for tree-sitter: scripts, templates and doc comments",
     "authors": [
       {
         "name": "António Mora"

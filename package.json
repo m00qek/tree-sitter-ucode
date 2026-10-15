@@ -1,7 +1,12 @@
 {
   "name": "tree-sitter-ucode",
   "version": "0.8.0",
-  "description": "Ucode grammar for tree-sitter",
+  "description": "Ucode grammars for tree-sitter: scripts, templates and doc comments",
+  "author": "António Mora",
+  "homepage": "https://github.com/m00qek/tree-sitter-ucode#readme",
+  "bugs": {
+    "url": "https://github.com/m00qek/tree-sitter-ucode/issues"
+  },
   "repository": {
     "type": "git",
     "url": "git+https://github.com/m00qek/tree-sitter-ucode.git"
