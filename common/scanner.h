@@ -8,29 +8,28 @@
  * Token order MUST match the `externals` array in common/define-grammar.js:
  *   0  AUTOMATIC_SEMICOLON        $._automatic_semicolon
  *   1  TEMPLATE_CHARS             $._template_chars
- *   2  TERNARY_QMARK              $._ternary_qmark
- *   3  RAW_TEXT                   $.raw_text
- *   4  STATEMENT_TAG_OPEN         $.statement_tag_open         {%
- *   5  STATEMENT_TAG_TRIM_OPEN    $.statement_tag_trim_open    {%-
- *   6  STATEMENT_TAG_LSTRIP_OPEN  $.statement_tag_lstrip_open  {%+
- *   7  STATEMENT_TAG_CLOSE        $.statement_tag_close        %}
- *   8  STATEMENT_TAG_TRIM_CLOSE   $.statement_tag_trim_close   -%}
- *   9  EXPRESSION_TAG_OPEN        $.expression_tag_open        {{
- *  10  EXPRESSION_TAG_TRIM_OPEN   $.expression_tag_trim_open   {{-
- *  11  EXPRESSION_TAG_CLOSE       $.expression_tag_close       }}
- *  12  EXPRESSION_TAG_TRIM_CLOSE  $.expression_tag_trim_close  -}}
- *  13  COMMENT_CONTENT              $.comment_content            {# ... #} body
- *  14  COMMENT                    $.comment                    line and block
- *  15  SINGLE_QUOTE_STRING_CONTENT $._single_quote_string_content  '...' body
- *  16  DOUBLE_QUOTE_STRING_CONTENT $._double_quote_string_content  "..." body
- *  17  REGEX_CONTENT               $._regex_content                /.../ body
- *  18  OCTAL_ESCAPE                $._octal_escape                 \NNN in a string/template
- *  19  ASI_GAP                     $._asi_gap                      zero-width no-op (extra)
- *  20  TAG_SEMICOLON               $._tag_semicolon                zero-width ';' before %} (template unbraced body)
- *  21  TEXT_END                    $._text_end                     zero-width end of input
- *  22  RETURN_MARKER               $._return_marker                never emitted; valid only right after `return`
- *  23  BLOCK_END                   $._block_end                    zero-width end of input, closing one statement list
- *  24  ERROR_SENTINEL              $._error_sentinel               never emitted; valid only in error recovery
+ *   2  RAW_TEXT                   $.raw_text
+ *   3  STATEMENT_TAG_OPEN         $.statement_tag_open         {%
+ *   4  STATEMENT_TAG_TRIM_OPEN    $.statement_tag_trim_open    {%-
+ *   5  STATEMENT_TAG_LSTRIP_OPEN  $.statement_tag_lstrip_open  {%+
+ *   6  STATEMENT_TAG_CLOSE        $.statement_tag_close        %}
+ *   7  STATEMENT_TAG_TRIM_CLOSE   $.statement_tag_trim_close   -%}
+ *   8  EXPRESSION_TAG_OPEN        $.expression_tag_open        {{
+ *   9  EXPRESSION_TAG_TRIM_OPEN   $.expression_tag_trim_open   {{-
+ *  10  EXPRESSION_TAG_CLOSE       $.expression_tag_close       }}
+ *  11  EXPRESSION_TAG_TRIM_CLOSE  $.expression_tag_trim_close  -}}
+ *  12  COMMENT_CONTENT              $.comment_content            {# ... #} body
+ *  13  COMMENT                    $.comment                    line and block
+ *  14  SINGLE_QUOTE_STRING_CONTENT $._single_quote_string_content  '...' body
+ *  15  DOUBLE_QUOTE_STRING_CONTENT $._double_quote_string_content  "..." body
+ *  16  REGEX_CONTENT               $._regex_content                /.../ body
+ *  17  OCTAL_ESCAPE                $._octal_escape                 \NNN in a string/template
+ *  18  ASI_GAP                     $._asi_gap                      zero-width no-op (extra)
+ *  19  TAG_SEMICOLON               $._tag_semicolon                zero-width ';' before %} (template unbraced body)
+ *  20  TEXT_END                    $._text_end                     zero-width end of input
+ *  21  RETURN_MARKER               $._return_marker                never emitted; valid only right after `return`
+ *  22  BLOCK_END                   $._block_end                    zero-width end of input, closing one statement list
+ *  23  ERROR_SENTINEL              $._error_sentinel               never emitted; valid only in error recovery
  */
 
 #ifndef UCODE_COMMON_SCANNER_H_
@@ -54,7 +53,6 @@
 enum TokenType {
     AUTOMATIC_SEMICOLON,
     TEMPLATE_CHARS,
-    TERNARY_QMARK,
     RAW_TEXT,
     STATEMENT_TAG_OPEN,
     STATEMENT_TAG_TRIM_OPEN,
@@ -106,19 +104,6 @@ typedef enum {
     TAG_CLOSE_ABSENT,    /* not a close marker; nothing consumed */
     TAG_CLOSE_PARTIAL,   /* a leading '-'/'%'/'}' was consumed, then rejected */
 } TagCloseResult;
-
-/*
- * Result of automatic-semicolon scanning.  Distinguishes the two "no
- * semicolon" outcomes so the dispatcher knows whether scanning a ternary '?'
- * next is safe: after an operator was consumed the lexer is skewed past it and
- * a following ternary token would swallow it (turning invalid `a -? b : c`
- * into a clean ternary).
- */
-typedef enum {
-    ASI_INSERT,       /* emit a zero-length semicolon */
-    ASI_TRY_TERNARY,  /* no semicolon; nothing consumed, so a ternary is safe */
-    ASI_DECLINE,      /* no semicolon; an operator ('-' '%' '/') was consumed */
-} AsiResult;
 
 /* Line terminators.  ucode has only LF and CR — not JavaScript's U+2028 /
    U+2029, which its lexer rejects as "Unexpected character". */
@@ -562,15 +547,17 @@ static bool lookahead_is_tag_open(TSLexer *lexer) {
 }
 
 /*
+ * The ASI decisions below return true to insert the zero-length ';' and false
+ * not to. A false return makes the scanner return false, so tree-sitter
+ * re-lexes from the entry position whatever was peeked at.
+ *
  * ASI decision when the pending token is '-' or '%'.  Shared by both the
  * same-line and post-newline paths: '-'/'%' begins a statement-tag close
  * (%} / -%}) → insert the zero-length ';'; otherwise it is a binary operator
- * continuing the expression, and lookahead_is_stmt_close has consumed it, so
- * DECLINE (a ternary here would swallow the operator, e.g. `a -? b : c`, which
- * ucode rejects).
+ * continuing the expression.
  */
-static AsiResult asi_dash_or_percent(TSLexer *lexer) {
-    return lookahead_is_stmt_close(lexer) ? ASI_INSERT : ASI_DECLINE;
+static bool asi_dash_or_percent(TSLexer *lexer) {
+    return lookahead_is_stmt_close(lexer);
 }
 
 /*
@@ -650,19 +637,18 @@ static bool lookahead_is_end_keyword(TSLexer *lexer) {
  * up the zero-length token first) and by the ASI-before-comment peek, which
  * decides while positioned past a comment and rewinds via a held mark_end.
  */
-static AsiResult asi_same_line_decision(TSLexer *lexer) {
+static bool asi_same_line_decision(TSLexer *lexer) {
     /* ECMAScript rule 1 ('}') and rule 3 (EOF): insert. */
     if (lexer->lookahead == '}' || lexer->lookahead == 0)
-        return ASI_INSERT;
+        return true;
 
     /* Template only: a `{%` or `{{` inside a tag is always an error in ucode
        ("Template blocks may not be nested") — typically a half-typed tag
        followed by the next real one. End the statement here, so error
        recovery only has to supply the missing `%}` (see
-       scan_stray_tag_delimiter) instead of swallowing the rest of the file.
-       '{' consumed and not a tag open → DECLINE so it is re-lexed. */
+       scan_stray_tag_delimiter) instead of swallowing the rest of the file. */
     if (UCODE_SCANNER_TEMPLATE && lexer->lookahead == '{')
-        return lookahead_is_tag_open(lexer) ? ASI_INSERT : ASI_DECLINE;
+        return lookahead_is_tag_open(lexer);
 
     /* Ucode extension: %} / -%} closing a statement tag → insert (see
        asi_dash_or_percent). */
@@ -670,11 +656,11 @@ static AsiResult asi_same_line_decision(TSLexer *lexer) {
         return asi_dash_or_percent(lexer);
 
     /* Any other token on the same line: no line terminator precedes it, so no
-       ASI.  Nothing was consumed, so a ternary '?' here is safe (`a ? b : c`). */
-    return ASI_TRY_TERNARY;
+       ASI. */
+    return false;
 }
 
-static AsiResult scan_automatic_semicolon(TSLexer *lexer) {
+static bool scan_automatic_semicolon(TSLexer *lexer) {
     /* mark_end stays at the scan's entry (see ucode_scanner_scan), before the
        whitespace scan_comment skipped, so `{ x = 1 }` ends the statement at
        `1`, not at the space before `}`. */
@@ -700,21 +686,20 @@ static AsiResult scan_automatic_semicolon(TSLexer *lexer) {
  * default arm via lookahead_is_in_keyword) is the one continuation token that
  * isn't punctuation.
  */
-static AsiResult asi_after_newline_decision(TSLexer *lexer, bool after_return) {
+static bool asi_after_newline_decision(TSLexer *lexer, bool after_return) {
     /* Right after `return`, ucode reads the next line as the return value
        (`return\n\ta + b;` returns a + b), so end the statement only where no
        expression can follow: '}', EOF, a tag close or `{%`, or a keyword that
        ends the statement list.  Anything else — including '{', an object
-       literal — is the operand; nothing worth keeping was consumed, so
-       DECLINE and let the grammar lex it. */
+       literal — is the operand. */
     if (after_return) {
         if (lexer->lookahead == '}' || lexer->eof(lexer))
-            return ASI_INSERT;
+            return true;
         if (lexer->lookahead == '%' || lexer->lookahead == '-')
             return asi_dash_or_percent(lexer);
         if (UCODE_SCANNER_TEMPLATE && lexer->lookahead == '{')
-            return lookahead_is_tag_open(lexer) ? ASI_INSERT : ASI_DECLINE;
-        return lookahead_is_end_keyword(lexer) ? ASI_INSERT : ASI_DECLINE;
+            return lookahead_is_tag_open(lexer);
+        return lookahead_is_end_keyword(lexer);
     }
 
     switch (lexer->lookahead) {
@@ -723,17 +708,15 @@ static AsiResult asi_after_newline_decision(TSLexer *lexer, bool after_return) {
         case '+': case '*':
         case '=': case '<': case '>': case '!': case '~':
         case '&': case '|': case '^': case '?':
-            /* Continuation token; nothing consumed, so a ternary '?' here is
-               safe (e.g. `a\n// c\n? b : c`). */
-            return ASI_TRY_TERNARY;
+            /* Continuation token (e.g. `a\n// c\n? b : c`). */
+            return false;
         case '-':
         case '%':
             return asi_dash_or_percent(lexer);
         default:
             /* `in` continues the expression (`y\nin [1, 2]`); anything else
                is '}', EOF, or the start of a new statement → insert. */
-            if (lookahead_is_in_keyword(lexer)) return ASI_DECLINE;
-            return ASI_INSERT;
+            return !lookahead_is_in_keyword(lexer);
     }
 }
 
@@ -745,7 +728,7 @@ static AsiResult asi_after_newline_decision(TSLexer *lexer, bool after_return) {
  * (scan_comment stopped at the first non-whitespace char, and a comment there
  * would have been emitted as its own token).
  */
-static AsiResult asi_after_newline(TSLexer *lexer, bool after_return) {
+static bool asi_after_newline(TSLexer *lexer, bool after_return) {
     /* No mark_end here: it stays at the scan's ENTRY position, before the
        whitespace and newline scan_comment skipped, so the zero-width ';' sits
        right after the statement's last token. Marking here would stretch the
@@ -754,40 +737,6 @@ static AsiResult asi_after_newline(TSLexer *lexer, bool after_return) {
        still inside the block (Helix indented it). */
     lexer->result_symbol = AUTOMATIC_SEMICOLON;
     return asi_after_newline_decision(lexer, after_return);
-}
-
-static bool scan_ternary_qmark(TSLexer *lexer) {
-    if (lexer->lookahead != '?') return false;
-    advance(lexer);
-
-    if (lexer->lookahead == '?') return false; /* nullish coalescing */
-
-    lexer->mark_end(lexer);
-    lexer->result_symbol = TERNARY_QMARK;
-
-    if (lexer->lookahead == '.') {
-        advance(lexer);
-        return iswdigit(lexer->lookahead); /* ?. followed by digit is ternary */
-    }
-
-    return true;
-}
-
-/*
- * Turn an ASI decision into the scanner's return value.  Both the same-line
- * (scan_automatic_semicolon) and post-newline (asi_after_newline) paths end the
- * same way: INSERT emits the zero-length ';', TRY_TERNARY re-reads the stop char
- * as a ternary '?' when one is valid, and DECLINE returns false (an operator was
- * consumed, so re-lex it).
- */
-static bool dispatch_asi(AsiResult result, TSLexer *lexer,
-                         const bool *valid_symbols) {
-    switch (result) {
-        case ASI_INSERT:      return true;
-        case ASI_TRY_TERNARY: return valid_symbols[TERNARY_QMARK] && scan_ternary_qmark(lexer);
-        case ASI_DECLINE:     return false;
-    }
-    return false; /* unreachable: switch is exhaustive over AsiResult */
 }
 
 /*
@@ -806,12 +755,10 @@ static bool dispatch_asi(AsiResult result, TSLexer *lexer,
  *   CMT_ABORT        — a '/' was consumed but it starts a division / regex, not
  *                a comment.  The dispatcher must return false from the WHOLE
  *                scanner so tree-sitter discards the consumed '/' and re-lexes
- *                it from the original position (as division or a regex).  This
- *                mirrors ASI's own division-slash DECLINE and is what keeps
- *                `a /? b : c` an ERROR rather than a swallowed ternary.
+ *                it from the original position (as division or a regex).
  *   CMT_NONE        — no comment and no line terminator was crossed (only inline
  *                whitespace was skipped); the dispatcher may safely fall through
- *                to the tag-close / ASI / ternary scanners.
+ *                to the tag-close / ASI scanners.
  *   CMT_NONE_NEWLINE — no comment, but a line terminator WAS skipped to reach the
  *                current token.  The dispatcher runs asi_after_newline (when ASI
  *                is valid) because the consumed newline is the one lenient
@@ -920,11 +867,11 @@ static bool scan_asi_before_comment(TSLexer *lexer, bool after_return) {
        keeps a block comment whose own closing line carries the next statement
        an error, matching ucode, while allowing ASI before a `%}` on the
        comment's own line. */
-    AsiResult r = newline_before_next
+    bool insert = newline_before_next
         ? asi_after_newline_decision(lexer, after_return)
         : asi_same_line_decision(lexer);
-    lexer->result_symbol = (r == ASI_INSERT) ? AUTOMATIC_SEMICOLON : ASI_GAP;
-    return r == ASI_INSERT;
+    lexer->result_symbol = insert ? AUTOMATIC_SEMICOLON : ASI_GAP;
+    return insert;
 }
 
 static CommentResult scan_comment(TSLexer *lexer, Scanner *state,
@@ -1233,7 +1180,7 @@ static bool ucode_scanner_scan(
     }
 
     /*
-     * Comments.  Run before the tag-close / ASI / ternary scanners so a comment
+     * Comments.  Run before the tag-close / ASI scanners so a comment
      * is emitted as its own token instead of being silently skipped by those
      * scanners' comment-skipping (e.g. a `//` line comment sitting between a
      * ternary condition and its `?`).  Run after the markup block so a `//` in
@@ -1281,8 +1228,7 @@ static bool ucode_scanner_scan(
     }
 
     if (crossed_newline)
-        return dispatch_asi(asi_after_newline(lexer, valid_symbols[RETURN_MARKER]),
-                            lexer, valid_symbols);
+        return asi_after_newline(lexer, valid_symbols[RETURN_MARKER]);
 
     /*
      * Tag close tokens.  Checked before ASI so that %} / -%} / }} / -}}
@@ -1290,10 +1236,9 @@ static bool ucode_scanner_scan(
      *
      * TAG_CLOSE_PARTIAL means a leading '-'/'%'/'}' was consumed and then
      * rejected (it is really an operator).  We must NOT fall through to the
-     * ternary scan afterwards: the lexer is skewed past that operator and a
-     * TERNARY_QMARK token would swallow it (turning invalid `{{ a -? b : c }}`
-     * into a clean ternary).  Returning false lets tree-sitter re-lex the
-     * operator from the original position with the internal lexer.
+     * scans below: the lexer is skewed past that operator.  Returning false
+     * lets tree-sitter re-lex the operator from the original position with
+     * the internal lexer.
      */
     if (valid_symbols[STATEMENT_TAG_CLOSE] || valid_symbols[STATEMENT_TAG_TRIM_CLOSE]) {
         switch (scan_statement_tag_close(lexer)) {
@@ -1310,18 +1255,12 @@ static bool ucode_scanner_scan(
         }
     }
 
-    /* ASI and ternary.  Only attempt the ternary when ASI consumed nothing but
-     * whitespace (ASI_TRY_TERNARY); ASI_DECLINE means an operator was consumed
-     * and a ternary token would swallow it. */
     if (valid_symbols[AUTOMATIC_SEMICOLON])
-        return dispatch_asi(scan_automatic_semicolon(lexer), lexer, valid_symbols);
+        return scan_automatic_semicolon(lexer);
 
     if (UCODE_SCANNER_TEMPLATE && (lexer->lookahead == '{' || lexer->lookahead == '}' ||
                                    lexer->lookahead == '%' || lexer->lookahead == '-'))
         return scan_stray_tag_delimiter(lexer);
-
-    if (valid_symbols[TERNARY_QMARK])
-        return scan_ternary_qmark(lexer);
 
     /*
      * Error recovery: end of input inside a block or alt-syntax body that was

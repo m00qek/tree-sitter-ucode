@@ -41,37 +41,36 @@ module.exports = function defineGrammar(name) {
     externals: $ => [
       $._automatic_semicolon,        //  0
       $._template_chars,             //  1
-      $._ternary_qmark,              //  2
-      $.raw_text,                    //  3  literal text outside tags
-      $.statement_tag_open,          //  4  {%
-      $.statement_tag_trim_open,     //  5  {%-
-      $.statement_tag_lstrip_open,   //  6  {%+
-      $.statement_tag_close,         //  7  %}
-      $.statement_tag_trim_close,    //  8  -%}
-      $.expression_tag_open,         //  9  {{
-      $.expression_tag_trim_open,    // 10  {{-
-      $.expression_tag_close,        // 11  }}
-      $.expression_tag_trim_close,   // 12  -}}
-      $.comment_content,             // 13  {# ... #} body (scans up to #}/-#})
-      $.comment,                     // 14  // line and /* */ block comments
-      $._single_quote_string_content, // 15  '...' body (scans up to ' / \ / EOF; raw newlines are content)
-      $._double_quote_string_content, // 16  "..." body (scans up to " / \ / EOF; raw newlines are content)
-      $._regex_content,               // 17  /.../ body (scans up to the closing / or EOF; raw newlines are content)
-      $._octal_escape,                 // 18  \NNN octal escape in a string/template, range-checked to <= 255
-      $._asi_gap,                      // 19  zero-width no-op emitted before an own-line comment when ASI declines (see scanner)
-      $._tag_semicolon,                // 20  zero-width ';' before %} / -%} in an unbraced-body position (template only; see scanner)
-      $._text_end,                     // 21  zero-width end of input (see scanner)
+      $.raw_text,                    //  2  literal text outside tags
+      $.statement_tag_open,          //  3  {%
+      $.statement_tag_trim_open,     //  4  {%-
+      $.statement_tag_lstrip_open,   //  5  {%+
+      $.statement_tag_close,         //  6  %}
+      $.statement_tag_trim_close,    //  7  -%}
+      $.expression_tag_open,         //  8  {{
+      $.expression_tag_trim_open,    //  9  {{-
+      $.expression_tag_close,        // 10  }}
+      $.expression_tag_trim_close,   // 11  -}}
+      $.comment_content,             // 12  {# ... #} body (scans up to #}/-#})
+      $.comment,                     // 13  // line and /* */ block comments
+      $._single_quote_string_content, // 14  '...' body (scans up to ' / \ / EOF; raw newlines are content)
+      $._double_quote_string_content, // 15  "..." body (scans up to " / \ / EOF; raw newlines are content)
+      $._regex_content,               // 16  /.../ body (scans up to the closing / or EOF; raw newlines are content)
+      $._octal_escape,                 // 17  \NNN octal escape in a string/template, range-checked to <= 255
+      $._asi_gap,                      // 18  zero-width no-op emitted before an own-line comment when ASI declines (see scanner)
+      $._tag_semicolon,                // 19  zero-width ';' before %} / -%} in an unbraced-body position (template only; see scanner)
+      $._text_end,                     // 20  zero-width end of input (see scanner)
       // Never emitted: offered only right after `return`, so the scanner can
       // tell that state apart and keep a following line's expression as the
       // return value instead of ending the statement at the newline.
-      $._return_marker,                // 22
+      $._return_marker,                // 21
       // Zero-width end of input at the end of a statement list (see
       // statements() below and BLOCK_END in common/scanner.h).
-      $._block_end,                    // 23
+      $._block_end,                    // 22
       // Used by no rule, so tree-sitter marks it valid only during error
       // recovery (when it marks every external token valid) — the scanner's
       // documented way to detect that mode. Keep it last.
-      $._error_sentinel,               // 24
+      $._error_sentinel,               // 23
     ],
 
     extras: $ => [
@@ -776,7 +775,7 @@ module.exports = function defineGrammar(name) {
 
       ternary_expression: $ => prec.right('ternary', seq(
         field('condition', $.expression),
-        alias($._ternary_qmark, '?'),
+        '?',
         field('consequence', $.expression),
         ':',
         field('alternative', $.expression),
