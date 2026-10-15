@@ -137,7 +137,7 @@ single ` * ` comment frame at the start of each line is stripped, so `**bold**`,
 
 ## Requirements
 
-- [tree-sitter CLI](https://github.com/tree-sitter/tree-sitter) ≥ 0.24
+- [tree-sitter CLI](https://github.com/tree-sitter/tree-sitter) ≥ 0.25 (the parsers use ABI 15)
 - Node.js ≥ 18 (for the Node.js bindings only)
 
 ## Build

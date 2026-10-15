@@ -3,7 +3,7 @@
 ## Prerequisites
 
 - Node.js ≥ 18
-- tree-sitter CLI ≥ 0.24 (installed automatically as a dev dependency via `npm install`)
+- tree-sitter CLI ≥ 0.25, for ABI 15 (0.27.1 is installed as a dev dependency by `npm install`)
 
 ## Setup
 
@@ -78,7 +78,7 @@ npx tree-sitter generate ucode_markup/grammar.js --output ucode_markup/src
 npx tree-sitter generate ucdocs/grammar.js --output ucdocs/src
 ```
 
-`npm run build` regenerates all three parsers (ucode, ucode_markup, ucdocs) in one step. Commit the regenerated files under `ucode/src/`, `ucode_markup/src/`, and `ucdocs/src/` together with your grammar change. CI verifies that generated files are up to date.
+`npm run build` regenerates all three parsers (ucode, ucode_markup, ucdocs) in one step. Commit the regenerated files under `ucode/src/`, `ucode_markup/src/`, `ucdocs/src/`, `ucode_markup/queries/` and `editors/helix/queries/` together with your change. CI verifies that generated files are up to date.
 
 Every query applies to both grammars: edit the file under `ucode/queries/` and run `node scripts/generate-markup-queries.js` (or `npm run build`) to regenerate its `ucode_markup/queries/` copy — do not edit the generated copies. The Helix
 copies under `editors/helix/queries/` come from `node scripts/generate-helix-queries.js` (also
@@ -202,7 +202,14 @@ npm run test:bindings                                                # Node
 ```
 
 The version lives in `package.json`, `tree-sitter.json`, `Cargo.toml`, `pyproject.toml`,
-`CMakeLists.txt` and `Makefile`; bump them together.
+`CMakeLists.txt`, `Makefile`, `package-lock.json` and `Cargo.lock`; bump them together:
+
+```sh
+npx tree-sitter version X.Y.Z        # package.json, tree-sitter.json, Cargo.toml, pyproject.toml, CMakeLists.txt
+sed -i 's/^VERSION := .*/VERSION := X.Y.Z/' Makefile
+npm install --package-lock-only      # package-lock.json
+cargo update -p tree-sitter-ucode    # Cargo.lock
+```
 
 ## Note on tree-sitter.json
 
