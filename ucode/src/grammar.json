@@ -1431,7 +1431,7 @@
         },
         {
           "type": "SYMBOL",
-          "name": "_for_header"
+          "name": "_for_in_header"
         },
         {
           "type": "FIELD",
@@ -1452,7 +1452,7 @@
         },
         {
           "type": "SYMBOL",
-          "name": "_for_header"
+          "name": "_for_in_header"
         },
         {
           "type": "STRING",
@@ -1497,7 +1497,7 @@
         }
       ]
     },
-    "_for_header": {
+    "_for_in_header": {
       "type": "SEQ",
       "members": [
         {
@@ -1995,7 +1995,7 @@
         },
         {
           "type": "SYMBOL",
-          "name": "_identifier"
+          "name": "identifier"
         },
         {
           "type": "SYMBOL",
@@ -2433,7 +2433,7 @@
         },
         {
           "type": "SYMBOL",
-          "name": "_identifier"
+          "name": "identifier"
         }
       ]
     },
@@ -3398,7 +3398,7 @@
     },
     "unary_expression": {
       "type": "PREC_LEFT",
-      "value": "unary_void",
+      "value": "unary",
       "content": {
         "type": "SEQ",
         "members": [
@@ -3440,7 +3440,7 @@
     },
     "delete_expression": {
       "type": "PREC_LEFT",
-      "value": "unary_void",
+      "value": "unary",
       "content": {
         "type": "SEQ",
         "members": [
@@ -3576,7 +3576,7 @@
     },
     "function_expression": {
       "type": "PREC",
-      "value": "literal",
+      "value": "function_literal",
       "content": {
         "type": "SEQ",
         "members": [
@@ -4627,10 +4627,6 @@
         ]
       }
     },
-    "_identifier": {
-      "type": "SYMBOL",
-      "name": "identifier"
-    },
     "identifier": {
       "type": "PATTERN",
       "value": "[A-Za-z_][A-Za-z0-9_]*"
@@ -4822,11 +4818,11 @@
     ],
     [
       "primary_expression",
-      "_for_header"
+      "_for_in_header"
     ],
     [
       "variable_declarator",
-      "_for_header"
+      "_for_in_header"
     ],
     [
       "primary_expression",
@@ -4853,7 +4849,7 @@
       },
       {
         "type": "STRING",
-        "value": "unary_void"
+        "value": "unary"
       },
       {
         "type": "STRING",
@@ -4943,7 +4939,7 @@
       },
       {
         "type": "STRING",
-        "value": "literal"
+        "value": "function_literal"
       }
     ],
     [
@@ -4958,26 +4954,6 @@
       {
         "type": "STRING",
         "value": "object"
-      }
-    ],
-    [
-      {
-        "type": "SYMBOL",
-        "name": "export_statement"
-      },
-      {
-        "type": "SYMBOL",
-        "name": "primary_expression"
-      }
-    ],
-    [
-      {
-        "type": "SYMBOL",
-        "name": "lexical_declaration"
-      },
-      {
-        "type": "SYMBOL",
-        "name": "primary_expression"
       }
     ]
   ],
@@ -5087,7 +5063,6 @@
     "_call_signature",
     "_expressions",
     "_semicolon",
-    "_identifier",
     "_lhs_expression"
   ],
   "supertypes": [

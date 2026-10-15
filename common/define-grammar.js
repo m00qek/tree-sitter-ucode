@@ -79,7 +79,7 @@ module.exports = function defineGrammar(name) {
       // Zero-width marker the external scanner emits at an own-line comment when
       // ASI does NOT fire before it (a continuation like `a\n// c\n.b`). It lets
       // the scanner decide ASI by peeking PAST the comment yet still emit the
-      // comment on the next call at the same position \u2014 see scan_comment /
+      // comment on the next call at the same position — see scan_comment /
       // scan_asi_before_comment in common/scanner.h. Hidden and zero-width, so
       // it never appears in the tree; listed as an extra because it can occur at
       // any inter-statement position a comment can.
@@ -135,7 +135,6 @@ module.exports = function defineGrammar(name) {
       $._call_signature,
       $._expressions,
       $._semicolon,
-      $._identifier,
       $._lhs_expression,
       ...(isTemplate ? [$._stmt_open, $._stmt_close, $._expr_open, $._expr_close] : []),
     ],
@@ -145,7 +144,7 @@ module.exports = function defineGrammar(name) {
         'member',
         'call',
         'update',
-        'unary_void',
+        'unary',
         'binary_exp',
         'binary_times',
         'binary_plus',
@@ -163,16 +162,14 @@ module.exports = function defineGrammar(name) {
       ],
       ['assign', $.primary_expression],
       ['member', 'call', $.expression],
-      ['declaration', 'literal'],
+      ['declaration', 'function_literal'],
       [$.primary_expression, $.statement_block, 'object'],
-      [$.export_statement, $.primary_expression],
-      [$.lexical_declaration, $.primary_expression],
     ],
 
     conflicts: $ => [
       [$.primary_expression, $.formal_parameters],
-      [$.primary_expression, $._for_header],
-      [$.variable_declarator, $._for_header],
+      [$.primary_expression, $._for_in_header],
+      [$.variable_declarator, $._for_in_header],
       [$.primary_expression, $.delete_expression],
       [$.primary_expression, $.update_expression],
     ],
@@ -279,7 +276,8 @@ module.exports = function defineGrammar(name) {
       // Export declarations
       // Ucode export is simpler than JS: no `from`, no namespace re-exports.
       // `export default` always takes an expression (requires trailing semicolon).
-      // `export function name() {}` does NOT require a semicolon.
+      // `export function name() {}` requires one too (it is optional only on ucode
+      // master, which this grammar does not target yet).
       //
 
       export_statement: $ => choice(
@@ -393,21 +391,7 @@ module.exports = function defineGrammar(name) {
         $.declaration,
         $.statement_block,
 
-        $.if_statement,
-        $.if_alt_statement,
-        $.switch_statement,
-        $.for_statement,
-        $.for_alt_statement,
-        $.for_in_statement,
-        $.for_in_alt_statement,
-        $.while_statement,
-        $.while_alt_statement,
-        $.try_statement,
-
-        $.break_statement,
-        $.continue_statement,
-        $.return_statement,
-        $.empty_statement,
+        ...controlStatements($),
         ...(isTemplate ? [$.text_statement] : []),
       ),
 
@@ -447,8 +431,8 @@ module.exports = function defineGrammar(name) {
       //     for-in target.
       // Aliased back to lexical_declaration in the for-header so the tree node
       // name is unchanged. No `kind` field on the `let`: it is invariant here
-      // (always `let`), no query reads it, and adding it roughly doubles the
-      // generated parse tables (measured: STATE_COUNT 2937 → 6055).
+      // (always `let`), no query reads it, and adding it costs about 20% more
+      // parse states (measured: 1027 → 1233).
       _for_lexical_declaration: $ => seq(
         'let',
         commaSep1($.variable_declarator),
@@ -487,28 +471,14 @@ module.exports = function defineGrammar(name) {
         $.function_declaration,
         $.statement_block,
 
-        $.if_statement,
-        $.if_alt_statement,
-        $.switch_statement,
-        $.for_statement,
-        $.for_alt_statement,
-        $.for_in_statement,
-        $.for_in_alt_statement,
-        $.while_statement,
-        $.while_alt_statement,
-        $.try_statement,
-
-        $.break_statement,
-        $.continue_statement,
-        $.return_statement,
-        $.empty_statement,
+        ...controlStatements($),
         // ucode's compiler turns every `%}` into `;`, so in a template an
-      // unbraced body that runs into a tag close is EMPTY — `{% if (a) %}x`
-      // is `if (a) ;` followed by the text as the NEXT statement (and a later
-      // `{% else %}` is then an error, as in ucode). The scanner emits this
-      // zero-width token only directly before `%}` / `-%}`; text_statement
-      // itself is deliberately NOT an unbraced body.
-      ...(isTemplate ? [alias($._tag_semicolon, $.empty_statement)] : []),
+        // unbraced body that runs into a tag close is EMPTY — `{% if (a) %}x`
+        // is `if (a) ;` followed by the text as the NEXT statement (and a later
+        // `{% else %}` is then an error, as in ucode). The scanner emits this
+        // zero-width token only directly before `%}` / `-%}`; text_statement
+        // itself is deliberately NOT an unbraced body.
+        ...(isTemplate ? [alias($._tag_semicolon, $.empty_statement)] : []),
       ),
 
       else_clause: $ => seq('else', $._unbraced_statement),
@@ -554,12 +524,12 @@ module.exports = function defineGrammar(name) {
       ),
 
       for_statement: $ => seq(
-        forHeader($),
+        countingForHeader($),
         field('body', $._unbraced_statement),
       ),
 
       for_alt_statement: $ => seq(
-        forHeader($),
+        countingForHeader($),
         ':',
         altBody($, 'body'),
         'endfor',
@@ -567,13 +537,13 @@ module.exports = function defineGrammar(name) {
 
       for_in_statement: $ => seq(
         'for',
-        $._for_header,
+        $._for_in_header,
         field('body', $._unbraced_statement),
       ),
 
       for_in_alt_statement: $ => seq(
         'for',
-        $._for_header,
+        $._for_in_header,
         ':',
         altBody($, 'body'),
         'endfor',
@@ -582,7 +552,7 @@ module.exports = function defineGrammar(name) {
       // Supports both `for (k in obj)` and `for (k, v in obj)` (ucode two-variable form).
       // The loop target must be a plain identifier: ucode rejects member/subscript
       // targets (`for (a.x in o)`) and only `let` (never `const`) may declare it.
-      _for_header: $ => seq(
+      _for_in_header: $ => seq(
         '(',
         optional(field('kind', 'let')),
         field('left', $.identifier),
@@ -701,7 +671,7 @@ module.exports = function defineGrammar(name) {
         $.subscript_expression,
         $.member_expression,
         $.parenthesized_expression,
-        $._identifier,
+        $.identifier,
         $.this,
         $.number,
         $.string,
@@ -778,7 +748,7 @@ module.exports = function defineGrammar(name) {
       _lhs_expression: $ => choice(
         $.member_expression,
         $.subscript_expression,
-        $._identifier,
+        $.identifier,
       ),
 
       assignment_expression: $ => prec.right('assign', seq(
@@ -837,8 +807,8 @@ module.exports = function defineGrammar(name) {
           ['>', 'binary_relation'],
           ['??', 'logical_or'],    // same level as ||, freely mixable
           ['in', 'binary_relation'],
-        ].map(([operator, precedence, associativity]) =>
-          (associativity === 'right' ? prec.right : prec.left)(precedence, seq(
+        ].map(([operator, precedence]) =>
+          prec.left(precedence, seq(
             field('left', $.expression),
             field('operator', operator),
             field('right', $.expression),
@@ -846,7 +816,7 @@ module.exports = function defineGrammar(name) {
         ),
       ),
 
-      unary_expression: $ => prec.left('unary_void', seq(
+      unary_expression: $ => prec.left('unary', seq(
         field('operator', choice('!', '~', '-', '+')),
         field('argument', $.expression),
       )),
@@ -857,7 +827,7 @@ module.exports = function defineGrammar(name) {
       // `delete x` and `delete (5)` are rejected by ucode at compile time, but
       // the parenthesized-non-property case is a semantic lval check the grammar
       // does not attempt (mirroring how tree-sitter-javascript treats `delete`).
-      delete_expression: $ => prec.left('unary_void', seq(
+      delete_expression: $ => prec.left('unary', seq(
         field('operator', 'delete'),
         field('argument', choice(
           $.member_expression,
@@ -885,7 +855,7 @@ module.exports = function defineGrammar(name) {
       // Functions
       //
 
-      function_expression: $ => prec('literal', seq(
+      function_expression: $ => prec('function_literal', seq(
         'function',
         field('name', optional($.identifier)),
         $._call_signature,
@@ -970,7 +940,7 @@ module.exports = function defineGrammar(name) {
       ),
 
       // Ucode extends JS escapes with \e (ESC), \a (BEL), and octal sequences.
-      // Unlike JS, ucode supports only the 4-hex `\uXXXX` form \u2014 not `\u{...}`.
+      // Unlike JS, ucode supports only the 4-hex `\uXXXX` form — not `\u{...}`.
       //
       // The octal branch lives entirely in the external `_octal_escape` token
       // (aliased back to escape_sequence above and in template_string below),
@@ -1104,12 +1074,10 @@ module.exports = function defineGrammar(name) {
         ));
       },
 
-      _identifier: $ => $.identifier,
-
       // ucode identifiers are ASCII only: a leading letter or underscore, then
       // letters, digits, or underscores. Unlike JS there is no `$`, no unicode
       // escape sequences (`\u...` is an "Unexpected character"), and no non-ASCII
-      // letters \u2014 real ucode rejects `$x`, `a$b`, and `caf\u00E9` all as "Unexpected
+      // letters — real ucode rejects `$x`, `a$b`, and `café` all as "Unexpected
       // character". (property_identifier and shorthand_property_identifier alias
       // this rule, so they inherit the same alphabet.)
       identifier: _ => /[A-Za-z_][A-Za-z0-9_]*/,
@@ -1153,7 +1121,7 @@ module.exports = function defineGrammar(name) {
   });
 };
 
-function forHeader($) {
+function countingForHeader($) {
   // KNOWN LIMITATION (documented divergence): the expression-initializer branch
   // accepts any expression, which is MORE permissive than ucode.  ucode's
   // C-style for-init is a stateful hand-parser (uc_compiler_compile_for /
@@ -1180,6 +1148,29 @@ function forHeader($) {
     field('increment', optional($._expressions)),
     ')',
   );
+}
+
+// The statements that may be a statement list's item and also an unbraced
+// body (`if (c) …`, `else …`, a loop body): everything but imports, exports,
+// `let` / `const` declarations and, in a template, text.
+function controlStatements($) {
+  return [
+    $.if_statement,
+    $.if_alt_statement,
+    $.switch_statement,
+    $.for_statement,
+    $.for_alt_statement,
+    $.for_in_statement,
+    $.for_in_alt_statement,
+    $.while_statement,
+    $.while_alt_statement,
+    $.try_statement,
+
+    $.break_statement,
+    $.continue_statement,
+    $.return_statement,
+    $.empty_statement,
+  ];
 }
 
 // A statement list. It may end with the zero-width _block_end, which only the
