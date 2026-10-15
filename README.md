@@ -79,11 +79,6 @@ The grammar tracks ucode's parser closely, with a few deliberate divergences:
   errors, matching ucode. Conversely, a comment does **not** break an expression that
   continues on the next line — `a\n// note\n.b` stays a single member access and
   `a\n/* note */\n+ b` a single addition, also matching ucode.
-- **Unterminated tags and the single-line `// … %}` footgun are flagged, not tolerated.**
-  ucode leniently accepts an unterminated `{% … ` at EOF, and (because `//` runs to
-  end-of-line) silently swallows a same-line `%}` into the comment; the grammar reports an
-  error in both cases so the mistake surfaces in an editor. Put the comment on its own line
-  (with `%}` on the next) or use `/* */` to close on the same line.
 - **Some constructs ucode rejects only at compile time still parse.** The grammar
   describes ucode's *syntax*; semantic rejections the compiler makes after parsing are
   left to the compiler (and to linters), not enforced here — matching how tree-sitter
@@ -375,6 +370,11 @@ As in ucode, `{{` and `}}` are tag delimiters anywhere in template code, not
 just in text: `{% x = {a:{b:1}}; %}` is an error (separate the braces: `{a:{b:1} }`), and so is
 a `{{` inside a `{% … %}` tag. Inside strings, regexes and template-literal text
 they are ordinary characters.
+
+A `//` comment runs to the end of its line, so it swallows a `%}` on the same
+line, again as in ucode; put the `%}` on the next line or use `/* */`. A file may
+end inside an open `{%` tag, but not inside `{{` or `{#`: those are errors, as
+in ucode.
 
 While a file is being edited, errors stay local. Blocks and alt-syntax bodies
 that are not closed yet at the end of the file each end in a zero-width

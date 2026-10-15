@@ -172,16 +172,7 @@ git clone --depth 1 https://github.com/openwrt/firewall4 /tmp/firewall4
 node scripts/validate-corpus.js project /tmp/firewall4
 ```
 
-```sh
-git clone https://github.com/jow-/ucode /tmp/ucode
-git -C /tmp/ucode checkout 85922056ef7abeace3cca3ab28bc1ac2d88e31b1
-git clone https://github.com/openwrt/firewall4 /tmp/firewall4
-
-node scripts/validate-corpus.js corpus  /tmp/ucode/tests/custom
-node scripts/validate-corpus.js project /tmp/firewall4
-```
-
-A small number of upstream test cases are intentionally skipped because they contain code that ucode itself rejects at compile time (not grammar bugs). They are listed in `EXPECTED_INVALID` inside `scripts/validate-corpus.js`. `KNOWN_GRAMMAR_GAPS` in the same file lists the opposite: valid ucode the grammar doesn't parse yet (currently empty — see README.md).
+A small number of upstream test cases contain code that ucode itself rejects (not grammar bugs). They are listed in `EXPECTED_INVALID` inside `scripts/validate-corpus.js`, and must fail to parse: an entry that parses clean, or names no testcase, fails the run. `KNOWN_GRAMMAR_GAPS` in the same file lists the opposite, checked the same way: valid ucode the grammar doesn't parse yet (currently empty — see README.md). Any ERROR or MISSING node counts as a failure; `.ut` files are parsed as templates in project mode.
 
 ## Before submitting a PR
 

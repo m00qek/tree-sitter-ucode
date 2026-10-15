@@ -11,17 +11,17 @@
  *
  *                node scripts/validate-corpus.js corpus <path/to/tests/custom>
  *
- *   project  -- Find every .uc / .uc.tmpl file under a directory and parse it.
- *               Auto-detects template vs raw mode from file content.
+ *   project  -- Find every .uc / .uc.tmpl / .ut file under a directory and
+ *               parse it. `.ut` files are templates; the others are detected
+ *               from their content.
  *
  *                node scripts/validate-corpus.js project <path/to/project>
  *
- * Exits 0 when every file/testcase parses without ERROR nodes, and without a
- * MISSING node anywhere except exactly at end-of-input (ucode tolerates an
- * unclosed template block at EOF, so a MISSING statement_tag_close/etc. there
- * is expected recovery, not a grammar bug — see EXPECTED_INVALID's sibling
- * KNOWN_GRAMMAR_GAPS below for the distinction from a MISSING in the middle
- * of the file, which means the grammar failed to parse a real construct).
+ * Exits 0 when every file/testcase parses without ERROR or MISSING nodes, and
+ * every EXPECTED_INVALID / KNOWN_GRAMMAR_GAPS testcase exists and still fails
+ * to parse. A file ucode accepts never needs a MISSING node: a template that
+ * ends inside an open `{%` tag parses clean, and the other unclosed constructs
+ * (`{{`, `{#`, `{`, `/*`, …) are errors in ucode too.
  * Exits 2 on a setup error (missing tree-sitter binary or unbuilt grammar
  * library, or zero files/testcases found) so a broken environment or a wrong
  * path cannot masquerade as a clean run.
@@ -53,6 +53,10 @@ const TREE_SITTER = require('./tree-sitter-cli');
 // Known-invalid testcases in the jow-/ucode corpus.
 // These are code that ucode itself rejects at compile time — not grammar bugs.
 // Key format: "<relative/path>#<testcase-index>"  (1-based, forward slashes)
+//
+// These testcases are parsed too, and must fail to: one that parses clean (or
+// a key that names no testcase) fails the run, so an index that drifts after
+// a corpus change cannot silently skip a valid testcase.
 // ---------------------------------------------------------------------------
 
 const EXPECTED_INVALID = new Set([
@@ -96,6 +100,11 @@ const EXPECTED_INVALID = new Set([
   //     "Template blocks may not be nested"), not merely a grammar gap. ---
   '00_syntax/05_block_nesting#1',
 
+  // --- `{{ … ` / `{# …` left open at EOF — "Unterminated template block".
+  //     (An open `{% …` at EOF is valid, and parses clean.) ---
+  '00_syntax/01_unterminated_comment#1',
+  '99_bugs/17_hang_on_unclosed_expression_block#1',
+
   // --- Malformed computed object keys (empty `[]:` / sequence `[a, b]:`) —
   //     ucode itself rejects these at parse time. ---
   '00_syntax/13_object_literals#7',
@@ -111,9 +120,10 @@ const EXPECTED_INVALID = new Set([
 //
 // Unlike EXPECTED_INVALID (code ucode itself rejects), these are VALID ucode
 // that this grammar does not yet support — real, tracked gaps, not corrected
-// syntax errors. Keeping them here (rather than silently tolerating their
-// MISSING nodes, or mislabeling them as EXPECTED_INVALID) keeps the corpus
-// run green without hiding that the feature is unimplemented.
+// syntax errors. Keeping them here (rather than mislabeling them as
+// EXPECTED_INVALID) keeps the corpus run green without hiding that the
+// feature is unimplemented. Like EXPECTED_INVALID, each must still fail to
+// parse, so a fixed gap shows up as a failure until its entry is removed.
 //
 // Empty for the currently pinned ucode version (see README.md's "Targeted
 // ucode version" section) — every construct in that corpus is either valid
@@ -172,86 +182,89 @@ function isCodeFragment(code) {
   return /^\{%/.test(line) && /[^%]\s*\}$/.test(line);
 }
 
-// The row (0-indexed, counting newlines) where an "at EOF" MISSING node may
-// legitimately land. Whether trailing whitespace before EOF is consumed as
-// part of an unclosed construct's own content varies by construct: a `{# #}`
-// or `/* */` comment (or a string) spans raw newlines as content, so tree-sitter
-// reports the missing closer AFTER them; an unclosed `{{ }}`/`{% %}` code tag
-// treats trailing whitespace as skippable "extra" and reports the missing
-// closer right after the last real token, BEFORE it. So both the trimmed and
-// untrimmed last row count as "at EOF" — anywhere in between covers either
-// construct without having to replicate the scanner's own whitespace rules.
-function eofRows(code) {
-  const untrimmedRow = code.split('\n').length - 1;
-  const trimmedRow = code.replace(/\s+$/, '').split('\n').length - 1;
-  return { min: trimmedRow, max: untrimmedRow };
-}
-
-// Every `(MISSING ... [row, col] - ...)` node's row.
-function missingRows(output) {
-  return [...output.matchAll(/\(MISSING\b[^[]*\[(\d+),/g)].map(([, row]) => Number(row));
-}
-
-function parse(code, tmpl) {
-  const libPath  = tmpl ? LIB_UCODE_MARKUP : LIB_UCODE;
-  const langName = tmpl ? 'ucode_markup'   : 'ucode';
-  const suffix   = tmpl ? '.ucode'         : '.uc';
-  const tmpFile  = path.join(os.tmpdir(), `ucode-validate-${process.pid}-${Date.now()}${suffix}`);
-  fs.writeFileSync(tmpFile, code, 'utf8');
+// Parse every item ({ code, tmpl }) with one tree-sitter run per grammar,
+// and return a { hasError, output } result for each, in order. hasError is
+// true for any ERROR or MISSING node.
+function parseAll(items) {
+  const dir = fs.mkdtempSync(path.join(os.tmpdir(), 'ucode-validate-'));
   try {
-    const result = spawnSync(
-      TREE_SITTER,
-      ['parse', '--quiet', '--lib-path', libPath, '--lang-name', langName, tmpFile],
-      { cwd: TS_ROOT, encoding: 'utf8' },
-    );
-    // The tree-sitter binary itself could not be spawned (e.g. not installed).
-    if (result.error) {
-      fatal(`could not run tree-sitter (${TREE_SITTER}): ${result.error.message}`);
+    const files = items.map(({ code, tmpl }, i) => {
+      const file = path.join(dir, `${i}.${tmpl ? 'ut' : 'uc'}`);
+      fs.writeFileSync(file, code, 'utf8');
+      return file;
+    });
+    const results = new Array(items.length);
+    for (const tmpl of [false, true]) {
+      const idx = items.flatMap((item, i) => (item.tmpl === tmpl ? [i] : []));
+      if (!idx.length) continue;
+      const batch = runParser(idx.map((i) => files[i]), tmpl, dir);
+      // A crash names no file. Re-run the batch one file at a time, so the
+      // report points at the input that crashed and the rest still count.
+      const each = batch ?? idx.map((i) => runParser([files[i]], tmpl, dir)?.[0] ??
+        { hasError: true, output: 'tree-sitter crashed on this input' });
+      idx.forEach((i, k) => { results[i] = each[k]; });
     }
-    const output = (result.stdout ?? '') + (result.stderr ?? '');
-    // The grammar library could not be loaded (missing/incompatible .so). This
-    // is not a parse result: without this guard the ERROR grep below sees no
-    // "ERROR" token and every file counts as a pass, so the run exits 0 having
-    // parsed nothing.
-    if (/Failed to load language|dlopen/i.test(output)) {
-      fatal(`could not load ${langName} grammar from ${libPath}:\n${output.trim()}`);
-    }
-    // A real parse either succeeds (exit 0, empty output under --quiet) or
-    // reports an ERROR/MISSING tree (exit 1, output naming the node). A crash
-    // signal, or a non-zero exit that produced no output at all, is neither —
-    // without this a scanner segfault (SIGSEGV → empty output) would be
-    // silently counted as a clean parse. Surface it as a per-file failure so
-    // the run names the offending input and keeps looking for others.
-    if (result.signal || (result.status !== 0 && output.trim() === '')) {
-      const how = result.signal
-        ? `killed by signal ${result.signal}`
-        : `exited with status ${result.status} and no output`;
-      return { hasError: true, output: `tree-sitter ${how}` };
-    }
-    let hasError = /\bERROR\b/.test(output);
-    if (!hasError) {
-      // A MISSING node anywhere but at end-of-input means the grammar failed
-      // to parse something mid-file — not the EOF-tolerant "unclosed
-      // template block" recovery this script is meant to allow.
-      const { min, max } = eofRows(code);
-      hasError = missingRows(output).some((row) => row < min || row > max);
-    }
-    return { hasError, output: output.trim() };
+    return results;
   } finally {
-    try { fs.unlinkSync(tmpFile); } catch { /* ignore */ }
+    fs.rmSync(dir, { recursive: true, force: true });
   }
 }
 
-function printReport(ok, fail, skip, mode, gapSkip = 0) {
-  const total = ok + fail.length + skip + gapSkip;
+// Run `tree-sitter parse` over files; return one result per file, or null if
+// tree-sitter crashed.
+function runParser(files, tmpl, dir) {
+  const libPath  = tmpl ? LIB_UCODE_MARKUP : LIB_UCODE;
+  const langName = tmpl ? 'ucode_markup'   : 'ucode';
+  const pathsFile = path.join(dir, 'paths.txt');
+  fs.writeFileSync(pathsFile, files.join('\n') + '\n', 'utf8');
+  const result = spawnSync(
+    TREE_SITTER,
+    ['parse', '--quiet', '--json-summary', '--lib-path', libPath, '--lang-name', langName,
+     '--paths', pathsFile],
+    { cwd: TS_ROOT, encoding: 'utf8', maxBuffer: 64 * 1024 * 1024 },
+  );
+  // The tree-sitter binary itself could not be spawned (e.g. not installed).
+  if (result.error) {
+    fatal(`could not run tree-sitter (${TREE_SITTER}): ${result.error.message}`);
+  }
+  const stdout = result.stdout ?? '';
+  const output = stdout + (result.stderr ?? '');
+  // The grammar library could not be loaded (missing/incompatible .so). This
+  // is not a parse result, and without this guard nothing would fail.
+  if (/Failed to load language|dlopen/i.test(output)) {
+    fatal(`could not load ${langName} grammar from ${libPath}:\n${output.trim()}`);
+  }
+  // stdout is one line per failed file ("<path>\tParse: … (ERROR …)", the
+  // path padded with spaces to a common width), then the JSON summary. A
+  // crash (e.g. a scanner segfault) leaves no summary.
+  const json = stdout.startsWith('{') ? 0 : stdout.indexOf('\n{') + 1;
+  let summaries;
+  try {
+    summaries = JSON.parse(stdout.slice(json)).parse_summaries;
+  } catch {
+    return null;
+  }
+  const successful = new Map(summaries.map((s) => [s.file, s.successful]));
+  if (result.signal || !files.every((file) => successful.has(file))) return null;
+  const errors = new Map(stdout.slice(0, json).trimEnd().split('\n')
+    .map((line) => line.split('\t'))
+    .map(([file, ...rest]) => [file.trimEnd(), rest.join('\t').replace(/^Parse:.*?\(/, '(')]));
+  return files.map((file) => ({
+    hasError: !successful.get(file),
+    output: successful.get(file) ? '' : errors.get(file) ?? 'parse failed',
+  }));
+}
+
+function printReport(ok, fail, skips, mode) {
+  const skipped = Object.values(skips).reduce((a, b) => a + b, 0);
+  const total = ok + fail.length + skipped;
   // A wrong path, an empty checkout, or an extraction regex that stopped
   // matching would otherwise report "0/0 passed" and exit 0 — indistinguishable
   // from a genuinely clean, and much larger, run.
   if (total === 0) fatal(`no files/testcases found to validate [${mode}]`);
 
   let line = `\n${ok}/${total} passed`;
-  if (skip)        line += `, ${skip} skipped (expected-invalid)`;
-  if (gapSkip)     line += `, ${gapSkip} skipped (known grammar gap)`;
+  for (const [why, n] of Object.entries(skips)) if (n) line += `, ${n} ${why}`;
   if (fail.length) line += `, ${fail.length} FAILED`;
   console.log(line + `  [${mode}]`);
 
@@ -259,8 +272,10 @@ function printReport(ok, fail, skip, mode, gapSkip = 0) {
     console.log('\n--- Failures ---');
     for (const { label, code, output } of fail) {
       console.log(`\n=== ${label} ===`);
-      console.log(code.slice(0, 400).trimEnd());
-      console.log('---');
+      if (code) {
+        console.log(code.slice(0, 400).trimEnd());
+        console.log('---');
+      }
       console.log(output.slice(0, 300));
     }
   }
@@ -282,9 +297,7 @@ function* walkFiles(dir) {
 // ---------------------------------------------------------------------------
 
 function runCorpus(testsDir) {
-  let okCount = 0, skipCount = 0, gapCount = 0;
-  const fail = [];
-
+  const cases = [];
   for (const file of walkFiles(testsDir)) {
     const name = path.basename(file);
     if (name === 'CMakeLists.txt' || name === 'run_tests.uc') continue;
@@ -293,65 +306,81 @@ function runCorpus(testsDir) {
     try { text = fs.readFileSync(file, 'utf8'); }
     catch { continue; }
 
-    const rel   = path.relative(testsDir, file).replace(/\\/g, '/');
-    const cases = [...text.matchAll(/-- Testcase --\n([\s\S]*?)-- End --/g)];
-
-    cases.forEach(([, code], i) => {
-      const key   = `${rel}#${i + 1}`;
-      const tmpl  = isTemplateCorpus(code);
-      const label = `${rel} #${i + 1} [${tmpl ? 'tmpl' : 'raw'}]`;
-
-      if (EXPECTED_INVALID.has(key)) {
-        skipCount++;
-        console.log(`  skip  ${label}`);
-        return;
-      }
-      if (KNOWN_GRAMMAR_GAPS.has(key)) {
-        gapCount++;
-        console.log(`  gap   ${label}`);
-        return;
-      }
-
-      const { hasError, output } = parse(code, tmpl);
-      if (hasError) {
-        fail.push({ label, code: code.trim(), output });
-        console.log(`  FAIL  ${label}`);
-      } else {
-        okCount++;
-        console.log(`  ok    ${label}`);
-      }
+    const rel = path.relative(testsDir, file).replace(/\\/g, '/');
+    [...text.matchAll(/-- Testcase --\n([\s\S]*?)-- End --/g)].forEach(([, code], i) => {
+      const tmpl = isTemplateCorpus(code);
+      cases.push({
+        key: `${rel}#${i + 1}`,
+        label: `${rel} #${i + 1} [${tmpl ? 'tmpl' : 'raw'}]`,
+        code,
+        tmpl,
+      });
     });
   }
 
-  return printReport(okCount, fail, skipCount, 'corpus', gapCount);
+  let okCount = 0;
+  const skips = { 'expected-invalid': 0, 'known grammar gaps': 0 };
+  const fail = [];
+  const results = parseAll(cases);
+
+  cases.forEach(({ key, label, code }, i) => {
+    const { hasError, output } = results[i];
+    const expected = EXPECTED_INVALID.has(key) ? 'expected-invalid'
+      : KNOWN_GRAMMAR_GAPS.has(key) ? 'known grammar gaps' : null;
+    if (expected && hasError) {
+      skips[expected]++;
+      console.log(`  ${expected === 'expected-invalid' ? 'inv ' : 'gap '}  ${label}`);
+    } else if (expected) {
+      fail.push({ label, code: code.trim(), output: `listed in ${expected} but parses clean` });
+      console.log(`  FAIL  ${label}`);
+    } else if (hasError) {
+      fail.push({ label, code: code.trim(), output });
+      console.log(`  FAIL  ${label}`);
+    } else {
+      okCount++;
+      console.log(`  ok    ${label}`);
+    }
+  });
+
+  const keys = new Set(cases.map(({ key }) => key));
+  for (const key of [...EXPECTED_INVALID, ...KNOWN_GRAMMAR_GAPS]) {
+    if (!keys.has(key)) fail.push({ label: key, output: 'listed, but no such testcase' });
+  }
+
+  return printReport(okCount, fail, skips, 'corpus');
 }
 
 // ---------------------------------------------------------------------------
-// Mode: project  (real ucode project — parse .uc / .uc.tmpl files directly)
+// Mode: project  (real ucode project — parse .uc / .uc.tmpl / .ut files)
 // ---------------------------------------------------------------------------
 
 function runProject(projectDir) {
-  let okCount = 0, skipCount = 0;
-  const fail = [];
-
+  const files = [];
+  const skips = { 'template fragments': 0 };
   for (const file of walkFiles(projectDir)) {
-    if (!file.endsWith('.uc') && !file.endsWith('.uc.tmpl')) continue;
+    if (!/\.(uc|uc\.tmpl|ut)$/.test(file)) continue;
 
     let code;
     try { code = fs.readFileSync(file, 'utf8'); }
     catch { continue; }
 
     const rel   = path.relative(projectDir, file).replace(/\\/g, '/');
-    const tmpl  = isTemplateProject(code);
+    const tmpl  = file.endsWith('.ut') || isTemplateProject(code);
     const label = `${rel} [${tmpl ? 'tmpl' : 'raw'}]`;
 
     if (tmpl && isCodeFragment(code)) {
-      skipCount++;
+      skips['template fragments']++;
       console.log(`  skip  ${label} (template fragment)`);
       continue;
     }
+    files.push({ label, code, tmpl });
+  }
 
-    const { hasError, output } = parse(code, tmpl);
+  let okCount = 0;
+  const fail = [];
+  const results = parseAll(files);
+  files.forEach(({ label, code }, i) => {
+    const { hasError, output } = results[i];
     if (hasError) {
       fail.push({ label, code: code.slice(0, 400), output });
       console.log(`  FAIL  ${label}`);
@@ -359,9 +388,9 @@ function runProject(projectDir) {
       okCount++;
       console.log(`  ok    ${label}`);
     }
-  }
+  });
 
-  return printReport(okCount, fail, skipCount, 'project');
+  return printReport(okCount, fail, skips, 'project');
 }
 
 // ---------------------------------------------------------------------------
