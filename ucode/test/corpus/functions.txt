@@ -41,7 +41,8 @@ function greet(): print("hi"); endfunction
               (string_fragment))))))))
 
 ================================================================================
-Forward function declaration — not supported, produces ERROR
+Forward function declaration — not in the targeted release, produces ERROR
+:error
 ================================================================================
 
 function foo;
@@ -49,19 +50,8 @@ function foo() { return 1; }
 
 --------------------------------------------------------------------------------
 
-; `function foo;` is not valid ucode. The grammar produces an ERROR node
-; and the semicolon is parsed as an empty_statement.
-
-(program
-  (ERROR
-    (identifier))
-  (empty_statement)
-  (function_declaration
-    name: (identifier)
-    parameters: (formal_parameters)
-    body: (statement_block
-      (return_statement
-        (number)))))
+; `function foo;` (a forward declaration) came after the targeted ucode
+; release (master d9e24e4).
 
 ================================================================================
 Arrow function — single parameter, expression body

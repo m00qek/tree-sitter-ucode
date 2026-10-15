@@ -125,6 +125,11 @@ Notable changes to tree-sitter-ucode. Releases up to v0.8.0 are described in the
   `npm run test:bindings` smoke-tests the Node binding.
 - Built parsers live in `.build/parsers/`. tree-sitter CLI 0.27.1. `.gitattributes` and
   `.editorconfig` added.
+- `scripts/validate-corpus.js` fails on any MISSING node, checks that its expected-invalid
+  testcases still fail, parses `.ut` files in project mode, and runs one tree-sitter process per
+  grammar instead of one per testcase.
+- Corpus tests that only assert a parse error use `:error` instead of a snapshot of the ERROR
+  tree; CRLF line endings are tested.
 - `tree-sitter.json` validates against the official schema, and declares `common/scanner.h` as
   an external file so the CLI rebuilds its cached parsers when the shared scanner changes.
 - `scripts/check-helix-indents.sh` checks the Helix indent queries in a real Helix.

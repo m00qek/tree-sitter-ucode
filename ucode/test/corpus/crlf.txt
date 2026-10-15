@@ -1,0 +1,35 @@
+================================================================================
+CRLF line endings
+================================================================================
+
+let x = 1; // note
+let y = x
+  + 1;
+function f() {
+  return
+    y;
+}
+
+--------------------------------------------------------------------------------
+
+; \r\n ends a line comment, separates statements, and still lets a binary
+; expression and a return value continue on the next line.
+
+(program
+  (lexical_declaration
+    (variable_declarator
+      name: (identifier)
+      value: (number)))
+  (comment)
+  (lexical_declaration
+    (variable_declarator
+      name: (identifier)
+      value: (binary_expression
+        left: (identifier)
+        right: (number))))
+  (function_declaration
+    name: (identifier)
+    parameters: (formal_parameters)
+    body: (statement_block
+      (return_statement
+        (identifier)))))

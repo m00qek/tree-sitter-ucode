@@ -1,0 +1,31 @@
+================================================================================
+CRLF line endings
+================================================================================
+{% if (x): -%}
+hello {{ x }}
+{%- endif %}
+
+--------------------------------------------------------------------------------
+
+; \r\n line endings around tags, trim markers and an expression tag. The
+; code starts right after the header: tree-sitter test drops only the \n of
+; a blank line there, and the \r left over would be raw text.
+
+(markup
+  (statement_tag_open)
+  (if_alt_statement
+    condition: (parenthesized_expression
+      (identifier))
+    consequence: (statement_list
+      (text_statement
+        (statement_tag_trim_close)
+        (raw_text)
+        (expression_tag
+          open: (expression_tag_open)
+          (identifier)
+          close: (expression_tag_close))
+        (raw_text)
+        (statement_tag_trim_open))))
+  (text_statement
+    (statement_tag_close)
+    (raw_text)))

@@ -80,26 +80,16 @@ import * as ns from "./mod.uc";
       (string_fragment))))
 
 ================================================================================
-Dynamic import expression — not supported, produces ERROR
+Dynamic import expression — not in the targeted release, produces ERROR
+:error
 ================================================================================
 
 let mod = import("./mod.uc");
 
 --------------------------------------------------------------------------------
 
-; `import(...)` as an expression is not valid ucode. Only the static
-; statement form `import "mod.uc"` is supported. The `import` keyword
-; produces an ERROR node; the parenthesised path is recovered as the
-; variable's value.
-
-(program
-  (lexical_declaration
-    (variable_declarator
-      name: (identifier)
-      (ERROR)
-      value: (parenthesized_expression
-        (string
-          (string_fragment))))))
+; `import(...)` as an expression came after the targeted ucode release
+; (master 926f20b); only the static `import` statement is supported.
 
 ================================================================================
 Export let
@@ -183,57 +173,39 @@ import def, { a } from "./mod.uc";
 
 ================================================================================
 Empty export list is rejected — produces ERROR
+:error
 ================================================================================
 
 export {};
 
 --------------------------------------------------------------------------------
 
-; ucode's export-list parser demands a label (or `default`) before it will
-; even check for '}' — an empty `{}` is "Expecting Label", so recovery leaves
-; a MISSING identifier where the first specifier's name should be.
-
-(program
-  (export_statement
-    clause: (export_clause
-      (export_specifier
-        name: (MISSING identifier)))))
+; ucode demands a label (or `default`) before it checks for '}':
+; "Expecting Label".
 
 ================================================================================
 Empty named-import list is rejected — produces ERROR
+:error
 ================================================================================
 
 import {} from "./mod.uc";
 
 --------------------------------------------------------------------------------
 
-; Same root as the empty export list above: ucode's import-list parser
-; demands a label/string/`default` before checking for '}'.
-
-(program
-  (import_statement
-    clause: (import_clause
-      named: (named_imports
-        (import_specifier
-          name: (MISSING identifier))))
-    source: (string
-      (string_fragment))))
+; As with the empty export list, ucode demands a label, string or `default`
+; before it checks for '}'.
 
 ================================================================================
-Export forward declaration — not supported, produces ERROR
+Export forward declaration — not in the targeted release, produces ERROR
+:error
 ================================================================================
 
 export function foo;
 
 --------------------------------------------------------------------------------
 
-; `export function foo;` (forward declaration) is not valid ucode.
-; The parser produces an ERROR node and the semicolon becomes an empty_statement.
-
-(program
-  (ERROR
-    (identifier))
-  (empty_statement))
+; `export function foo;` (a forward declaration) came after the targeted
+; ucode release (master d9e24e4).
 
 ================================================================================
 Export with rename
@@ -278,17 +250,14 @@ export default 42;
     value: (number)))
 
 ================================================================================
-Export default without semicolon — produces MISSING node
+Export default without semicolon — produces ERROR
+:error
 ================================================================================
 
 export default 42
 
 --------------------------------------------------------------------------------
 
-; Unlike JS, ucode `export default` has no ASI — a literal ';' is required.
-; The parser produces a MISSING ";" node rather than silently accepting a newline.
+; ucode requires the `;` after `export default`; the grammar keeps it
+; strict on purpose (see README).
 
-(program
-  (export_statement
-    value: (number)
-    (MISSING ";")))

@@ -1,5 +1,8 @@
 * text=auto eol=lf
 
+# Corpus tests with CRLF line endings: keep them byte for byte
+*/test/corpus/crlf.txt  -text
+
 # Generated parsers
 */src/parser.c         linguist-generated
 */src/grammar.json     linguist-generated

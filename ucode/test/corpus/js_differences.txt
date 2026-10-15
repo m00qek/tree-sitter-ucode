@@ -1,17 +1,11 @@
 ================================================================================
 var is not a keyword — produces ERROR
+:error
 ================================================================================
 
 var x = 1;
 
 --------------------------------------------------------------------------------
-
-(program
-  (expression_statement
-    (assignment_expression
-      left: (identifier)
-      (ERROR (identifier))
-      right: (number))))
 
 ================================================================================
 get and set are ordinary identifiers
@@ -71,205 +65,124 @@ function h(get) { return { get, set: get }; }
 
 ================================================================================
 new is not a keyword — produces ERROR
+:error
 ================================================================================
 
 new Foo();
 
 --------------------------------------------------------------------------------
 
-(program
-  (ERROR (identifier))
-  (expression_statement
-    (call_expression
-      function: (identifier)
-      arguments: (arguments))))
-
 ================================================================================
 throw is not a keyword — produces ERROR
+:error
 ================================================================================
 
 throw err;
 
 --------------------------------------------------------------------------------
 
-(program
-  (expression_statement
-    (identifier)
-    (ERROR (identifier))))
-
 ================================================================================
 typeof is not a keyword — produces ERROR
+:error
 ================================================================================
 
 typeof x;
 
 --------------------------------------------------------------------------------
 
-(program
-  (expression_statement
-    (identifier)
-    (ERROR (identifier))))
-
 ================================================================================
 Array destructuring — produces ERROR
+:error
 ================================================================================
 
 let [a, b] = arr;
 
 --------------------------------------------------------------------------------
 
-; Ucode has no destructuring. `let [a, b] = arr` is not valid ucode.
-; `let` is a keyword and cannot be used as an identifier, so the parser
-; produces an ERROR node. The `= arr` portion is recovered as a separate
-; expression statement.
-
-(program
-  (ERROR
-    (array
-      (identifier)
-      (identifier)))
-  (expression_statement
-    (identifier)))
+; ucode has no destructuring.
 
 ================================================================================
 Object destructuring — produces ERROR
+:error
 ================================================================================
 
 let {x} = obj;
 
 --------------------------------------------------------------------------------
 
-(program
-  (ERROR)
-  (statement_block
-    (expression_statement (identifier)))
-  (ERROR)
-  (expression_statement (identifier)))
-
 ================================================================================
 class is not a keyword — produces ERROR
+:error
 ================================================================================
 
 class Foo {}
 
 --------------------------------------------------------------------------------
 
-(program
-  (ERROR
-    (identifier)
-    (identifier))
-  (statement_block))
-
 ================================================================================
 do-while is not supported — produces ERROR
+:error
 ================================================================================
 
 do { x++; } while (x < 10);
 
 --------------------------------------------------------------------------------
 
-(program
-  (ERROR (identifier))
-  (statement_block
-    (expression_statement
-      (update_expression argument: (identifier))))
-  (while_statement
-    condition: (parenthesized_expression
-      (binary_expression left: (identifier) right: (number)))
-    body: (empty_statement)))
-
 ================================================================================
 for...of is not supported — produces ERROR
+:error
 ================================================================================
 
 for (x of arr) {}
 
 --------------------------------------------------------------------------------
 
-(program
-  (ERROR
-    (ERROR
-      (identifier)
-      (identifier)
-      (identifier))
-    (object)))
-
 ================================================================================
 async function is not supported — produces ERROR
+:error
 ================================================================================
 
 async function f() {}
 
 --------------------------------------------------------------------------------
 
-(program
-  (ERROR (identifier))
-  (function_declaration
-    name: (identifier)
-    parameters: (formal_parameters)
-    body: (statement_block)))
-
 ================================================================================
 Generator function is not supported — produces ERROR
+:error
 ================================================================================
 
 function* gen() {}
 
 --------------------------------------------------------------------------------
 
-; `*` is not valid between `function` and the name; it lands as an ERROR node
-; inside the function_declaration while the rest parses normally.
-
-(program
-  (function_declaration
-    (ERROR)
-    name: (identifier)
-    parameters: (formal_parameters)
-    body: (statement_block)))
+; `*` is not valid between `function` and the name.
 
 ================================================================================
 >>> unsigned right shift is not supported — produces ERROR
+:error
 ================================================================================
 
 let x = a >>> b;
 
 --------------------------------------------------------------------------------
 
-(program
-  (lexical_declaration
-    (variable_declarator
-      name: (identifier)
-      value: (binary_expression
-        left: (identifier)
-        (ERROR)
-        right: (identifier)))))
-
 ================================================================================
 void is not a keyword — produces ERROR
+:error
 ================================================================================
 
 void x;
 
 --------------------------------------------------------------------------------
 
-(program
-  (expression_statement
-    (identifier)
-    (ERROR (identifier))))
-
 ================================================================================
 instanceof is not a keyword — produces ERROR
+:error
 ================================================================================
 
 a instanceof b;
 
 --------------------------------------------------------------------------------
-
-(program
-  (ERROR
-    (identifier)
-    (identifier))
-  (expression_statement (identifier)))
 
 ================================================================================
 debugger is not a keyword — silently parses as identifier
@@ -287,85 +200,41 @@ debugger;
 
 ================================================================================
 await is not a keyword — produces ERROR
+:error
 ================================================================================
 
 await foo();
 
 --------------------------------------------------------------------------------
 
-(program
-  (expression_statement
-    (call_expression
-      function: (identifier)
-      (ERROR (identifier))
-      arguments: (arguments))))
-
 ================================================================================
 yield is not a keyword — produces ERROR
+:error
 ================================================================================
 
 yield x;
 
 --------------------------------------------------------------------------------
 
-(program
-  (expression_statement
-    (identifier)
-    (ERROR (identifier))))
-
 ================================================================================
 Bare array destructuring assignment — produces ERROR
+:error
 ================================================================================
 
 [a, b] = [1, 2];
 
 --------------------------------------------------------------------------------
 
-; Ucode has no destructuring. A bare `[a, b] = [...]` is parsed as a subscript
-; expression where `[a, b]` is the object and `= [...]` is invalid inside the
-; subscript, so the parser produces an ERROR node around the `=` and its operand.
-
-(program
-  (expression_statement
-    (subscript_expression
-      object: (array
-        (identifier)
-        (identifier))
-      (ERROR)
-      index: (sequence_expression
-        (number)
-        (number)))))
+; ucode has no destructuring.
 
 ================================================================================
 Function parameter destructuring — produces ERROR
+:error
 ================================================================================
 
 function f([a, b]) {}
 
 --------------------------------------------------------------------------------
-
-(program
-  (ERROR
-    (identifier)
-    (array
-      (identifier)
-      (identifier)))
-  (statement_block))
-
-================================================================================
-Dynamic import — produces ERROR
-================================================================================
-
-import("module");
-
---------------------------------------------------------------------------------
-
-(program
-  (ERROR)
-  (expression_statement
-    (parenthesized_expression
-      (string
-        (string_fragment)))))
 
 ================================================================================
 Numeric underscore separators are not supported — produces ERROR
