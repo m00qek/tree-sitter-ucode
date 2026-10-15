@@ -115,6 +115,9 @@ Notable changes to tree-sitter-ucode. Releases up to v0.8.0 are described in the
   calls to ucode's builtins are not references; doc text no longer ends with `*/`.
 - ucdocs: a record field after a tag no longer starts with the preceding space; a name followed
   by a full stop keeps its name; an `@` inside a word is prose.
+- ucdocs: bare `{list}` and `{dict}` types, a lowercase `@template t` and a bare `@module` parse,
+  and so does a `}` in prose with no `{` before it; all were errors. Identifiers no longer accept
+  `$`, which ucode does not have.
 - Nothing may separate `?.` from a following `[` or `(`: `a?. [1]` and `a?.⏎(1)` are errors, as
   in ucode, which reads `?.[` and `?.(` as single tokens. `a?. b` is still fine.
 

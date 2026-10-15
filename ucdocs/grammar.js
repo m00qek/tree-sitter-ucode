@@ -6,11 +6,11 @@
 /// <reference types="tree-sitter-cli/dsl" />
 // @ts-check
 
-// Shared identifier alphabet (JS-style), written once so the character
-// classes can't drift between the rules that use them. ID_START is the set
-// of first characters; ID_CONT the set of subsequent characters.
-const ID_START = 'a-zA-Z_$';
-const ID_CONT = 'a-zA-Z0-9_$';
+// Shared identifier alphabet (ucode's: ASCII, no `$`), written once so the
+// character classes can't drift between the rules that use them. ID_START is
+// the set of first characters; ID_CONT the set of subsequent characters.
+const ID_START = 'a-zA-Z_';
+const ID_CONT = 'a-zA-Z0-9_';
 const IDENT = `[${ID_START}][${ID_CONT}]*`;
 
 module.exports = grammar({
@@ -69,7 +69,16 @@ module.exports = grammar({
     // longest-match prefers type_identifier over _brace_text's single-char lead
     // token, and for a single-character name (`{T}`, `{t}`) the tie is broken by
     // that lead token's negative lexical precedence (see _brace_text below).
-    _description: $ => repeat1(choice($._text, $._stars, $.inline_tag, $._brace_text)),
+    //
+    // A `}` with no `{` before it is prose too (the `}` of a block). An
+    // unbalanced `{` is still an error: telling it from the start of brace text
+    // would need lookahead to the end of the comment.
+    _description: $ => repeat1(choice(
+      $._text, $._stars, $.inline_tag, $._brace_text, $._stray_close_brace,
+    )),
+
+    // prec(-1): inside an inline tag, the tag's own closing `}` wins.
+    _stray_close_brace: _ => token(prec(-1, '}')),
 
     // {@link target text} and similar inline JSDoc tags embedded in description text.
     inline_tag: $ => seq(
@@ -155,7 +164,7 @@ module.exports = grammar({
 
     template_tag: $ => seq(
       '@template',
-      commaSep1(alias($.type_identifier, $.type_param)),
+      commaSep1(alias(choice($.type_identifier, $.identifier), $.type_param)),
     ),
 
     // @typedef {Type} Name description. Every part is optional, because the
@@ -237,10 +246,11 @@ module.exports = grammar({
       optional(field('namepath', $.namepath)),
     ),
 
-    // @module name — identifies the module this file documents.
+    // @module name — identifies the module this file documents. JSDoc
+    // allows a bare `@module`, named after the file.
     module_tag: $ => seq(
       '@module',
-      field('name', $.member_name),
+      optional(field('name', $.member_name)),
     ),
 
     // module:X.Y#Z — a namepath referencing a specific member within a module.
@@ -297,18 +307,15 @@ module.exports = grammar({
 
     any_type: _ => choice('*', 'any'),
 
+    // `list` and `dict` may also stand alone, with any element type.
     list_type: $ => seq(
       'list',
-      '<',
-      field('element', $._type),
-      '>',
+      optional(seq('<', field('element', $._type), '>')),
     ),
 
     dict_type: $ => seq(
       'dict',
-      '<',
-      field('value', $._type),
-      '>',
+      optional(seq('<', field('value', $._type), '>')),
     ),
 
     // prec(1): right after a tag, `{{}}` could also be nested brace-text
@@ -398,7 +405,7 @@ module.exports = grammar({
     type_identifier: _ => new RegExp(`[A-Z][${ID_CONT}]*`),
 
     // Lowercase-starting names: parameter names and function param names.
-    identifier: _ => new RegExp(`[a-z_$][${ID_CONT}]*`),
+    identifier: _ => new RegExp(`[a-z_][${ID_CONT}]*`),
 
     // Description prose. A literal `*` (multiplication, markdown **bold**, a
     // glob) is allowed mid-text: it is consumed only as a star-run followed by
