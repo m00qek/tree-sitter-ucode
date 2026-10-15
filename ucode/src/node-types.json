@@ -664,16 +664,6 @@
     "type": "elif_clause",
     "named": true,
     "fields": {
-      "body": {
-        "multiple": true,
-        "required": false,
-        "types": [
-          {
-            "type": "statement",
-            "named": true
-          }
-        ]
-      },
       "condition": {
         "multiple": false,
         "required": true,
@@ -683,23 +673,32 @@
             "named": true
           }
         ]
+      },
+      "consequence": {
+        "multiple": false,
+        "required": false,
+        "types": [
+          {
+            "type": "statement_list",
+            "named": true
+          }
+        ]
       }
     }
   },
   {
     "type": "else_alt_clause",
     "named": true,
-    "fields": {
-      "body": {
-        "multiple": true,
-        "required": false,
-        "types": [
-          {
-            "type": "statement",
-            "named": true
-          }
-        ]
-      }
+    "fields": {},
+    "children": {
+      "multiple": false,
+      "required": false,
+      "types": [
+        {
+          "type": "statement_list",
+          "named": true
+        }
+      ]
     }
   },
   {
@@ -907,11 +906,11 @@
     "named": true,
     "fields": {
       "body": {
-        "multiple": true,
+        "multiple": false,
         "required": false,
         "types": [
           {
-            "type": "statement",
+            "type": "statement_list",
             "named": true
           }
         ]
@@ -981,11 +980,11 @@
     "named": true,
     "fields": {
       "body": {
-        "multiple": true,
+        "multiple": false,
         "required": false,
         "types": [
           {
-            "type": "statement",
+            "type": "statement_list",
             "named": true
           }
         ]
@@ -1322,19 +1321,15 @@
     "named": true,
     "fields": {
       "body": {
-        "multiple": true,
-        "required": true,
+        "multiple": false,
+        "required": false,
         "types": [
           {
-            "type": ":",
-            "named": false
+            "type": "statement_block",
+            "named": true
           },
           {
-            "type": "endfunction",
-            "named": false
-          },
-          {
-            "type": "statement",
+            "type": "statement_list",
             "named": true
           }
         ]
@@ -1401,12 +1396,12 @@
     "type": "if_alt_statement",
     "named": true,
     "fields": {
-      "body": {
-        "multiple": true,
+      "alternative": {
+        "multiple": false,
         "required": false,
         "types": [
           {
-            "type": "statement",
+            "type": "else_alt_clause",
             "named": true
           }
         ]
@@ -1421,22 +1416,22 @@
           }
         ]
       },
+      "consequence": {
+        "multiple": false,
+        "required": false,
+        "types": [
+          {
+            "type": "statement_list",
+            "named": true
+          }
+        ]
+      },
       "elif_clause": {
         "multiple": true,
         "required": false,
         "types": [
           {
             "type": "elif_clause",
-            "named": true
-          }
-        ]
-      },
-      "else_body": {
-        "multiple": false,
-        "required": false,
-        "types": [
-          {
-            "type": "else_alt_clause",
             "named": true
           }
         ]
@@ -1937,6 +1932,21 @@
     }
   },
   {
+    "type": "statement_list",
+    "named": true,
+    "fields": {},
+    "children": {
+      "multiple": true,
+      "required": true,
+      "types": [
+        {
+          "type": "statement",
+          "named": true
+        }
+      ]
+    }
+  },
+  {
     "type": "string",
     "named": true,
     "fields": {},
@@ -2297,11 +2307,11 @@
     "named": true,
     "fields": {
       "body": {
-        "multiple": true,
+        "multiple": false,
         "required": false,
         "types": [
           {
-            "type": "statement",
+            "type": "statement_list",
             "named": true
           }
         ]

@@ -13,7 +13,9 @@
 (function_declaration
   body: (statement_block) @function.inner) @function.outer
 
-; Colon-body function declaration — outer only; no block node to target for inner
+; Colon-body function declaration (`function f(): … endfunction`)
+(function_declaration
+  body: (statement_list) @function.inner) @function.outer
 (function_declaration "endfunction") @function.outer
 
 (function_expression
@@ -48,6 +50,8 @@
 (if_statement
   consequence: (statement_block) @conditional.inner) @conditional.outer
 
+(if_alt_statement
+  consequence: (statement_list) @conditional.inner) @conditional.outer
 (if_alt_statement) @conditional.outer
 
 ; -------------------------------------------------------------------------
@@ -63,6 +67,14 @@
 (while_statement
   body: (statement_block) @loop.inner) @loop.outer
 
+(for_alt_statement
+  body: (statement_list) @loop.inner) @loop.outer
+(for_in_alt_statement
+  body: (statement_list) @loop.inner) @loop.outer
+(while_alt_statement
+  body: (statement_list) @loop.inner) @loop.outer
+
+; An empty alt-syntax loop has no statement_list.
 (for_alt_statement) @loop.outer
 (for_in_alt_statement) @loop.outer
 (while_alt_statement) @loop.outer

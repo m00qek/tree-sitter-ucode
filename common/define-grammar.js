@@ -464,6 +464,9 @@ module.exports = function defineGrammar(name) {
         $._initializer,
       ),
 
+      // The statements of an alt-syntax body (see altBody() below).
+      statement_list: $ => repeat1($.statement),
+
       statement_block: $ => prec.right(seq(
         '{',
         statements($),
@@ -525,9 +528,9 @@ module.exports = function defineGrammar(name) {
         'if',
         field('condition', $.parenthesized_expression),
         ':',
-        field('body', statements($)),
+        altBody($, 'consequence'),
         repeat(field('elif_clause', $.elif_clause)),
-        optional(field('else_body', $.else_alt_clause)),
+        optional(field('alternative', $.else_alt_clause)),
         'endif',
       ),
 
@@ -535,12 +538,13 @@ module.exports = function defineGrammar(name) {
         'elif',
         field('condition', $.parenthesized_expression),
         ':',
-        field('body', statements($)),
+        altBody($, 'consequence'),
       ),
 
+      // Like else_clause, the body has no field name.
       else_alt_clause: $ => seq(
         'else',
-        field('body', statements($)),
+        altBody($),
       ),
 
       switch_statement: $ => seq(
@@ -557,7 +561,7 @@ module.exports = function defineGrammar(name) {
       for_alt_statement: $ => seq(
         forHeader($),
         ':',
-        field('body', statements($)),
+        altBody($, 'body'),
         'endfor',
       ),
 
@@ -571,7 +575,7 @@ module.exports = function defineGrammar(name) {
         'for',
         $._for_header,
         ':',
-        field('body', statements($)),
+        altBody($, 'body'),
         'endfor',
       ),
 
@@ -598,7 +602,7 @@ module.exports = function defineGrammar(name) {
         'while',
         field('condition', $.parenthesized_expression),
         ':',
-        field('body', statements($)),
+        altBody($, 'body'),
         'endwhile',
       ),
 
@@ -893,10 +897,10 @@ module.exports = function defineGrammar(name) {
         'function',
         field('name', $.identifier),
         $._call_signature,
-        field('body', choice(
-          $.statement_block,
-          seq(':', statements($), 'endfunction'),
-        )),
+        choice(
+          field('body', $.statement_block),
+          seq(':', altBody($, 'body'), 'endfunction'),
+        ),
         optional($._automatic_semicolon),
       )),
 
@@ -1185,6 +1189,15 @@ function forHeader($) {
 // block into an ERROR. See BLOCK_END in common/scanner.h.
 function statements($) {
   return seq(repeat($.statement), optional($._block_end));
+}
+
+// The body of an alt-syntax statement (`if (c): … endif`, `for (…): … endfor`,
+// `function f(): … endfunction`, …): its statements in one statement_list
+// node, as a brace body has its statement_block. Absent when the body is
+// empty. Ends with the optional _block_end, like statements() above.
+function altBody($, fieldName) {
+  const list = fieldName ? field(fieldName, $.statement_list) : $.statement_list;
+  return seq(optional(list), optional($._block_end));
 }
 
 function commaSep1(rule) {

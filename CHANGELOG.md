@@ -36,6 +36,15 @@ Notable changes to tree-sitter-ucode. Releases up to v0.8.0 are described in the
 - **`ucdocs/queries/tags.scm` is a tags query.** It was a field-extraction query (`@param.type`,
   `@template.param`, …) registered as tags, which tree-sitter-tags rejected. It now tags `@typedef`
   names as type definitions and named and module types as references.
+- **Alt-syntax bodies are a `statement_list` node.** The statements of `if (c): … endif` (and its
+  `elif` / `else`), `for (…): … endfor`, `while (c): … endwhile` and `function f(): … endfunction`
+  were loose children of the statement; they are now one `statement_list`, absent when the body
+  is empty. `function_declaration`'s `body` is a `statement_block` or a `statement_list`; it used
+  to cover the colon form's `:` and `endfunction` too.
+- **Alt-syntax `if` uses the brace form's field names:** `if_alt_statement` has `condition`,
+  `consequence` and `alternative` (was `body` and `else_body`), `elif_clause` has `condition` and
+  `consequence` (was `body`), and `else_alt_clause`'s body has no field name, like
+  `else_clause`'s.
 
 ### Added
 

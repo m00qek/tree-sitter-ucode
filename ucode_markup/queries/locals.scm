@@ -27,14 +27,9 @@
 (for_in_alt_statement) @local.scope
 ; catch clause scopes its parameter to the handler body
 (catch_clause) @local.scope
-; ucode also scopes declarations to alt-syntax bodies and to a switch. The
-; `if` body of an alt-syntax if has no container node of its own, so the whole
-; statement is its scope (it encloses the elif/else clauses, which get their
-; own scopes inside it).
-(if_alt_statement) @local.scope
-(elif_clause) @local.scope
-(else_alt_clause) @local.scope
-(while_alt_statement) @local.scope
+; ucode also scopes declarations to alt-syntax bodies (`if (c): … endif`,
+; `while (c): … endwhile`, …) and to a switch.
+(statement_list) @local.scope
 (switch_body) @local.scope
 
 ; -------------------------------------------------------------------------

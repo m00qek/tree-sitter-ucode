@@ -419,7 +419,8 @@ endfunction
   (function_declaration
     name: (identifier)
     parameters: (formal_parameters)
-    body: (return_statement)))
+    body: (statement_list
+      (return_statement))))
 
 ================================================================================
 All augmented assignment operators
@@ -521,9 +522,14 @@ if (a):
 
 (program
   (if_alt_statement
-    condition: (parenthesized_expression (identifier))
-    body: (expression_statement
-      (call_expression function: (identifier) arguments: (arguments (number))))
+    condition: (parenthesized_expression
+      (identifier))
+    consequence: (statement_list
+      (expression_statement
+        (call_expression
+          function: (identifier)
+          arguments: (arguments
+            (number)))))
     (MISSING "endif")))
 
 ================================================================================

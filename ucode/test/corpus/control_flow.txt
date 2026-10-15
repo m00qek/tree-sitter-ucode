@@ -42,24 +42,33 @@ if (x == 1): print("one"); elif (x == 2): print("two"); else print("other"); end
       (binary_expression
         left: (identifier)
         right: (number)))
-    body: (expression_statement
-      (call_expression
-        function: (identifier)
-        arguments: (arguments (string (string_fragment)))))
+    consequence: (statement_list
+      (expression_statement
+        (call_expression
+          function: (identifier)
+          arguments: (arguments
+            (string
+              (string_fragment))))))
     elif_clause: (elif_clause
       condition: (parenthesized_expression
         (binary_expression
           left: (identifier)
           right: (number)))
-      body: (expression_statement
-        (call_expression
-          function: (identifier)
-          arguments: (arguments (string (string_fragment))))))
-    else_body: (else_alt_clause
-      body: (expression_statement
-        (call_expression
-          function: (identifier)
-          arguments: (arguments (string (string_fragment))))))))
+      consequence: (statement_list
+        (expression_statement
+          (call_expression
+            function: (identifier)
+            arguments: (arguments
+              (string
+                (string_fragment)))))))
+    alternative: (else_alt_clause
+      (statement_list
+        (expression_statement
+          (call_expression
+            function: (identifier)
+            arguments: (arguments
+              (string
+                (string_fragment)))))))))
 
 ================================================================================
 Standard for-in loop
@@ -116,10 +125,12 @@ for (k in arr): print(k); endfor
   (for_in_alt_statement
     left: (identifier)
     right: (identifier)
-    body: (expression_statement
-      (call_expression
-        function: (identifier)
-        arguments: (arguments (identifier))))))
+    body: (statement_list
+      (expression_statement
+        (call_expression
+          function: (identifier)
+          arguments: (arguments
+            (identifier)))))))
 
 ================================================================================
 Counting for loop
@@ -162,9 +173,10 @@ while (x > 0): x--; endwhile
       (binary_expression
         left: (identifier)
         right: (number)))
-    body: (expression_statement
-      (update_expression
-        argument: (identifier)))))
+    body: (statement_list
+      (expression_statement
+        (update_expression
+          argument: (identifier))))))
 
 ================================================================================
 Switch statement
@@ -232,11 +244,14 @@ for (let i = 0; i < 3; i++): print(i); endfor
     condition: (binary_expression
       left: (identifier)
       right: (number))
-    increment: (update_expression argument: (identifier))
-    body: (expression_statement
-      (call_expression
-        function: (identifier)
-        arguments: (arguments (identifier))))))
+    increment: (update_expression
+      argument: (identifier))
+    body: (statement_list
+      (expression_statement
+        (call_expression
+          function: (identifier)
+          arguments: (arguments
+            (identifier)))))))
 
 ================================================================================
 For-in with let keyword
@@ -310,11 +325,14 @@ if (x): print(x); endif
 
 (program
   (if_alt_statement
-    condition: (parenthesized_expression (identifier))
-    body: (expression_statement
-      (call_expression
-        function: (identifier)
-        arguments: (arguments (identifier))))))
+    condition: (parenthesized_expression
+      (identifier))
+    consequence: (statement_list
+      (expression_statement
+        (call_expression
+          function: (identifier)
+          arguments: (arguments
+            (identifier)))))))
 
 ================================================================================
 Alt if with else but no elif
@@ -326,16 +344,21 @@ if (x): print(x); else print(y); endif
 
 (program
   (if_alt_statement
-    condition: (parenthesized_expression (identifier))
-    body: (expression_statement
-      (call_expression
-        function: (identifier)
-        arguments: (arguments (identifier))))
-    else_body: (else_alt_clause
-      body: (expression_statement
+    condition: (parenthesized_expression
+      (identifier))
+    consequence: (statement_list
+      (expression_statement
         (call_expression
           function: (identifier)
-          arguments: (arguments (identifier)))))))
+          arguments: (arguments
+            (identifier)))))
+    alternative: (else_alt_clause
+      (statement_list
+        (expression_statement
+          (call_expression
+            function: (identifier)
+            arguments: (arguments
+              (identifier))))))))
 
 ================================================================================
 Alt for-in with two variables
@@ -350,12 +373,13 @@ for (let k, v in arr): print(k, v); endfor
     left: (identifier)
     value: (identifier)
     right: (identifier)
-    body: (expression_statement
-      (call_expression
-        function: (identifier)
-        arguments: (arguments
-          (identifier)
-          (identifier))))))
+    body: (statement_list
+      (expression_statement
+        (call_expression
+          function: (identifier)
+          arguments: (arguments
+            (identifier)
+            (identifier)))))))
 
 ================================================================================
 Alt if with multiple body statements
@@ -367,15 +391,19 @@ if (x): print(1); print(2); endif
 
 (program
   (if_alt_statement
-    condition: (parenthesized_expression (identifier))
-    body: (expression_statement
-      (call_expression
-        function: (identifier)
-        arguments: (arguments (number))))
-    body: (expression_statement
-      (call_expression
-        function: (identifier)
-        arguments: (arguments (number))))))
+    condition: (parenthesized_expression
+      (identifier))
+    consequence: (statement_list
+      (expression_statement
+        (call_expression
+          function: (identifier)
+          arguments: (arguments
+            (number))))
+      (expression_statement
+        (call_expression
+          function: (identifier)
+          arguments: (arguments
+            (number)))))))
 
 ================================================================================
 Nested alt syntax
@@ -387,14 +415,18 @@ if (x): for (k in arr): print(k); endfor endif
 
 (program
   (if_alt_statement
-    condition: (parenthesized_expression (identifier))
-    body: (for_in_alt_statement
-      left: (identifier)
-      right: (identifier)
-      body: (expression_statement
-        (call_expression
-          function: (identifier)
-          arguments: (arguments (identifier)))))))
+    condition: (parenthesized_expression
+      (identifier))
+    consequence: (statement_list
+      (for_in_alt_statement
+        left: (identifier)
+        right: (identifier)
+        body: (statement_list
+          (expression_statement
+            (call_expression
+              function: (identifier)
+              arguments: (arguments
+                (identifier)))))))))
 
 ================================================================================
 Two-variable for-in without let (bare assignment form)

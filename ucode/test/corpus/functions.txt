@@ -32,10 +32,13 @@ function greet(): print("hi"); endfunction
   (function_declaration
     name: (identifier)
     parameters: (formal_parameters)
-    body: (expression_statement
-      (call_expression
-        function: (identifier)
-        arguments: (arguments (string (string_fragment)))))))
+    body: (statement_list
+      (expression_statement
+        (call_expression
+          function: (identifier)
+          arguments: (arguments
+            (string
+              (string_fragment))))))))
 
 ================================================================================
 Forward function declaration — not supported, produces ERROR

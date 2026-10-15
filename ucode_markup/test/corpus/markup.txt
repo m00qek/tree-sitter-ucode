@@ -224,10 +224,11 @@ if alt-syntax
   (if_alt_statement
     condition: (parenthesized_expression
       (identifier))
-    body: (text_statement
-      (statement_tag_close)
-      (raw_text)
-      (statement_tag_open)))
+    consequence: (statement_list
+      (text_statement
+        (statement_tag_close)
+        (raw_text)
+        (statement_tag_open))))
   (text_statement
     (statement_tag_close)))
 
@@ -242,15 +243,16 @@ for-in alt-syntax
   (for_in_alt_statement
     left: (identifier)
     right: (identifier)
-    body: (text_statement
-      (statement_tag_close)
-      (expression_tag
-        open: (expression_tag_open)
-        (subscript_expression
-          object: (identifier)
-          index: (identifier))
-        close: (expression_tag_close))
-      (statement_tag_open)))
+    body: (statement_list
+      (text_statement
+        (statement_tag_close)
+        (expression_tag
+          open: (expression_tag_open)
+          (subscript_expression
+            object: (identifier)
+            index: (identifier))
+          close: (expression_tag_close))
+        (statement_tag_open))))
   (text_statement
     (statement_tag_close)))
 
@@ -265,10 +267,11 @@ while alt-syntax
   (while_alt_statement
     condition: (parenthesized_expression
       (identifier))
-    body: (text_statement
-      (statement_tag_close)
-      (raw_text)
-      (statement_tag_open)))
+    body: (statement_list
+      (text_statement
+        (statement_tag_close)
+        (raw_text)
+        (statement_tag_open))))
   (text_statement
     (statement_tag_close)))
 
@@ -285,14 +288,15 @@ function alt-syntax (spanning tags)
     parameters: (formal_parameters
       (identifier)
       (identifier))
-    body: (text_statement
-      (statement_tag_close)
-      (raw_text)
-      (expression_tag
-        open: (expression_tag_open)
-        (identifier)
-        close: (expression_tag_close))
-      (statement_tag_open)))
+    body: (statement_list
+      (text_statement
+        (statement_tag_close)
+        (raw_text)
+        (expression_tag
+          open: (expression_tag_open)
+          (identifier)
+          close: (expression_tag_close))
+        (statement_tag_open))))
   (text_statement
     (statement_tag_close)))
 
@@ -542,10 +546,11 @@ counting for alt-syntax
       right: (number))
     increment: (update_expression
       argument: (identifier))
-    body: (text_statement
-      (statement_tag_close)
-      (raw_text)
-      (statement_tag_open)))
+    body: (statement_list
+      (text_statement
+        (statement_tag_close)
+        (raw_text)
+        (statement_tag_open))))
   (text_statement
     (statement_tag_close)))
 
@@ -560,19 +565,21 @@ nested if inside for-in body
   (for_in_alt_statement
     left: (identifier)
     right: (identifier)
-    body: (text_statement
-      (statement_tag_close)
-      (statement_tag_open))
-    body: (if_alt_statement
-      condition: (parenthesized_expression
-        (identifier))
-      body: (text_statement
+    body: (statement_list
+      (text_statement
         (statement_tag_close)
-        (raw_text)
-        (statement_tag_open)))
-    body: (text_statement
-      (statement_tag_close)
-      (statement_tag_open)))
+        (statement_tag_open))
+      (if_alt_statement
+        condition: (parenthesized_expression
+          (identifier))
+        consequence: (statement_list
+          (text_statement
+            (statement_tag_close)
+            (raw_text)
+            (statement_tag_open))))
+      (text_statement
+        (statement_tag_close)
+        (statement_tag_open))))
   (text_statement
     (statement_tag_close)))
 
@@ -587,22 +594,24 @@ nested for-in inside while body
   (while_alt_statement
     condition: (parenthesized_expression
       (identifier))
-    body: (text_statement
-      (statement_tag_close)
-      (statement_tag_open))
-    body: (for_in_alt_statement
-      left: (identifier)
-      right: (identifier)
-      body: (text_statement
+    body: (statement_list
+      (text_statement
         (statement_tag_close)
-        (expression_tag
-          open: (expression_tag_open)
-          (identifier)
-          close: (expression_tag_close))
-        (statement_tag_open)))
-    body: (text_statement
-      (statement_tag_close)
-      (statement_tag_open)))
+        (statement_tag_open))
+      (for_in_alt_statement
+        left: (identifier)
+        right: (identifier)
+        body: (statement_list
+          (text_statement
+            (statement_tag_close)
+            (expression_tag
+              open: (expression_tag_open)
+              (identifier)
+              close: (expression_tag_close))
+            (statement_tag_open))))
+      (text_statement
+        (statement_tag_close)
+        (statement_tag_open))))
   (text_statement
     (statement_tag_close)))
 
@@ -814,16 +823,17 @@ For-in alt-syntax with raw text in body
   (for_in_alt_statement
     left: (identifier)
     right: (identifier)
-    body: (text_statement
-      (statement_tag_close)
-      (expression_tag
-        open: (expression_tag_open)
-        (subscript_expression
-          object: (identifier)
-          index: (identifier))
-        close: (expression_tag_close))
-      (raw_text)
-      (statement_tag_open)))
+    body: (statement_list
+      (text_statement
+        (statement_tag_close)
+        (expression_tag
+          open: (expression_tag_open)
+          (subscript_expression
+            object: (identifier)
+            index: (identifier))
+          close: (expression_tag_close))
+        (raw_text)
+        (statement_tag_open))))
   (text_statement
     (statement_tag_close)))
 
@@ -839,15 +849,17 @@ Compact double for-in nesting (both loops in one tag pair)
     left: (identifier)
     right: (array
       (number))
-    body: (for_in_alt_statement
-      left: (identifier)
-      right: (array
-        (number))
-      body: (text_statement
-        (statement_tag_close)
-        (raw_text)
-        (statement_tag_open)))
-    body: (empty_statement))
+    body: (statement_list
+      (for_in_alt_statement
+        left: (identifier)
+        right: (array
+          (number))
+        body: (statement_list
+          (text_statement
+            (statement_tag_close)
+            (raw_text)
+            (statement_tag_open))))
+      (empty_statement)))
   (text_statement
     (statement_tag_close)))
 
@@ -863,20 +875,23 @@ Compact triple for-in nesting
     (identifier)
     (array
       (number))
-    (for_in_alt_statement
-      (identifier)
-      (array
-        (number))
+    (statement_list
       (for_in_alt_statement
         (identifier)
         (array
           (number))
-        (text_statement
-          (statement_tag_close)
-          (raw_text)
-          (statement_tag_open)))
-      (empty_statement))
-    (empty_statement))
+        (statement_list
+          (for_in_alt_statement
+            (identifier)
+            (array
+              (number))
+            (statement_list
+              (text_statement
+                (statement_tag_close)
+                (raw_text)
+                (statement_tag_open))))
+          (empty_statement)))
+      (empty_statement)))
   (text_statement
     (statement_tag_close)))
 
@@ -891,15 +906,17 @@ Compact mixed if/for nesting
   (if_alt_statement
     (parenthesized_expression
       (number))
-    (for_in_alt_statement
-      (identifier)
-      (array
-        (number))
-      (text_statement
-        (statement_tag_close)
-        (raw_text)
-        (statement_tag_open)))
-    (empty_statement))
+    (statement_list
+      (for_in_alt_statement
+        (identifier)
+        (array
+          (number))
+        (statement_list
+          (text_statement
+            (statement_tag_close)
+            (raw_text)
+            (statement_tag_open))))
+      (empty_statement)))
   (text_statement
     (statement_tag_close)))
 
@@ -914,22 +931,25 @@ Markup if / elif / else spanning tags
   (if_alt_statement
     condition: (parenthesized_expression
       (identifier))
-    body: (text_statement
-      (statement_tag_close)
-      (raw_text)
-      (statement_tag_open))
-    elif_clause: (elif_clause
-      condition: (parenthesized_expression
-        (identifier))
-      body: (text_statement
+    consequence: (statement_list
+      (text_statement
         (statement_tag_close)
         (raw_text)
         (statement_tag_open)))
-    else_body: (else_alt_clause
-      body: (text_statement
-        (statement_tag_close)
-        (raw_text)
-        (statement_tag_open))))
+    elif_clause: (elif_clause
+      condition: (parenthesized_expression
+        (identifier))
+      consequence: (statement_list
+        (text_statement
+          (statement_tag_close)
+          (raw_text)
+          (statement_tag_open))))
+    alternative: (else_alt_clause
+      (statement_list
+        (text_statement
+          (statement_tag_close)
+          (raw_text)
+          (statement_tag_open)))))
   (text_statement
     (statement_tag_close)))
 
@@ -944,21 +964,23 @@ Trailing statements share the elif and endif tags (ucode statement stream)
   (if_alt_statement
     condition: (parenthesized_expression
       (identifier))
-    body: (text_statement
-      (statement_tag_close)
-      (raw_text)
-      (statement_tag_open))
+    consequence: (statement_list
+      (text_statement
+        (statement_tag_close)
+        (raw_text)
+        (statement_tag_open)))
     elif_clause: (elif_clause
       condition: (parenthesized_expression
         (identifier))
-      body: (expression_statement
-        (call_expression
-          function: (identifier)
-          arguments: (arguments)))
-      body: (text_statement
-        (statement_tag_close)
-        (raw_text)
-        (statement_tag_open))))
+      consequence: (statement_list
+        (expression_statement
+          (call_expression
+            function: (identifier)
+            arguments: (arguments)))
+        (text_statement
+          (statement_tag_close)
+          (raw_text)
+          (statement_tag_open)))))
   (empty_statement)
   (text_statement
     (statement_tag_close)))
@@ -974,20 +996,22 @@ Trailing statement shares the bare else tag
   (if_alt_statement
     condition: (parenthesized_expression
       (identifier))
-    body: (text_statement
-      (statement_tag_close)
-      (raw_text)
-      (statement_tag_open))
-    else_body: (else_alt_clause
-      body: (expression_statement
-        (call_expression
-          function: (identifier)
-          arguments: (arguments
-            (number))))
-      body: (text_statement
+    consequence: (statement_list
+      (text_statement
         (statement_tag_close)
         (raw_text)
-        (statement_tag_open))))
+        (statement_tag_open)))
+    alternative: (else_alt_clause
+      (statement_list
+        (expression_statement
+          (call_expression
+            function: (identifier)
+            arguments: (arguments
+              (number))))
+        (text_statement
+          (statement_tag_close)
+          (raw_text)
+          (statement_tag_open)))))
   (text_statement
     (statement_tag_close)))
 
@@ -1002,15 +1026,16 @@ Trailing statement shares the function alt-declaration header tag
   (function_declaration
     name: (identifier)
     parameters: (formal_parameters)
-    body: (expression_statement
-      (call_expression
-        function: (identifier)
-        arguments: (arguments
-          (number))))
-    body: (text_statement
-      (statement_tag_close)
-      (raw_text)
-      (statement_tag_open)))
+    body: (statement_list
+      (expression_statement
+        (call_expression
+          function: (identifier)
+          arguments: (arguments
+            (number))))
+      (text_statement
+        (statement_tag_close)
+        (raw_text)
+        (statement_tag_open))))
   (text_statement
     (statement_tag_close)))
 
@@ -1026,15 +1051,17 @@ Trailing statement shares the compact double for-in end tag
     left: (identifier)
     right: (array
       (number))
-    body: (for_in_alt_statement
-      left: (identifier)
-      right: (array
-        (number))
-      body: (text_statement
-        (statement_tag_close)
-        (raw_text)
-        (statement_tag_open)))
-    body: (empty_statement))
+    body: (statement_list
+      (for_in_alt_statement
+        left: (identifier)
+        right: (array
+          (number))
+        body: (statement_list
+          (text_statement
+            (statement_tag_close)
+            (raw_text)
+            (statement_tag_open))))
+      (empty_statement)))
   (empty_statement)
   (expression_statement
     (call_expression
@@ -1055,31 +1082,35 @@ Nested if_alt inside an elif body
   (if_alt_statement
     condition: (parenthesized_expression
       (identifier))
-    body: (text_statement
-      (statement_tag_close)
-      (raw_text)
-      (statement_tag_open))
+    consequence: (statement_list
+      (text_statement
+        (statement_tag_close)
+        (raw_text)
+        (statement_tag_open)))
     elif_clause: (elif_clause
       condition: (parenthesized_expression
         (identifier))
-      body: (text_statement
-        (statement_tag_close)
-        (statement_tag_open))
-      body: (if_alt_statement
-        condition: (parenthesized_expression
-          (identifier))
-        body: (text_statement
+      consequence: (statement_list
+        (text_statement
+          (statement_tag_close)
+          (statement_tag_open))
+        (if_alt_statement
+          condition: (parenthesized_expression
+            (identifier))
+          consequence: (statement_list
+            (text_statement
+              (statement_tag_close)
+              (raw_text)
+              (statement_tag_open))))
+        (text_statement
+          (statement_tag_close)
+          (statement_tag_open))))
+    alternative: (else_alt_clause
+      (statement_list
+        (text_statement
           (statement_tag_close)
           (raw_text)
-          (statement_tag_open)))
-      body: (text_statement
-        (statement_tag_close)
-        (statement_tag_open)))
-    else_body: (else_alt_clause
-      body: (text_statement
-        (statement_tag_close)
-        (raw_text)
-        (statement_tag_open))))
+          (statement_tag_open)))))
   (text_statement
     (statement_tag_close)))
 
@@ -1094,24 +1125,27 @@ Nested if_alt inside an if body
   (if_alt_statement
     condition: (parenthesized_expression
       (identifier))
-    body: (text_statement
-      (statement_tag_close)
-      (statement_tag_open))
-    body: (if_alt_statement
-      condition: (parenthesized_expression
-        (identifier))
-      body: (text_statement
+    consequence: (statement_list
+      (text_statement
         (statement_tag_close)
-        (raw_text)
+        (statement_tag_open))
+      (if_alt_statement
+        condition: (parenthesized_expression
+          (identifier))
+        consequence: (statement_list
+          (text_statement
+            (statement_tag_close)
+            (raw_text)
+            (statement_tag_open))))
+      (text_statement
+        (statement_tag_close)
         (statement_tag_open)))
-    body: (text_statement
-      (statement_tag_close)
-      (statement_tag_open))
-    else_body: (else_alt_clause
-      body: (text_statement
-        (statement_tag_close)
-        (raw_text)
-        (statement_tag_open))))
+    alternative: (else_alt_clause
+      (statement_list
+        (text_statement
+          (statement_tag_close)
+          (raw_text)
+          (statement_tag_open)))))
   (text_statement
     (statement_tag_close)))
 
@@ -1126,24 +1160,27 @@ Nested if_alt inside an else body
   (if_alt_statement
     condition: (parenthesized_expression
       (identifier))
-    body: (text_statement
-      (statement_tag_close)
-      (raw_text)
-      (statement_tag_open))
-    else_body: (else_alt_clause
-      body: (text_statement
+    consequence: (statement_list
+      (text_statement
         (statement_tag_close)
-        (statement_tag_open))
-      body: (if_alt_statement
-        condition: (parenthesized_expression
-          (identifier))
-        body: (text_statement
+        (raw_text)
+        (statement_tag_open)))
+    alternative: (else_alt_clause
+      (statement_list
+        (text_statement
           (statement_tag_close)
-          (raw_text)
-          (statement_tag_open)))
-      body: (text_statement
-        (statement_tag_close)
-        (statement_tag_open))))
+          (statement_tag_open))
+        (if_alt_statement
+          condition: (parenthesized_expression
+            (identifier))
+          consequence: (statement_list
+            (text_statement
+              (statement_tag_close)
+              (raw_text)
+              (statement_tag_open))))
+        (text_statement
+          (statement_tag_close)
+          (statement_tag_open)))))
   (text_statement
     (statement_tag_close)))
 
@@ -1618,15 +1655,16 @@ row {{ x }}
   (for_in_alt_statement
     left: (identifier)
     right: (identifier)
-    body: (text_statement
-      (statement_tag_close)
-      (raw_text)
-      (expression_tag
-        open: (expression_tag_open)
-        (identifier)
-        close: (expression_tag_close))
-      (raw_text)
-      (statement_tag_open)))
+    body: (statement_list
+      (text_statement
+        (statement_tag_close)
+        (raw_text)
+        (expression_tag
+          open: (expression_tag_open)
+          (identifier)
+          close: (expression_tag_close))
+        (raw_text)
+        (statement_tag_open))))
   (text_statement
     (statement_tag_close)
     (raw_text)))
@@ -1684,14 +1722,15 @@ row {{ x }}
   (for_in_alt_statement
     left: (identifier)
     right: (identifier)
-    body: (text_statement
-      (statement_tag_close)
-      (raw_text)
-      (expression_tag
-        open: (expression_tag_open)
-        (identifier)
-        close: (expression_tag_close))
-      (raw_text))
+    body: (statement_list
+      (text_statement
+        (statement_tag_close)
+        (raw_text)
+        (expression_tag
+          open: (expression_tag_open)
+          (identifier)
+          close: (expression_tag_close))
+        (raw_text)))
     (MISSING "endfor")))
 
 ================================================================================
@@ -1713,31 +1752,32 @@ text
   (for_in_alt_statement
     left: (identifier)
     right: (identifier)
-    body: (text_statement
-      (statement_tag_close)
-      (raw_text)
-      (statement_tag_open))
-    body: (if_statement
-      condition: (parenthesized_expression
-        (identifier))
-      consequence: (statement_block
-        (text_statement
-          (statement_tag_close)
-          (raw_text)
-          (expression_tag
-            open: (expression_tag_open)
-            (identifier)
-            close: (expression_tag_close))
-          (raw_text)
-          (statement_tag_open))
-        (lexical_declaration
-          (variable_declarator
-            name: (identifier)
-            value: (identifier)))
-        (text_statement
-          (statement_tag_close)
-          (raw_text))
-        (MISSING "}")))
+    body: (statement_list
+      (text_statement
+        (statement_tag_close)
+        (raw_text)
+        (statement_tag_open))
+      (if_statement
+        condition: (parenthesized_expression
+          (identifier))
+        consequence: (statement_block
+          (text_statement
+            (statement_tag_close)
+            (raw_text)
+            (expression_tag
+              open: (expression_tag_open)
+              (identifier)
+              close: (expression_tag_close))
+            (raw_text)
+            (statement_tag_open))
+          (lexical_declaration
+            (variable_declarator
+              name: (identifier)
+              value: (identifier)))
+          (text_statement
+            (statement_tag_close)
+            (raw_text))
+          (MISSING "}"))))
     (MISSING "endfor")))
 
 ================================================================================
