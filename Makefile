@@ -47,6 +47,13 @@ ifneq ($(filter $(shell uname),FreeBSD NetBSD DragonFly),)
 endif
 endif
 
+# $(call pc_sed): fill in a bindings/c/*.pc.in template.
+pc_sed = sed -e 's|@PROJECT_VERSION@|$(VERSION)|' \
+	-e 's|@CMAKE_INSTALL_LIBDIR@|$(LIBDIR:$(PREFIX)/%=%)|' \
+	-e 's|@CMAKE_INSTALL_INCLUDEDIR@|$(INCLUDEDIR:$(PREFIX)/%=%)|' \
+	-e 's|@PROJECT_HOMEPAGE_URL@|$(HOMEPAGE_URL)|' \
+	-e 's|@CMAKE_INSTALL_PREFIX@|$(PREFIX)|'
+
 # $(call grammar,<name>): the build and install rules for tree-sitter-<name>.
 define grammar
 LIB_$(1) := tree-sitter-$(1)
@@ -68,18 +75,16 @@ ifneq ($$(STRIP),)
 endif
 
 $$(LIB_$(1)).pc: bindings/c/$$(LIB_$(1)).pc.in
-	sed -e 's|@PROJECT_VERSION@|$$(VERSION)|' \
-		-e 's|@CMAKE_INSTALL_LIBDIR@|$$(LIBDIR:$$(PREFIX)/%=%)|' \
-		-e 's|@CMAKE_INSTALL_INCLUDEDIR@|$$(INCLUDEDIR:$$(PREFIX)/%=%)|' \
-		-e 's|@PROJECT_HOMEPAGE_URL@|$$(HOMEPAGE_URL)|' \
-		-e 's|@CMAKE_INSTALL_PREFIX@|$$(PREFIX)|' $$< > $$@
+	$$(call pc_sed) $$< > $$@
 
 all: lib$$(LIB_$(1)).a lib$$(LIB_$(1)).$$(SOEXT) $$(LIB_$(1)).pc
 
-install-$(1): lib$$(LIB_$(1)).a lib$$(LIB_$(1)).$$(SOEXT) $$(LIB_$(1)).pc
+install-$(1): lib$$(LIB_$(1)).a lib$$(LIB_$(1)).$$(SOEXT)
 	install -d '$$(DESTDIR)$$(DATADIR)'/tree-sitter/queries/$(dir_$(1)) '$$(DESTDIR)$$(INCLUDEDIR)'/tree_sitter '$$(DESTDIR)$$(PCLIBDIR)' '$$(DESTDIR)$$(LIBDIR)'
 	install -m644 bindings/c/tree_sitter/$$(LIB_$(1)).h '$$(DESTDIR)$$(INCLUDEDIR)'/tree_sitter/$$(LIB_$(1)).h
-	install -m644 $$(LIB_$(1)).pc '$$(DESTDIR)$$(PCLIBDIR)'/$$(LIB_$(1)).pc
+	# Generated here, not copied: the .pc built by `all` has the PREFIX of
+	# that run, and `make install PREFIX=…` must not install a stale one.
+	$$(call pc_sed) bindings/c/$$(LIB_$(1)).pc.in > '$$(DESTDIR)$$(PCLIBDIR)'/$$(LIB_$(1)).pc
 	install -m644 lib$$(LIB_$(1)).a '$$(DESTDIR)$$(LIBDIR)'/lib$$(LIB_$(1)).a
 ifneq ($$(findstring mingw32,$$(MACHINE)),)
 	install -d '$$(DESTDIR)$$(BINDIR)'
@@ -116,5 +121,22 @@ clean: $(addprefix clean-,$(GRAMMARS))
 test:
 	node scripts/run-tests.js
 
-.PHONY: all install uninstall clean test \
+# Link-and-load test of the C libraries: install into .build/c-test, build
+# bindings/c/test.c from the installed headers, pkg-config files and shared
+# libraries, then parse a sample per grammar and compile every installed
+# query. Needs the tree-sitter runtime (0.25 or newer), found by pkg-config
+# unless TS_CFLAGS / TS_LIBS are given.
+TS_CFLAGS ?= $(shell pkg-config --cflags tree-sitter)
+TS_LIBS ?= $(shell pkg-config --libs tree-sitter)
+C_TEST := $(CURDIR)/.build/c-test
+test-c: all
+	$(RM) -r '$(C_TEST)'
+	$(MAKE) install PREFIX='$(C_TEST)'
+	$(CC) -std=c11 -Wall -Wextra bindings/c/test.c -o '$(C_TEST)/test' $(TS_CFLAGS) \
+		$$(PKG_CONFIG_PATH='$(C_TEST)/lib/pkgconfig' pkg-config --cflags --libs \
+			tree-sitter-ucode tree-sitter-ucode-markup tree-sitter-ucdocs) \
+		$(TS_LIBS) -Wl,-rpath,'$(C_TEST)/lib'
+	'$(C_TEST)/test' '$(C_TEST)/share/tree-sitter/queries'
+
+.PHONY: all install uninstall clean test test-c \
 	$(addprefix install-,$(GRAMMARS)) $(addprefix uninstall-,$(GRAMMARS)) $(addprefix clean-,$(GRAMMARS))
