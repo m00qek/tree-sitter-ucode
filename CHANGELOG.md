@@ -52,6 +52,11 @@ Notable changes to tree-sitter-ucode. Releases up to v0.8.0 are described in the
 - ucdocs: dotted and `[optional=default]` names with any default value, namepath `@typedef` names,
   rest parameters in function types, `Array.<T>`, `{{ name }}` as brace text, and markdown
   (`**bold**`, bullets) in prose. Of 1327 real doc comments, 8 fail to parse instead of 160.
+- Highlighting of ucode's builtins: the stdlib functions as `@function.builtin` when called, and
+  `ARGV`, `SCRIPT_NAME`, `REQUIRE_SEARCH_PATH` and `global` as `@variable.builtin`.
+- Injections: regex literals (`regex`) and the format string of `printf()` / `sprintf()`
+  (`printf`). Doc comments are also `@comment.documentation`, and the target of `{@link …}` is
+  `@markup.link`.
 - Scripts are recognised by a `#!` line naming `ucode` (`first-line-regex` in tree-sitter.json,
   `shebangs` in the README's Helix setup).
 - Highlight and tags assertion tests (`test/highlight/`, `test/tags/`), run by `npm test` through

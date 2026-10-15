@@ -101,3 +101,11 @@
 (see_tag           description: (description) @spell)
 
 (description) @comment
+
+; The target of an inline link ({@link module:fs#open}, {@linkcode Config}).
+; After `(description) @comment` above, so it wins. The grammar has no
+; separate target node yet, so this covers the whole tag body.
+(inline_tag
+  (tag_name) @_tag
+  (description) @markup.link
+  (#any-of? @_tag "@link" "@linkcode" "@linkplain"))

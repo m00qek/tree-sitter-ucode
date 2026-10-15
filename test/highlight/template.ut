@@ -16,5 +16,8 @@
 </ul>
     {% let r = /a+/; %}
             {# ^ string.regexp #}
+    {% print(length(r)); %}
+    {# ^ function.builtin #}
+          {# ^ function.builtin #}
     {# a note #}
     {# ^ comment #}

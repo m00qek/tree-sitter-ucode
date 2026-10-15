@@ -1,6 +1,12 @@
 // Highlight assertions for the ucode grammar (run by `npm test`).
 // <- comment
 
+/**
+ * Adds two numbers.
+ * @param {number} a - first
+ */
+// <- comment.documentation
+
 let r = /ab+/g;
 // <- keyword.storage
 //      ^ string.regexp
@@ -19,8 +25,11 @@ function add(a, b) {
 	//     ^ variable.parameter
 }
 
-print(add(1, 2));
+print(add(1, 2), length(ARGV));
+// <- function.builtin
 //    ^ function.call
+//               ^ function.builtin
+//                      ^ variable.builtin
 
 fs.open("x");
 // ^ function.method.call

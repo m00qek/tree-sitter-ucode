@@ -60,15 +60,19 @@ const HIGHLIGHT_NAMES = {
   'keyword.exception': 'keyword.control.exception',
   'keyword.import': 'keyword.control.import',
   module: 'namespace',
+  'comment.documentation': 'comment.block.documentation',
+  'markup.link': 'markup.link.url',
 };
 
 // Helix highlight scopes this file may emit (a subset of themes.md's list).
 const HELIX_SCOPES = new Set([
-  'comment', 'constant', 'constant.builtin', 'constant.builtin.boolean',
-  'constant.character.escape', 'constant.numeric', 'function', 'function.method',
+  'comment', 'comment.block.documentation', 'constant', 'constant.builtin', 'constant.builtin.boolean',
+  'constant.character.escape', 'constant.numeric', 'function', 'function.builtin',
+  'function.method',
   'keyword', 'keyword.control.conditional', 'keyword.control.exception',
   'keyword.control.import', 'keyword.control.repeat', 'keyword.control.return',
   'keyword.directive', 'keyword.function', 'keyword.operator', 'keyword.storage',
+  'markup.link.url',
   'namespace', 'operator', 'punctuation.bracket', 'punctuation.delimiter',
   'punctuation.special', 'string', 'string.regexp', 'type', 'type.builtin',
   'type.parameter', 'variable', 'variable.builtin', 'variable.other.member',

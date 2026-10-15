@@ -29,6 +29,10 @@
 (comment) @spell
 (comment) @comment
 
+; Doc comments (the ones ucdocs is injected into; see injections.scm).
+((comment) @comment.documentation
+  (#match? @comment.documentation "^/\\*\\*[^*/]"))
+
 ; -------------------------------------------------------------------------
 ; Shebang
 ; -------------------------------------------------------------------------
@@ -75,6 +79,26 @@
 (call_expression
   function: (member_expression
     property: (property_identifier) @function.method.call))
+
+; Builtins: ucode's stdlib functions (uc_stdlib_functions in lib.c, at the
+; release this grammar targets) when called, and the globals the interpreter
+; defines. After the generic patterns above, so these win. `modules` is left
+; out: it is also a common variable name.
+(call_expression
+  function: (identifier) @function.builtin
+  (#any-of? @function.builtin
+    "arrtoip" "assert" "b64dec" "b64enc" "call" "chr" "clock" "die"
+    "exists" "exit" "filter" "gc" "getenv" "gmtime" "hex" "hexdec"
+    "hexenc" "include" "index" "int" "iptoarr" "join" "json" "keys" "lc"
+    "length" "loadfile" "loadstring" "localtime" "ltrim" "map" "match"
+    "max" "min" "ord" "pop" "print" "printf" "proto" "push" "regexp"
+    "render" "replace" "require" "reverse" "rindex" "rtrim" "shift"
+    "signal" "sleep" "slice" "sort" "sourcepath" "splice" "split"
+    "sprintf" "substr" "system" "time" "timegm" "timelocal" "trace" "trim"
+    "type" "uc" "uchr" "uniq" "unshift" "values" "warn" "wildcard"))
+
+((identifier) @variable.builtin
+  (#any-of? @variable.builtin "ARGV" "SCRIPT_NAME" "REQUIRE_SEARCH_PATH" "global"))
 
 ; -------------------------------------------------------------------------
 ; Parameters
