@@ -79,6 +79,7 @@ Notable changes to tree-sitter-ucode. Releases up to v0.8.0 are described in the
   `shebangs` in the README's Helix setup).
 - Highlight and tags assertion tests (`test/highlight/`, `test/tags/`), run by `npm test` through
   tree-sitter-highlight and tree-sitter-tags themselves.
+- Node prebuilds for macOS on Intel (darwin-x64) and Windows on Arm (win32-arm64).
 
 ### Fixed
 
