@@ -28,7 +28,13 @@ Notable changes to tree-sitter-ucode. Releases up to v0.8.0 are described in the
 - **ucdocs node changes:** new `property_tag` (`@property` / `@prop`, previously `unknown_tag`);
   `@typedef` type, name and description are each optional; the JSDoc ` - ` separator is no longer
   part of a description; `number`, `integer`, `double`, `object`, `array`, `regexp` and `resource`
-  are `primitive_type` nodes (they were user type references).
+  are `primitive_type` nodes (they were user type references). Fields that take new node types:
+  `param_tag.name` may be a `param_path` (`@param opts.name`), `optional_param.name` a plain
+  `identifier` (`[name]`), `typedef_tag.name` a `namepath`; `typedef_tag` has a `description`
+  field; function types take a `rest_param` (`(...any) => R`). Now optional: `module_tag.name`,
+  and the element / value of `list_type` / `dict_type` (bare `{list}`, `{dict}`).
+- **`tree-sitter.json` no longer lists `folds`, `indents` or `textobjects`**, which the official
+  schema does not define; the query files are still shipped under `queries/`.
 - **Locals use the plain `@local.definition` capture.** `@local.definition.function`, `.var`,
   `.parameter` and `.import` made `tree-sitter tags` fail outright and were ignored by
   tree-sitter-highlight. The kind is now metadata on each pattern, `(#set! local.kind …)`; the
