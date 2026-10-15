@@ -271,14 +271,14 @@ const INDENTS = `[
   body: (_) @_body
   (#not-kind-eq? @_body "statement_block")) @indent
 
-; … and at the end of the file, where the not-yet-typed body is an empty
-; statement whose \`;\` the parser inserted, extend the statement over the
-; cursor so its indent applies (Helix's \`@extend\`).
-(if_statement consequence: (empty_statement (MISSING ";"))) @extend
-(else_clause (empty_statement (MISSING ";"))) @extend
-(while_statement body: (empty_statement (MISSING ";"))) @extend
-(for_statement body: (empty_statement (MISSING ";"))) @extend
-(for_in_statement body: (empty_statement (MISSING ";"))) @extend
+; … and at the end of the file, where the not-yet-typed body is a statement
+; the parser made up from a MISSING token (an identifier or a \`;\`), extend
+; the statement over the cursor so its indent applies (Helix's \`@extend\`).
+(if_statement consequence: (_ . (MISSING) .)) @extend
+(else_clause (_ . (MISSING) .)) @extend
+(while_statement body: (_ . (MISSING) .)) @extend
+(for_statement body: (_ . (MISSING) .)) @extend
+(for_in_statement body: (_ . (MISSING) .)) @extend
 ; A dangling \`else\` at the end of the file gets no inserted body: it is an
 ; ERROR holding just the keyword.
 (ERROR . "else" .) @indent @extend
