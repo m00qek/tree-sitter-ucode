@@ -31,9 +31,13 @@ npm package from it; nothing else is published.
 
     If any of these jobs fails, nothing is published.
 
-The workflow does not create a GitHub release. Releases up to v0.8.0 have
-release notes on the
-[GitHub releases page](https://github.com/m00qek/tree-sitter-ucode/releases).
+7. The workflow does not create a GitHub release. Once `publish` succeeds,
+   create one from the version's changelog section. GitHub keeps single line
+   breaks, so unwrap the lines, and make relative doc links absolute:
+
+    ```sh
+    gh release create vX.Y.Z --verify-tag --title vX.Y.Z --notes-file notes.md
+    ```
 
 ## Related
 
