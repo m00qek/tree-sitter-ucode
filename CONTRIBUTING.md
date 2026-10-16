@@ -103,6 +103,10 @@ nvim --headless --clean -l scripts/check-nvim-queries.lua <nvim-treesitter> <nvi
 
 Both plugin arguments are checkouts of their `main` branch; CI's `neovim` job pins the commits.
 
+CI pins every GitHub Action to a commit SHA, with the version it was resolved from in a comment
+(`uses: actions/checkout@<sha> # v6.1.0`). To update one, resolve the new tag to its commit
+(`gh api repos/actions/checkout/commits/v6.2.0 --jq .sha`) and replace both.
+
 The external lexer is hand-written and handles features that context-free grammars cannot express: automatic semicolon insertion, template string, string and regex content, comment terminators, template tag delimiters, and zero-width tokens for error recovery. All of its logic lives in **`common/scanner.h`** — edit that file. `ucode/src/scanner.c` and `ucode_markup/src/scanner.c` are thin shims that only export the entry points and `#include "../../common/scanner.h"`, so a single implementation is shared by both the `ucode` and `ucode_markup` parsers. None of these are touched by `tree-sitter generate`.
 
 `tree-sitter.json` lists `common/scanner.h` under `external-files`, so the CLI's parser cache (`~/.cache/tree-sitter`, used by `tree-sitter test`/`parse` without `--lib-path`) is rebuilt when it changes, not only when a `scanner.c` shim does. Every binding passes `-I<grammar>/src` because `common/scanner.h` includes `"tree_sitter/parser.h"`, which GCC and Clang resolve via the include path, not relative to the including file — keep that in any new build file.

@@ -164,6 +164,8 @@ Notable changes to tree-sitter-ucode. Releases up to v0.8.0 are described in the
 - `tree-sitter.json` validates against the official schema, and declares `common/scanner.h` as
   an external file so the CLI rebuilds its cached parsers when the shared scanner changes.
 - `scripts/check-helix-indents.sh` checks the Helix indent queries in a real Helix; CI runs it.
+- CI: every GitHub Action is pinned to a commit SHA (the version is in a comment beside it),
+  including in the publish path, which holds the token for npm provenance.
 - `scripts/check-nvim-queries.lua` checks the Neovim indents, folds and text objects in a real
   Neovim with nvim-treesitter and nvim-treesitter-textobjects; CI runs it.
 - Every binding test (C, Rust, Go, Python, Swift, Node) parses a sample per grammar and compiles the
