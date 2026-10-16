@@ -1,3 +1,2 @@
-; Indentation inside a doc comment: Neovim computes it from this injected
-; tree, so keep each line as it is (the ` * ` frame's own alignment).
+; Neovim indents doc-comment lines from this tree: keep them as they are.
 (document) @indent.auto

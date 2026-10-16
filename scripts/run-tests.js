@@ -1,8 +1,6 @@
 #!/usr/bin/env node
-// Builds and tests all three grammars (ucode, ucode_markup, ucdocs).
-// Each grammar's shared library goes to .build/parsers/ (see parsers.js) and
-// is rebuilt only when it is missing or older than its C sources; pass --force
-// to rebuild unconditionally, --build-only to build without testing.
+// Builds (when stale) and tests the three grammars.
+// --force rebuilds, --build-only skips tests, --update rewrites tags fixtures.
 'use strict';
 
 const fs   = require('fs');
@@ -10,8 +8,6 @@ const os   = require('os');
 const path = require('path');
 const { execFileSync } = require('child_process');
 
-// Anchor every path on the repo root (this script lives in scripts/) so the
-// runner works regardless of the caller's working directory.
 const ROOT  = path.dirname(__dirname);
 const force  = process.argv.includes('--force');
 const update = process.argv.includes('--update');
@@ -23,7 +19,6 @@ let checkFailures = 0;
 const checks = require('./checks');
 const TREE_SITTER = require('./tree-sitter-cli');
 
-// Report a check's problems (a list of strings); count a failure if any.
 function report(label, problems) {
   if (!problems.length) { console.log(`${label} OK`); return; }
   checkFailures++;
@@ -31,16 +26,12 @@ function report(label, problems) {
     (problems.length > 20 ? `\n  … and ${problems.length - 20} more` : ''));
 }
 
-// A trivial source file for the query compile-check below. A query is compiled
-// when it loads (node names and structure are validated then), independent of
-// what it matches, so an empty file is enough.
+// Queries compile on load, so an empty input is enough to check them.
 const tmpDir = fs.mkdtempSync(path.join(os.tmpdir(), 'ucode-run-tests-'));
 process.on('exit', () => fs.rmSync(tmpDir, { recursive: true, force: true }));
 const querySource = path.join(tmpDir, 'empty.txt');
 fs.writeFileSync(querySource, '');
 
-// The top-level C/H sources in a grammar's `src` directory (parser.c,
-// scanner.c) whose mtimes decide whether a rebuild is needed.
 function srcFiles(dir) {
   const abs = path.join(ROOT, dir);
   return fs.readdirSync(abs)
@@ -48,19 +39,13 @@ function srcFiles(dir) {
     .map((f) => path.join(abs, f));
 }
 
-// name:      passed to --lang-name (and names the <name>.<ext> library)
-// Every grammar lives in its own <name>/ directory: grammar.js, src/, queries/
-// and test/. deps are the C sources whose mtime is compared against the built
-// library; both code grammars' scanners are shims that #include
-// common/scanner.h, so that shared header is part of their deps too.
+// The code grammars' scanner.c files #include common/scanner.h.
 const SHARED_SCANNER = path.join(ROOT, 'common', 'scanner.h');
 const grammars = ['ucode', 'ucode_markup', 'ucdocs'].map((name) => ({
   name,
   deps: srcFiles(`${name}/src`).concat(name === 'ucdocs' ? [] : [SHARED_SCANNER]),
 }));
 
-// Rebuild when forced, when the library is missing, or when any source is
-// missing (a renamed/removed dep) or newer than the library.
 function needsBuild(lib, deps) {
   if (force || !fs.existsSync(lib)) return true;
   const libMtime = fs.statSync(lib).mtimeMs;
@@ -83,10 +68,7 @@ for (const g of grammars) {
   execFileSync(TREE_SITTER, ['test', '--lib-path', lib, '--lang-name', g.name, '-p', g.name],
     { stdio: 'inherit', cwd: ROOT });
 
-  // Compile-check every query file against the freshly built grammar, so a
-  // query that references a renamed/removed node (or has a syntax error) fails
-  // here instead of silently in an editor. `tree-sitter query` compiles the
-  // query when it loads; a non-zero exit throws and fails the run.
+  // A query naming a removed node fails here, not silently in an editor.
   const queryAbs = path.join(ROOT, g.name, 'queries');
   for (const f of fs.readdirSync(queryAbs).filter((f) => f.endsWith('.scm'))) {
     execFileSync(
@@ -118,13 +100,9 @@ for (const g of grammars) {
   }
 }
 
-// Highlight and tags assertion tests (test/highlight/, test/tags/: `// ^ capture`
-// comments under the token they check). Run from the repo root, where the CLI
-// picks each file's grammar through tree-sitter.json and runs the real
-// tree-sitter-highlight and tree-sitter-tags (injections, locals and #strip!
-// included); the per-grammar `test -p` runs above can't, because there is no
-// tree-sitter.json inside a grammar directory. It warns that the root has no
-// test/corpus; that is expected.
+// Highlight and tags assertion tests (test/highlight/, test/tags/) need
+// tree-sitter.json, which only the root has. The "no test/corpus" warning is
+// expected.
 if (!buildOnly) {
   execFileSync(TREE_SITTER, ['test'], { stdio: 'inherit', cwd: ROOT });
 }
@@ -137,17 +115,10 @@ if (checkFailures > 0) {
 }
 if (tagsFailures > 0 || checkFailures > 0) process.exit(1);
 
-// ---------------------------------------------------------------------------
-// Tags fixtures: <grammar>/test/tag-docs/<case>.<ext> + <case>.<ext>.expected
-//
-// The CLI's `tree-sitter tags` only finds grammars installed under one of its
-// configured parser directories, so it can't be pointed at the libraries this
-// script just built; instead this reproduces the part of
-// tree-sitter-tags that decides doc attachment: run tags.scm with
-// `tree-sitter query` (which evaluates #match?), keep ONE match per name —
-// the lowest pattern index, exactly as tree-sitter-tags does, discarding the
-// loser's docs — and print `row:col name <- first line of doc | (no doc)`.
-// ---------------------------------------------------------------------------
+// Tags fixtures: <grammar>/test/tag-docs/<case> + <case>.expected.
+// `tree-sitter tags` can't load the libraries built here, so this mimics how
+// tree-sitter-tags attaches docs: one match per name, the lowest pattern
+// index wins (the loser's docs are dropped).
 
 function checkTagsFixtures(g, lib) {
   const dir = path.join(ROOT, g.name, 'test', 'tag-docs');
@@ -158,7 +129,7 @@ function checkTagsFixtures(g, lib) {
       ['query', '--lib-path', lib, '--lang-name', g.name, path.join(ROOT, g.name, 'queries', 'tags.scm'), path.join(dir, f)],
       { cwd: ROOT, encoding: 'utf8' },
     );
-    const best = new Map();   // name position -> { pattern, line }
+    const best = new Map();   // "row:col" -> { pattern, line }
     let pattern = -1, doc = null;
     for (const line of out.split(/\r?\n/)) {
       let m;
@@ -175,8 +146,7 @@ function checkTagsFixtures(g, lib) {
     const actual = [...best.values()].map((v) => v.line)
       .sort((a, b) => a.localeCompare(b, 'en', { numeric: true })).join('\n') + '\n';
     const expFile = path.join(dir, f + '.expected');
-    // Normalise line endings: on Windows, git checks the .expected file out
-    // with CRLF (tree-sitter's own corpus runner normalises its files likewise).
+    // git may check it out with CRLF on Windows.
     const expected = fs.existsSync(expFile)
       ? fs.readFileSync(expFile, 'utf8').replace(/\r\n/g, '\n')
       : null;

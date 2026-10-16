@@ -1,6 +1,4 @@
-// Smoke test for the Node binding: every grammar the package exports loads
-// into the tree-sitter runtime (the peer-dependency range) and parses, and the
-// query files the package ships compile with that runtime.
+// Every exported grammar loads and parses, and every shipped query compiles.
 const assert = require("node:assert");
 const fs = require("node:fs");
 const path = require("node:path");
@@ -35,9 +33,8 @@ for (const name of Object.keys(samples)) {
   for (const file of fs.readdirSync(dir).filter((f) => f.endsWith(".scm"))) {
     test(`${name}/queries/${file} compiles`, () => {
       let source = fs.readFileSync(path.join(dir, file), "utf8");
-      // Predicates and directives of other tools, which the runtime rejects:
-      // tree-sitter-tags' (#strip!, #select-adjacent!) and nvim-treesitter's
-      // (#kind-eq?, used by the Neovim indents).
+      // Other tools' predicates, which the runtime rejects: tree-sitter-tags'
+      // and nvim-treesitter's.
       source = source
         .replace(/\(#(strip|select-adjacent)! [^)]*\)/g, "")
         .replace(/\(#(not-)?kind-eq\? [^)]*\)/g, "");

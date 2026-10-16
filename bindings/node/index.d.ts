@@ -24,10 +24,9 @@ type Language = {
 };
 
 /**
- * The package itself is the `ucode` grammar (plain scripts), so it can be
- * passed straight to `parser.setLanguage()`. All three grammars are also
- * available by name: `ucode`, `ucode_markup` (templates) and `ucdocs`
- * (doc comments).
+ * The `ucode` grammar, so it can go straight to `parser.setLanguage()`.
+ * All three grammars are also exported by name: `ucode`, `ucode_markup`
+ * (templates) and `ucdocs` (doc comments).
  */
 declare const ucode: Language & {
   ucode: Language;

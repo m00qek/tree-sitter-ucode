@@ -1,8 +1,6 @@
--- Check the Neovim indents, folds and text objects in a real Neovim, with the
--- plugins that read them: nvim-treesitter (main branch: indentexpr) and
--- nvim-treesitter-textobjects (main branch). Grammars come from
--- .build/parsers/ (`npm run build` or `node scripts/run-tests.js --build-only`
--- first) and queries from <grammar>/queries/.
+-- Check the Neovim indents, folds and text objects in a real Neovim, with
+-- nvim-treesitter and nvim-treesitter-textobjects (main branches). Needs the
+-- parsers in .build/parsers/.
 --
 --   nvim --headless --clean -l scripts/check-nvim-queries.lua \
 --     <nvim-treesitter checkout> <nvim-treesitter-textobjects checkout>
@@ -33,8 +31,7 @@ end
 vim.opt.rtp:prepend(tso)
 vim.opt.rtp:prepend(nts)
 vim.opt.rtp:prepend(rtp)
--- What startup would source: nvim-treesitter's plugin/ registers predicates
--- its queries (and these) use, such as kind-eq?.
+-- --clean skips plugin/, which registers predicates such as kind-eq?.
 vim.cmd('runtime! plugin/**/*.lua')
 
 local shared = require('nvim-treesitter-textobjects.shared')
@@ -125,8 +122,7 @@ local function textobject(lang, capture, want, name, text)
   vim.api.nvim_buf_delete(buf, { force = true })
 end
 
--- Indentation (the same cases as scripts/check-helix-indents.sh, plus
--- closing delimiters and end keywords typed on a new line).
+-- Indentation: the Helix cases, plus closers typed on a new line.
 indent('ucode', 1, 2, 'brace block body', 'if (a) {\n}')
 indent('ucode', 1, 2, 'object literal', 'let o = {\n};')
 indent('ucode', 1, 2, 'call arguments', 'foo(\n);')

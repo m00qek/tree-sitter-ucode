@@ -1,36 +1,9 @@
 /*
- * Shared external-scanner implementation for ucode and ucode_markup.
+ * External scanner shared by ucode and ucode_markup, included by each one's
+ * src/scanner.c. Everything is static, so no ucode_* symbol leaks into the
+ * markup library.
  *
- * Included by ucode/src/scanner.c and ucode_markup/src/scanner.c.  Every
- * function here is static so each compilation unit gets its own copy and no
- * ucode_* symbols leak into the markup shared library.
- *
- * Token order MUST match the `externals` array in common/define-grammar.js:
- *  0  AUTOMATIC_SEMICOLON          $._automatic_semicolon
- *  1  TEMPLATE_CHARS               $._template_chars
- *  2  RAW_TEXT                     $.raw_text
- *  3  STATEMENT_TAG_OPEN           $.statement_tag_open            {%
- *  4  STATEMENT_TAG_TRIM_OPEN      $.statement_tag_trim_open       {%-
- *  5  STATEMENT_TAG_LSTRIP_OPEN    $.statement_tag_lstrip_open     {%+
- *  6  STATEMENT_TAG_CLOSE          $.statement_tag_close           %}
- *  7  STATEMENT_TAG_TRIM_CLOSE     $.statement_tag_trim_close      -%}
- *  8  EXPRESSION_TAG_OPEN          $.expression_tag_open           {{
- *  9  EXPRESSION_TAG_TRIM_OPEN     $.expression_tag_trim_open      {{-
- * 10  EXPRESSION_TAG_CLOSE         $.expression_tag_close          }}
- * 11  EXPRESSION_TAG_TRIM_CLOSE    $.expression_tag_trim_close     -}}
- * 12  COMMENT_CONTENT              $.comment_content               {# ... #} body
- * 13  COMMENT                      $.comment                       line and block
- * 14  SINGLE_QUOTE_STRING_CONTENT  $._single_quote_string_content  '...' body
- * 15  DOUBLE_QUOTE_STRING_CONTENT  $._double_quote_string_content  "..." body
- * 16  REGEX_CONTENT                $._regex_content                /.../ body
- * 17  OCTAL_ESCAPE                 $._octal_escape                 \NNN in a string/template
- * 18  ASI_GAP                      $._asi_gap                      zero-width no-op (extra)
- * 19  TAG_SEMICOLON                $._tag_semicolon                zero-width ';' before %} (template unbraced body)
- * 20  TEXT_END                     $._text_end                     zero-width end of input
- * 21  RETURN_MARKER                $._return_marker                never emitted; valid only right after `return`
- * 22  BLOCK_END                    $._block_end                    zero-width end of input, closing one statement list
- * 23  DOC_COMMENT                  $.doc_comment                   slash-star-star doc comment
- * 24  ERROR_SENTINEL               $._error_sentinel               never emitted; valid only in error recovery
+ * Token order MUST match `externals` in common/define-grammar.js.
  */
 
 #ifndef UCODE_COMMON_SCANNER_H_
@@ -38,15 +11,10 @@
 
 #include "tree_sitter/parser.h"
 #include <wctype.h>
-#include <stdlib.h>   /* calloc / free for the scanner state */
-#include <string.h>   /* strcmp in lookahead_is_end_keyword */
+#include <stdlib.h>
+#include <string.h>
 
-/*
- * 1 when compiled into the ucode_markup scanner (its shim defines it before
- * including this file), 0 for the plain ucode scanner. Enables the template-
- * only lexing of tag delimiters inside code (see lookahead_is_tag_open and
- * scan_stray_tag_delimiter).
- */
+/* 1 in the ucode_markup scanner (its shim defines it), 0 in ucode. */
 #ifndef UCODE_SCANNER_TEMPLATE
 #define UCODE_SCANNER_TEMPLATE 0
 #endif
@@ -70,27 +38,19 @@ enum TokenType {
     DOUBLE_QUOTE_STRING_CONTENT,
     REGEX_CONTENT,
     OCTAL_ESCAPE,
-    ASI_GAP,
-    TAG_SEMICOLON,
-    TEXT_END,
-    RETURN_MARKER,
-    BLOCK_END,
+    ASI_GAP,             /* zero-width no-op extra */
+    TAG_SEMICOLON,       /* zero-width ';' before %} */
+    TEXT_END,            /* zero-width end of input, ends the root */
+    RETURN_MARKER,       /* never emitted; valid only right after `return` */
+    BLOCK_END,           /* zero-width end of input, ends a statement list */
     DOC_COMMENT,
-    ERROR_SENTINEL,
+    ERROR_SENTINEL,      /* never emitted; valid only in error recovery */
 };
 
 /*
- * Persistent scanner state, serialized because a GLR fork must carry it to
- * each branch.
- *
- * skip_asi_before_comment is carried across exactly two consecutive scans:
- * when the ASI-before-comment path emits its zero-width marker (a real ASI or
- * a no-op ASI_GAP), it sets the flag so the very next scan re-scans the
- * comment itself instead of re-deciding the ASI (which would loop, and would
- * misplace the marker).
- *
- * text_end_emitted is set once the root's TEXT_END has been emitted, so no
- * BLOCK_END follows it (see the end of ucode_scanner_scan).
+ * skip_asi_before_comment: set when an ASI marker was emitted before a
+ * comment, so the next scan takes the comment instead of deciding ASI again.
+ * text_end_emitted: no BLOCK_END after the root's TEXT_END.
  */
 typedef struct {
     bool skip_asi_before_comment;
@@ -100,29 +60,18 @@ typedef struct {
 static inline void advance(TSLexer *lexer) { lexer->advance(lexer, false); }
 static inline void skip(TSLexer *lexer)    { lexer->advance(lexer, true);  }
 
-/* Result of attempting to scan a tag-close marker (%} -%} }} -}}). */
 typedef enum {
-    TAG_CLOSE_MATCHED,   /* full marker consumed; result_symbol set */
-    TAG_CLOSE_ABSENT,    /* not a close marker; nothing consumed */
-    TAG_CLOSE_PARTIAL,   /* a leading '-'/'%'/'}' was consumed, then rejected */
+    TAG_CLOSE_MATCHED,   /* consumed; result_symbol set */
+    TAG_CLOSE_ABSENT,    /* nothing consumed */
+    TAG_CLOSE_PARTIAL,   /* a leading '-'/'%'/'}' consumed, then rejected */
 } TagCloseResult;
 
-/* Line terminators.  ucode has only LF and CR — not JavaScript's U+2028 /
-   U+2029, which its lexer rejects as "Unexpected character". */
+/* ucode has no U+2028 / U+2029 line terminators. */
 static inline bool is_line_terminator(int32_t c) {
     return c == '\n' || c == '\r';
 }
 
-/*
- * Inline (non-line-terminating) whitespace: the rest of C isspace(), which is
- * what ucode's lexer skips and what the grammar's `extras` regex matches.
- * Listed explicitly rather than calling iswspace(), whose answer depends on
- * the host process's locale (an editor that calls setlocale() would see NBSP
- * as a blank), so a file would parse differently from one program to the
- * next.  This is the single predicate for "blank that does not end a line";
- * scan_comment's leading skip uses it so the ASI decision is not stranded on
- * one of them.
- */
+/* The rest of C isspace(). Not iswspace(): it depends on the host's locale. */
 static inline bool is_inline_ws(int32_t c) {
     return c == ' ' || c == '\t' || c == '\v' || c == '\f';
 }
@@ -132,22 +81,14 @@ static inline bool is_inline_ws(int32_t c) {
  * ---------------------------------------------------------------------- */
 
 /*
- * scan_raw_text_from(lexer, has_content)
- *
- * Core raw-text loop.  Caller sets has_content=true when it has already
- * consumed one or more characters (e.g. a lone '{' that turned out not to
- * be a tag opener) so that the scanner returns true even if no additional
- * characters follow.
- *
- * Stops BEFORE '{' that is followed by '%', '{', or '#' (tag/comment openers).
- * A lone '{' is committed on the next iteration's mark_end.
+ * Raw text up to a '{' that opens a tag or comment. has_content: the caller
+ * already consumed a lone '{'.
  */
 static bool scan_raw_text_from(TSLexer *lexer, bool has_content) {
     lexer->result_symbol = RAW_TEXT;
     while (true) {
         lexer->mark_end(lexer);
-        /* Real end-of-input ends the token; a literal NUL byte in the file is
-           ordinary content (ucode accepts NUL in raw template text). */
+        /* A NUL byte is content: ucode accepts it in raw text. */
         if (lexer->eof(lexer)) return has_content;
         if (lexer->lookahead == '{') {
             advance(lexer);
@@ -162,10 +103,7 @@ static bool scan_raw_text_from(TSLexer *lexer, bool has_content) {
     }
 }
 
-/*
- * The rest of a tag opener, after its '{': `{%`, `{%-`, `{%+`, `{{` or `{{-`.
- * The lookahead is the opener's '%' or '{'.
- */
+/* The rest of a tag opener; the lookahead is the '%' or '{' after the first '{'. */
 static bool finish_tag_open(TSLexer *lexer) {
     bool statement = lexer->lookahead == '%';
     advance(lexer);
@@ -182,13 +120,8 @@ static bool finish_tag_open(TSLexer *lexer) {
     return true;
 }
 
-/*
- * Raw text and the tag openers. One function, because telling them apart
- * means advancing past a '{' and looking at the next character, and a
- * scanner cannot step back: it must decide here, from that position.
- */
+/* Raw text and tag openers in one function: past a '{', a scanner can't step back. */
 static bool scan_markup(TSLexer *lexer, const bool *valid_symbols) {
-    /* Not at '{': only raw text is possible. */
     if (lexer->lookahead != '{')
         return valid_symbols[RAW_TEXT] ? scan_raw_text_from(lexer, false) : false;
 
@@ -204,20 +137,16 @@ static bool scan_markup(TSLexer *lexer, const bool *valid_symbols) {
         (valid_symbols[EXPRESSION_TAG_OPEN] || valid_symbols[EXPRESSION_TAG_TRIM_OPEN]))
         return finish_tag_open(lexer);
 
-    /* {#  {#- — comment tag; let the internal lexer match the literal '{#'. */
+    /* `{#`: the internal lexer matches it. */
     if (lexer->lookahead == '#') return false;
 
-    /* '{' followed by anything else: include it in raw text. */
     return valid_symbols[RAW_TEXT] ? scan_raw_text_from(lexer, true) : false;
 }
 
 
 /*
- * Advance past a tag close: `%}` / `-%}` when statement is set, `}}` / `-}}`
- * when expression is. On a match, *symbol is its token; mark_end is left to
- * the caller. No leading-whitespace skip: scan_comment is dispatched first
- * (COMMENT is a valid extra wherever this runs) and has already consumed any
- * whitespace and line terminators.
+ * Advance past `%}` / `-%}` (statement) or `}}` / `-}}` (expression); mark_end
+ * is the caller's. No whitespace skip: scan_comment, dispatched first, did it.
  */
 static TagCloseResult match_tag_close(
     TSLexer *lexer, bool statement, bool expression, enum TokenType *symbol
@@ -235,7 +164,6 @@ static TagCloseResult match_tag_close(
     return TAG_CLOSE_MATCHED;
 }
 
-/* Scan a tag close (see match_tag_close) as a token. */
 static TagCloseResult scan_tag_close(TSLexer *lexer, bool statement, bool expression) {
     enum TokenType symbol;
     TagCloseResult result = match_tag_close(lexer, statement, expression, &symbol);
@@ -247,41 +175,32 @@ static TagCloseResult scan_tag_close(TSLexer *lexer, bool statement, bool expres
 }
 
 /*
- * Scan the body of a {# ... #} comment: everything up to, but not including,
- * the first #} or -#} close marker.  A regex cannot express this — maximal
- * munch would consume the '#' that begins the terminator (e.g. the second '#'
- * of `{# x##}`), and tree-sitter regexes have no look-ahead — so the boundary
- * is found here by look-ahead.
- *
- * mark_end() is set at the start of each iteration, so when a close marker is
- * detected the characters already advanced past ('#' or '-#') fall outside the
- * token; the lexer resumes at mark_end and the internal lexer matches #}/-#}.
- * Returns false on an empty body (immediate close), leaving comment_content
- * unmatched (it is optional in the grammar).
+ * Body of {# ... #}, up to `#}` or `-#}`: a regex would eat the closing '#'.
+ * mark_end at each iteration leaves the close marker for the internal lexer.
+ * An empty body declines (comment_content is optional).
  */
 static bool scan_comment_chars(TSLexer *lexer) {
     lexer->result_symbol = COMMENT_CONTENT;
     bool has_content = false;
     for (;;) {
         lexer->mark_end(lexer);
-        if (lexer->eof(lexer)) return has_content; /* EOF: close is missing */
-        /* A literal NUL is ordinary comment content (ucode accepts it). */
+        if (lexer->eof(lexer)) return has_content;
 
         if (lexer->lookahead == '#') {
             advance(lexer);
-            if (lexer->lookahead == '}') return has_content; /* #} ahead */
-            has_content = true;                              /* '#' was content */
+            if (lexer->lookahead == '}') return has_content;
+            has_content = true;
             continue;
         }
         if (lexer->lookahead == '-') {
             advance(lexer);
             if (lexer->lookahead == '#') {
                 advance(lexer);
-                if (lexer->lookahead == '}') return has_content; /* -#} ahead */
-                has_content = true;                              /* '-#' was content */
+                if (lexer->lookahead == '}') return has_content;
+                has_content = true;
                 continue;
             }
-            has_content = true;                                  /* '-' was content */
+            has_content = true;
             continue;
         }
 
@@ -298,9 +217,7 @@ static bool scan_template_chars(TSLexer *lexer) {
     lexer->result_symbol = TEMPLATE_CHARS;
     for (bool has_content = false;; has_content = true) {
         lexer->mark_end(lexer);
-        /* Real end-of-input leaves the template unterminated (discard, matching
-           tree-sitter-javascript). A literal NUL byte is ordinary content —
-           ucode accepts NUL inside a template string. */
+        /* Unterminated at EOF: discard, as tree-sitter-javascript does. */
         if (lexer->eof(lexer)) return false;
         switch (lexer->lookahead) {
             case '`': return has_content;
@@ -315,31 +232,16 @@ static bool scan_template_chars(TSLexer *lexer) {
 }
 
 /*
- * Body of a single- or double-quoted string, up to the closing quote or a
- * backslash (start of an escape_sequence).  Unlike JavaScript, ucode strings
- * MAY span raw line terminators: lexer.c parse_string has no newline handling,
- * so a bare LF/CR is ordinary content and only EOF (a missing closing quote)
- * makes a string unterminated.  We therefore keep '\r'/'\n' as content and,
- * mirroring scan_template_chars, return false at EOF: discarding the token on a
- * missing quote lets the parser recover statement-by-statement instead of
- * swallowing the rest of the file into one string.
- *
- * Dispatched as an external token BEFORE the COMMENT scanner so a string
- * starting with slash-star or `//` (e.g. the glob `'/\*.uc'`) is kept as string
- * content instead of being lexed as a comment.  A literal NUL is ordinary
- * content (ucode allows it in strings).
- *
- * Cost: while a string is unterminated, each reparse rescans it to EOF (about
- * 0.06 ms per KB of file tail). Ending the token earlier would be cheaper but
- * would swallow the rest of the file into the string.
+ * Body of a quoted string, up to the quote or a backslash. ucode strings may
+ * span raw newlines; only EOF leaves one unterminated, and then the token is
+ * discarded so the parser recovers instead of swallowing the file. Dispatched
+ * before COMMENT, so `'/\*.uc'` stays a string.
  */
 static bool scan_string_chars(TSLexer *lexer, int32_t quote, enum TokenType sym) {
     lexer->result_symbol = sym;
     bool has_content = false;
     for (;;) {
-        /* The terminator/EOF check below always runs before any advance() past
-           it, so no committed character is ever advanced past — one mark_end()
-           right at each return is enough, instead of one per character. */
+        /* The stop check precedes every advance, so mark_end is needed only at returns. */
         if (lexer->eof(lexer)) {
             lexer->mark_end(lexer);
             return false;
@@ -354,45 +256,26 @@ static bool scan_string_chars(TSLexer *lexer, int32_t quote, enum TokenType sym)
     }
 }
 
-/* Consume a backslash escape (the '\' plus the escaped char).  Returns false on
-   a trailing '\' at EOF, which makes the surrounding literal unterminated. */
+/* Consume '\' and the escaped char; false on a trailing '\' at EOF. */
 static inline bool regex_consume_escape(TSLexer *lexer) {
-    advance(lexer); /* the backslash */
+    advance(lexer);
     if (lexer->eof(lexer)) return false;
-    advance(lexer); /* the escaped char (any char, incl. newline) */
+    advance(lexer);
     return true;
 }
 
 /*
- * Body of a regex literal, up to the closing '/' delimiter (external token
- * REGEX_CONTENT).  ucode lexes regexes with parse_string(lex, '/') — the SAME
- * routine as strings (lexer.c parse_regexp) — so, exactly like scan_string_chars:
- * raw newlines are ordinary content, and only EOF makes the literal
- * unterminated.  Returning false at EOF discards the run so the parser recovers
- * statement-by-statement instead of swallowing the file tail, which a regex in
- * the grammar could not do.
- *
- * A regex additionally has character-class structure a plain string lacks
- * (parse_string only applies it when the delimiter is '/'): inside `[ ... ]`,
- * '/' and newlines are literal, an optional leading '^' and a leading ']' are
- * literal members (`[]…]`, `[^]…]` do not close at the first ']'), and nested
- * POSIX / collating / equivalence sub-expressions ([:name:] [.coll.] [=eq=])
- * keep their inner ']' from closing the class.  We stop just before the closing
- * '/', leaving it for the grammar (like scan_string_chars leaves the quote).
- *
- * An empty pattern is impossible here: `//` is a line comment, dispatched by
- * scan_comment before REGEX_CONTENT is offered.  We still require at least one
- * content char (return false on a leading '/') so the grammar never accepts an
- * empty regex.
+ * Body of a regex literal, up to the closing '/'. ucode lexes regexes like
+ * strings (raw newlines are content, EOF discards), plus bracket classes:
+ * inside `[...]` a '/' is literal, a leading ']' (after an optional '^') is a
+ * member, and [:name:] [.coll.] [=eq=] keep their ']' from closing the class.
+ * Never empty: `//` is a comment.
  */
 static bool scan_regex_content(TSLexer *lexer) {
     lexer->result_symbol = REGEX_CONTENT;
     bool has_content = false;
     for (;;) {
-        /* Same reasoning as scan_string_chars: the terminator check below
-           always runs before advancing past it, so mark_end() is only needed
-           right at the two returns here, not once per outer-loop iteration
-           (the '[' branch's own EOF returns need none — they discard). */
+        /* As in scan_string_chars; the class loop's EOF returns discard. */
         if (lexer->eof(lexer)) {
             lexer->mark_end(lexer);
             return false;
@@ -411,8 +294,8 @@ static bool scan_regex_content(TSLexer *lexer) {
             advance(lexer);
             has_content = true;
             if (lexer->lookahead == '^') advance(lexer);
-            if (lexer->lookahead == ']') advance(lexer); /* literal leading ']' */
-            for (;;) { /* read up to the closing ']' */
+            if (lexer->lookahead == ']') advance(lexer);
+            for (;;) {
                 if (lexer->eof(lexer)) return false;
                 int32_t d = lexer->lookahead;
                 if (d == '\\') {
@@ -421,11 +304,11 @@ static bool scan_regex_content(TSLexer *lexer) {
                 }
                 advance(lexer);
                 if (d == ']') break;
-                if (d == '[') { /* nested [:name:] / [.coll.] / [=eq=] */
+                if (d == '[') {
                     int32_t kind = lexer->lookahead;
                     if (kind == ':' || kind == '.' || kind == '=') {
-                        advance(lexer); /* the kind char */
-                        for (;;) { /* read up to the matching kind + ']' */
+                        advance(lexer);
+                        for (;;) {
                             if (lexer->eof(lexer)) return false;
                             int32_t e = lexer->lookahead;
                             if (e == '\\') {
@@ -443,19 +326,15 @@ static bool scan_regex_content(TSLexer *lexer) {
             }
             continue;
         }
-        advance(lexer); /* ordinary content, including raw newlines */
+        advance(lexer);
         has_content = true;
     }
 }
 
 /*
- * Octal escape sequence in a string/template literal: '\' followed by 1-3
- * octal digits, e.g. \0, \40, \377.  ucode's lexer (lexer.c parse_escape)
- * consumes up to 3 digits and rejects a value above 255 ("Invalid escape
- * sequence"). A regex cannot: `\777` would match as `\77` plus a literal '7'.
- * Declining here leaves nothing else that can start at the '\', so it is an
- * error. Aliased to escape_sequence in the grammar, whose own regex has no
- * octal branch.
+ * '\' plus 1-3 octal digits, at most 255 as in ucode. A regex can't do this:
+ * `\777` would match `\77` then '7'. Declining leaves an error. Aliased to
+ * escape_sequence.
  */
 static bool scan_octal_escape(TSLexer *lexer) {
     if (lexer->lookahead != '\\') return false;
@@ -475,29 +354,21 @@ static bool scan_octal_escape(TSLexer *lexer) {
 }
 
 /*
- * Return true if the lookahead is `%}` or `-%}`. Peeks by advancing, without
- * mark_end, so a zero-width token (ASI, TAG_SEMICOLON) can be emitted before
- * the close. The lookahead_is_* helpers below all work this way.
+ * The lookahead_is_* helpers peek by advancing without mark_end, so a
+ * zero-width token can still be emitted at the entry position.
  */
 static bool lookahead_is_stmt_close(TSLexer *lexer) {
     enum TokenType symbol;
     return match_tag_close(lexer, true, false, &symbol) == TAG_CLOSE_MATCHED;
 }
 
-/* Return true if the lookahead is `{%` or `{{`, in any variant. */
 static bool lookahead_is_tag_open(TSLexer *lexer) {
     if (lexer->lookahead != '{') return false;
     advance(lexer);
     return lexer->lookahead == '%' || lexer->lookahead == '{';
 }
 
-/*
- * Return true if the lookahead is the keyword `in` at a word boundary, not a
- * prefix of a longer identifier (`intval`).  `in` is ucode's only keyword
- * binary operator (there is no `instanceof`), so it must decline ASI like any
- * other continuation token: `let x = y\nin [1, 2];` is valid ucode and must
- * not be split into two statements.
- */
+/* `in`, ucode's only keyword operator, continues an expression across lines. */
 static bool lookahead_is_in_keyword(TSLexer *lexer) {
     if (lexer->lookahead != 'i') return false;
     advance(lexer);
@@ -510,11 +381,7 @@ static bool lookahead_is_in_keyword(TSLexer *lexer) {
     return !is_ident_cont;
 }
 
-/*
- * Return true if the lookahead is a keyword that ends a statement list
- * (alt-syntax `else`/`elif`/`end*`, or a switch `case`/`default`) at a word
- * boundary.
- */
+/* A keyword that ends a statement list. */
 static bool lookahead_is_end_keyword(TSLexer *lexer) {
     static const char *const words[] = {
         "case", "default", "elif", "else",
@@ -540,32 +407,18 @@ static bool lookahead_is_end_keyword(TSLexer *lexer) {
 }
 
 /*
- * Automatic semicolon insertion. Each decision returns true to insert the
- * zero-width ';' and false not to; it peeks by advancing, and mark_end stays
- * at the scan's entry, right after the statement's last token, so the ';'
- * sits there rather than stretching the statement over the whitespace and
- * line breaks scan_comment skipped (editors would then treat the next line as
- * still inside the statement's block).
- *
- * Deliberately more lenient than ucode, which drops a ';' only before '}',
- * EOF, a tag close or an alt-syntax keyword (endif, elif, …) and rejects
- * `x = 1\ny = 2`: like ECMAScript, a line break also ends a statement, so
- * code being edited is not flagged (see README). Before a tag close
- * (`{% let x = 1 %}`) ucode itself needs no ';'.
+ * Automatic semicolon insertion: true inserts a zero-width ';' at the entry
+ * position, right after the statement, not after the skipped whitespace.
+ * More lenient than ucode by design: a line break also ends a statement.
  */
 
-/* Decision for a token on the same line as the statement's end. */
 static bool asi_same_line_decision(TSLexer *lexer) {
-    /* '}', or EOF. A NUL byte in code is an error in any case; ending the
-       statement before it keeps the statement intact. */
+    /* A NUL in code is an error anyway; ending here keeps the statement intact. */
     if (lexer->lookahead == '}' || lexer->lookahead == 0)
         return true;
 
-    /* Template only: a `{%` or `{{` inside a tag is always an error in ucode
-       ("Template blocks may not be nested") — typically a half-typed tag
-       followed by the next real one. End the statement here, so error
-       recovery only has to supply the missing `%}` (see
-       scan_stray_tag_delimiter) instead of swallowing the rest of the file. */
+    /* A tag opener inside a tag is an error in ucode: end the statement so
+       recovery only inserts the missing `%}`. */
     if (UCODE_SCANNER_TEMPLATE && lexer->lookahead == '{')
         return lookahead_is_tag_open(lexer);
 
@@ -575,17 +428,10 @@ static bool asi_same_line_decision(TSLexer *lexer) {
     return false;
 }
 
-/*
- * Decision for the first token after a line break. This is the one list of
- * tokens that continue an expression on the next line; `in` is the only one
- * that is not punctuation.
- */
+/* The tokens that continue an expression on the next line. */
 static bool asi_after_newline_decision(TSLexer *lexer, bool after_return) {
-    /* Right after `return`, ucode reads the next line as the return value
-       (`return\n\ta + b;` returns a + b), so end the statement only where no
-       expression can follow: '}', EOF, a tag close or `{%`, or a keyword that
-       ends the statement list.  Anything else — including '{', an object
-       literal — is the operand. */
+    /* ucode reads the line after `return` as its value, so only end it where
+       no expression can follow. */
     if (after_return) {
         if (lexer->lookahead == '}' || lexer->eof(lexer))
             return true;
@@ -605,42 +451,26 @@ static bool asi_after_newline_decision(TSLexer *lexer, bool after_return) {
             return false;
         case '-':
         case '%':
-            /* A tag close, or else a binary operator. */
             return lookahead_is_stmt_close(lexer);
         default:
-            /* `in` continues the expression (`y\nin [1, 2]`); anything else
-               is '}', EOF, or the start of a new statement → insert. */
             return !lookahead_is_in_keyword(lexer);
     }
 }
 
 /*
- * Line (slash-slash) and block (slash-star) comments.
- *
- * The '/' is ambiguous and cannot be un-consumed once advanced past, so
- * scan_comment reports one of four outcomes:
- *   CMT_FOUND         a comment (or an ASI marker before one) was scanned.
- *   CMT_ABORT         a '/' was consumed that starts a division or a regex:
- *                     the whole scanner returns false, so tree-sitter re-lexes
- *                     it from the entry position.
- *   CMT_NONE          no comment; only inline whitespace was skipped.
- *   CMT_NONE_NEWLINE  no comment, but a line break was skipped: the
- *                     dispatcher makes the post-newline ASI decision.
+ * A consumed '/' can't be un-consumed, hence:
+ *   CMT_ABORT         the '/' is division or a regex; the scan fails and
+ *                     tree-sitter re-lexes from the entry position.
+ *   CMT_NONE_NEWLINE  no comment, but a line break was skipped.
  */
 typedef enum { CMT_NONE, CMT_NONE_NEWLINE, CMT_FOUND, CMT_ABORT } CommentResult;
 
 typedef enum { BODY_UNTERMINATED, BODY_COMMENT, BODY_DOC } CommentBody;
 
 /*
- * Advance past the rest of a comment, from its second character ('/' or '*').
- *
- * A line comment runs to the end of the line or EOF, as in ucode, swallowing
- * a `%}` on that line. A block comment's opening '*' also counts towards its
- * close, as in ucode's lexer (lexer.c parse_comment): slash-star-slash is a
- * complete, empty comment. A block comment that opens with exactly two stars
- * and no `/` right after them is a doc comment (JSDoc's rule: slash-star-star-
- * star and slash-star-star-slash are not). BODY_UNTERMINATED: a block comment
- * left open at EOF.
+ * The rest of a comment, from its second character. As in ucode, the
+ * opening '*' counts towards the close (slash-star-slash is empty). A doc
+ * comment opens with exactly two stars not followed by '/'.
  */
 static CommentBody skip_comment_body(TSLexer *lexer) {
     if (lexer->lookahead == '/') {
@@ -648,7 +478,7 @@ static CommentBody skip_comment_body(TSLexer *lexer) {
             advance(lexer);
         return BODY_COMMENT;
     }
-    advance(lexer);  /* the '*' */
+    advance(lexer);
     if (lexer->lookahead == '/') {
         advance(lexer);
         return BODY_COMMENT;
@@ -677,33 +507,19 @@ static CommentBody skip_comment_body(TSLexer *lexer) {
 }
 
 /*
- * Decide the preceding statement's ASI BEFORE an own-line comment is emitted.
- *
- * A comment is an external `extra`, scanned ahead of ASI, so emitting it
- * first would leave it INSIDE the still-open preceding statement: a doc
- * comment after `function f() {}` (no `;`) would land in the function, not
- * before the next declaration. Instead, peek past this comment and any
- * further own-line comments to the next real token, decide, and emit a
- * zero-width token at the entry position: AUTOMATIC_SEMICOLON when that token
- * starts a new statement, or a no-op ASI_GAP when it continues the expression
- * (`a\n// c\n.b`). The comment itself is scanned on the next call.
- *
- * Returns true for AUTOMATIC_SEMICOLON. The caller then sets
- * Scanner.skip_asi_before_comment only for ASI_GAP: the statement is still
- * open, so ASI is valid on the next call, and this path would loop. After an
- * inserted ';' it is not valid, so no flag is needed — and setting one would
- * leave the comment inside the not-yet-reduced `function f() {}`.
- *
- * Contract: mark_end is at the entry position, and the caller has advanced
- * past the comment's '/'. This function never calls mark_end.
+ * Decide ASI before emitting an own-line comment; otherwise the comment would
+ * land inside the still-open statement. Peeks past the comments to the next
+ * token and emits AUTOMATIC_SEMICOLON (returns true) or a no-op ASI_GAP at the
+ * entry position; the comment comes on the next scan. Only ASI_GAP needs
+ * skip_asi_before_comment: after it ASI is still valid and this would loop.
+ * The caller has consumed the '/'; mark_end stays at the entry.
  */
 static bool scan_asi_before_comment(TSLexer *lexer, bool after_return) {
     bool newline_before_next;
 
     for (;;) {
         if (skip_comment_body(lexer) == BODY_UNTERMINATED) {
-            /* Unterminated block comment: an error either way. The next call
-               re-scans it, and scan_comment returns CMT_ABORT. */
+            /* The next scan aborts on it. */
             lexer->result_symbol = ASI_GAP;
             return false;
         }
@@ -719,19 +535,16 @@ static bool scan_asi_before_comment(TSLexer *lexer, bool after_return) {
             break;
         }
 
-        /* Another comment? */
         if (lexer->lookahead != '/') break;
         advance(lexer);
         if (lexer->lookahead == '/' || lexer->lookahead == '*')
             continue;
-        /* Division or a regex: it continues the expression. */
+        /* Division or a regex continues the expression. */
         lexer->result_symbol = ASI_GAP;
         return false;
     }
 
-    /* At the next real token. On the line where a block comment ends, the
-       same-line rules apply: a statement after the comment stays an error, as
-       in ucode, while a `%}` there still ends the statement. */
+    /* Same line as a block comment's end: same-line rules. */
     bool insert = newline_before_next
         ? asi_after_newline_decision(lexer, after_return)
         : asi_same_line_decision(lexer);
@@ -744,20 +557,14 @@ static CommentResult scan_comment(TSLexer *lexer, Scanner *state,
                                   bool after_return) {
     bool crossed_newline = false;
 
-    /* The previous scan emitted an ASI marker before this comment; this call
-       scans the comment itself. */
     bool suppress_asi_before_comment = state->skip_asi_before_comment;
     state->skip_asi_before_comment = false;
 
-    /* The entry position, where the zero-width tokens (ASI, ASI_GAP,
-       TAG_SEMICOLON) are emitted. */
+    /* The entry position, where zero-width tokens are emitted. */
     lexer->mark_end(lexer);
 
-    /* Skip whitespace to reach a comment: tree-sitter will not call the
-       scanner again after lexing whitespace itself, so a comment reached only
-       across whitespace would be lexed as division or a regex. A line break
-       is skipped too, but reported (crossed_newline): it is what lenient ASI
-       relies on. */
+    /* tree-sitter won't call the scanner again after skipping whitespace
+       itself, so skip it here; line breaks are reported for ASI. */
     for (;;) {
         while (is_inline_ws(lexer->lookahead))
             skip(lexer);
@@ -779,8 +586,7 @@ static CommentResult scan_comment(TSLexer *lexer, Scanner *state,
         return CMT_FOUND;
     }
 
-    /* An unterminated block comment is an error in ucode ("Unterminated
-       comment"), so it is not a token. */
+    /* ucode rejects an unterminated block comment. */
     CommentBody body = skip_comment_body(lexer);
     if (body == BODY_UNTERMINATED) return CMT_ABORT;
     lexer->result_symbol = body == BODY_DOC ? DOC_COMMENT : COMMENT;
@@ -793,19 +599,10 @@ static CommentResult scan_comment(TSLexer *lexer, Scanner *state,
  * ---------------------------------------------------------------------- */
 
 /*
- * Template only: a tag delimiter — `{%`, `%}`, `{{`, `}}`, in any variant —
- * where none is valid. ucode's lexer reads these as tag delimiters anywhere in
- * template code outside strings, comments, regexes and template-literal text,
- * so `{% x = {a:{b:1}}; %}` or `{% if (a) {{ … }} %}` is a syntax error there,
- * not nested braces. Typically it is a half-typed tag (`{% if (co` or
- * `{{ obj.` followed by the next tag), or a tag closed mid-expression
- * (`{% x = 1 + %}`, `{{ obj. }}`). Emit the delimiter token anyway, though it
- * is invalid here: tree-sitter then reports the error and recovers around the
- * tag boundary — typically by inserting the one missing token — instead of
- * re-lexing the characters as `{`, `%` and `}` operators and keeping the
- * error region open until some unrelated token happens to fit. Valid input
- * never reaches this: a delimiter that is valid has already been matched
- * above.
+ * Template only: a tag delimiter where none is valid. ucode reads one as a
+ * delimiter anywhere in code, so it is an error there; emitting it anyway,
+ * though invalid, lets recovery work at the tag boundary instead of lexing
+ * `{`, `%`, `}` as operators.
  */
 static bool scan_stray_tag_delimiter(TSLexer *lexer) {
     if (lexer->lookahead == '{')
@@ -818,23 +615,11 @@ static bool ucode_scanner_scan(
 ) {
     Scanner *state = (Scanner *)payload;
 
-    /*
-     * Error-recovery guard.
-     *
-     * During error recovery tree-sitter marks every external token valid at
-     * once; ERROR_SENTINEL, which no grammar rule uses, is valid only then (the
-     * pattern tree-sitter's external-scanner docs recommend). Return false so
-     * the parser uses its own grammar tokens for recovery instead of this
-     * scanner — e.g. consuming code as raw_text.
-     */
+    /* Error recovery marks every external valid; let the grammar's own tokens
+       recover (the pattern tree-sitter's docs recommend). */
     if (valid_symbols[ERROR_SENTINEL])
         return false;
 
-    /*
-     * The zero-width end of input that ends the root. (Also emitted below
-     * when it is NOT valid — see the end of this function.) RAW_TEXT declines
-     * at EOF, so nothing competes.
-     */
     if (valid_symbols[TEXT_END] && lexer->eof(lexer)) {
         state->text_end_emitted = true;
         lexer->result_symbol = TEXT_END;
@@ -842,20 +627,14 @@ static bool ucode_scanner_scan(
         return true;
     }
 
-    /* The zero-width end of input that ends a statement list. (Also emitted
-       below when it is NOT valid.) */
     if (valid_symbols[BLOCK_END] && lexer->eof(lexer)) {
         lexer->result_symbol = BLOCK_END;
         lexer->mark_end(lexer);
         return true;
     }
 
-    /*
-     * String and template-literal bodies. Dispatched ahead of COMMENT, which
-     * as an extra is offered even inside strings, so a `//` or slash-star in
-     * a string stays content. They decline at a '\\', where OCTAL_ESCAPE is
-     * valid too, so only a match returns.
-     */
+    /* Before COMMENT, an extra offered even inside strings. At a '\' they
+       decline so OCTAL_ESCAPE can match. */
     if (valid_symbols[TEMPLATE_CHARS] && scan_template_chars(lexer))
         return true;
 
@@ -866,32 +645,15 @@ static bool ucode_scanner_scan(
         scan_string_chars(lexer, '"', DOUBLE_QUOTE_STRING_CONTENT))
         return true;
 
-    /*
-     * Octal escape (\NNN) inside a string/template: only valid wherever
-     * escape_sequence itself is (aliased back to it — see scan_octal_escape).
-     * A '\' followed by a non-octal-digit, or an in-range value, falls
-     * through to escape_sequence's own regex; an out-of-range value (> 255)
-     * returns false here with nothing else able to match, forcing an ERROR.
-     */
     if (valid_symbols[OCTAL_ESCAPE] && scan_octal_escape(lexer))
         return true;
 
-    /*
-     * Regex body: only inside a `/ ... /` literal, dispatched like the string
-     * bodies above (and ahead of COMMENT so a `/` opening a regex is not lexed
-     * as a comment/division). Same non-overlap with AUTOMATIC_SEMICOLON.
-     */
     if (valid_symbols[REGEX_CONTENT])
         return scan_regex_content(lexer);
 
-    /*
-     * Comment body: only valid inside {# ... #}, where no other external token
-     * competes.  Scans up to the #}/-#} close marker.
-     */
     if (valid_symbols[COMMENT_CONTENT])
         return scan_comment_chars(lexer);
 
-    /* Raw text and tag openers. */
     if (valid_symbols[RAW_TEXT] ||
         valid_symbols[STATEMENT_TAG_OPEN] ||
         valid_symbols[STATEMENT_TAG_TRIM_OPEN] ||
@@ -901,10 +663,7 @@ static bool ucode_scanner_scan(
         if (scan_markup(lexer, valid_symbols)) return true;
     }
 
-    /*
-     * Comments, which also skip the whitespace before the tag-close and ASI
-     * scans below.
-     */
+    /* Also skips the whitespace before the scans below. */
     bool crossed_newline = false;
     if (valid_symbols[COMMENT]) {
         switch (scan_comment(lexer, state, valid_symbols[AUTOMATIC_SEMICOLON], valid_symbols[ASI_GAP],
@@ -915,43 +674,24 @@ static bool ucode_scanner_scan(
             case CMT_NONE:         break;
         }
     } else {
-        /* scan_comment marks the entry position for the zero-width tokens
-           below (ASI, TAG_SEMICOLON); COMMENT is an extra, so it is valid
-           wherever they are — this is only a safety net. */
+        /* Safety net: COMMENT is an extra, so valid wherever the tokens below are. */
         lexer->mark_end(lexer);
     }
 
-    /*
-     * Template only: ucode's compiler reads every `%}` as `;`, so an unbraced
-     * body (`{% if (a) %}`, `{% else %}`, `{% for (…) %}`) that runs straight
-     * into a tag close is an empty statement. Emit it zero-width so the `%}`
-     * is still lexed next, as the start of the following text_statement. Only
-     * valid in unbraced-body positions, where neither the tag close nor ASI is
-     * (so there is no competing decision); scan_comment has already skipped
-     * the whitespace before the close. Not a close → return false, letting
-     * tree-sitter re-lex the '-'/'%' that lookahead_is_stmt_close consumed.
-     */
+    /* Template only: ucode reads `%}` as `;`, so an unbraced body that runs
+       into a tag close is an empty statement. */
     if (valid_symbols[TAG_SEMICOLON]) {
-        lexer->result_symbol = TAG_SEMICOLON;   /* at the entry mark_end */
+        lexer->result_symbol = TAG_SEMICOLON;
         return lookahead_is_stmt_close(lexer);
     }
 
-    /* A line break precedes the next token: decide ASI there. */
     if (crossed_newline) {
         lexer->result_symbol = AUTOMATIC_SEMICOLON;
         return asi_after_newline_decision(lexer, valid_symbols[RETURN_MARKER]);
     }
 
-    /*
-     * Tag close tokens.  Checked before ASI so that %} / -%} / }} / -}}
-     * are preferred over a zero-length semicolon when both are valid.
-     *
-     * TAG_CLOSE_PARTIAL means a leading '-'/'%'/'}' was consumed and then
-     * rejected (it is really an operator).  We must NOT fall through to the
-     * scans below: the lexer is skewed past that operator.  Returning false
-     * lets tree-sitter re-lex the operator from the original position with
-     * the internal lexer.
-     */
+    /* Tag closes win over ASI. On TAG_CLOSE_PARTIAL the lexer is past an
+       operator, so fail and let tree-sitter re-lex it. */
     if (valid_symbols[STATEMENT_TAG_CLOSE] || valid_symbols[STATEMENT_TAG_TRIM_CLOSE]) {
         switch (scan_tag_close(lexer, true, false)) {
             case TAG_CLOSE_MATCHED: return true;
@@ -967,7 +707,6 @@ static bool ucode_scanner_scan(
         }
     }
 
-    /* Same line: scan_comment found no line break. */
     if (valid_symbols[AUTOMATIC_SEMICOLON]) {
         lexer->result_symbol = AUTOMATIC_SEMICOLON;
         return asi_same_line_decision(lexer);
@@ -978,23 +717,11 @@ static bool ucode_scanner_scan(
         return scan_stray_tag_delimiter(lexer);
 
     /*
-     * Error recovery: end of input inside a block or alt-syntax body that was
-     * never closed (typically one still being typed). tree-sitter only
-     * inserts a MISSING token if the lookahead can then be SHIFTED, and the
-     * real end of input is accepted, never shifted, so no MISSING `}` could
-     * ever be inserted before it: the whole open construct became an ERROR.
-     *
-     * Every statement list may end with a zero-width BLOCK_END, which the
-     * scanner emits (above) at end of input. After it, the list's own closer
-     * is due; emitting the (here invalid) BLOCK_END again gives the parser a
-     * lookahead that the ENCLOSING list accepts, so it inserts the one
-     * missing `}` / `endif` / … and shifts it there. Repeated, that closes
-     * every open block from the innermost out, up to the root, which ends
-     * with TEXT_END.
-     *
-     * Never after the root has shifted its TEXT_END, where the scanner is
-     * called once more at end of input. During the error recovery this
-     * starts, the ERROR_SENTINEL guard above keeps the scanner quiet.
+     * End of input inside an unclosed block. tree-sitter only inserts a
+     * MISSING token before a lookahead it can shift, and EOF is never shifted.
+     * An (invalid) BLOCK_END is one the enclosing list accepts, so each open
+     * block gets its MISSING closer, innermost first, up to the root's
+     * TEXT_END.
      */
     if (lexer->eof(lexer) && !state->text_end_emitted) {
         lexer->result_symbol = BLOCK_END;
@@ -1006,7 +733,7 @@ static bool ucode_scanner_scan(
 }
 
 /* -------------------------------------------------------------------------
- * Scanner lifecycle (shared by both parsers' shims)
+ * Lifecycle
  * ---------------------------------------------------------------------- */
 
 static void *ucode_scanner_create(void) {

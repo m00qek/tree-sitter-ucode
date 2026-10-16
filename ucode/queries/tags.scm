@@ -1,20 +1,7 @@
-; Tags queries for ucode.
-; Used by GitHub code navigation and tools that index symbol definitions.
-;
-; NOTE on #strip! and #select-adjacent!: tree-sitter-tags (`tree-sitter tags`,
-; GitHub code navigation) applies both. To other query consumers they are
-; plain metadata: one that reads @doc verbatim gets the raw `/** ... */` text
-; with its `*` characters, and may attach a comment from several lines above
-; to the wrong definition. Semantics:
-;   #strip! @capture <regex>        — strip text matching <regex> from the
-;                                      start/end of @capture's text.
-;   #select-adjacent! @a @b         — only keep this match if @a is on a line
-;                                      immediately preceding @b (no blank
-;                                      lines or other statements between).
+; #strip! and #select-adjacent! are applied only by tree-sitter-tags; other
+; consumers get the raw comment and must check adjacency themselves.
 
-; -------------------------------------------------------------------------
-; Function definitions — named declarations (brace body or endfunction body)
-; -------------------------------------------------------------------------
+; Function declarations
 
 (
   [(comment) (doc_comment)]* @doc
@@ -25,9 +12,7 @@
   (#select-adjacent! @doc @definition.function)
 )
 
-; -------------------------------------------------------------------------
-; Function definitions — named function expressions
-; -------------------------------------------------------------------------
+; Named function expressions
 
 (
   [(comment) (doc_comment)]* @doc
@@ -38,9 +23,7 @@
   (#select-adjacent! @doc @definition.function)
 )
 
-; -------------------------------------------------------------------------
-; Function definitions — let/const assigned a function or arrow
-; -------------------------------------------------------------------------
+; let/const bound to a function
 
 (
   [(comment) (doc_comment)]* @doc
@@ -53,9 +36,7 @@
   (#select-adjacent! @doc @definition.function)
 )
 
-; -------------------------------------------------------------------------
-; Function definitions — assignment of function to variable or property
-; -------------------------------------------------------------------------
+; Function assigned to a variable or property
 
 (assignment_expression
   left: [
@@ -65,17 +46,13 @@
   ]
   right: [(function_expression) (arrow_function)]) @definition.function
 
-; -------------------------------------------------------------------------
-; Function definitions — object method pairs  { key: function() {} }
-; -------------------------------------------------------------------------
+; { key: function() {} }
 
 (pair
   key: (property_identifier) @name
   value: [(function_expression) (arrow_function)]) @definition.function
 
-; -------------------------------------------------------------------------
-; Constants — exported scalar / expression values
-; -------------------------------------------------------------------------
+; Exported non-function constants
 
 (
   [(comment) (doc_comment)]* @doc
@@ -85,7 +62,7 @@
       (variable_declarator
         name: (identifier) @name
         value: [
-          ; every expression except a function (tagged as a function above)
+          ; every expression but a function
           (assignment_expression) (augmented_assignment_expression)
           (binary_expression) (delete_expression) (ternary_expression)
           (unary_expression) (update_expression)
@@ -97,12 +74,7 @@
   (#select-adjacent! @doc @definition.constant)
 )
 
-; -------------------------------------------------------------------------
-; References — function calls
-; -------------------------------------------------------------------------
-
-; Calls to ucode's builtins (the same list as highlights.scm) are not
-; references to anything in the code base.
+; Calls, except to builtins (the list in highlights.scm)
 (
   (call_expression
     function: (identifier) @name) @reference.call

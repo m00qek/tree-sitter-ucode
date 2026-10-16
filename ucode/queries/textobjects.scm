@@ -1,12 +1,7 @@
-; Text-object queries for nvim-treesitter-textobjects (the conventions of its
-; ecma queries). Captures that share a name within one match are joined into
-; one range, so `_+ @x.inner` between the braces selects the whole interior
-; and `"," @parameter.outer . (_) @parameter.outer` takes a separating comma
-; along with a parameter.
+; nvim-treesitter-textobjects, after its ecma queries. Same-named captures in
+; one match join into one range (`_+ @x.inner`, comma + parameter).
 
-; -------------------------------------------------------------------------
 ; Functions
-; -------------------------------------------------------------------------
 
 (function_declaration) @function.outer
 
@@ -43,10 +38,8 @@
 (function_declaration
   body: (statement_list) @function.inner)
 
-; -------------------------------------------------------------------------
-; Parameters: formal parameters, call arguments, import specifiers, and the
-; elements of array and object literals. .outer adds one separating comma.
-; -------------------------------------------------------------------------
+; Parameters, arguments, import specifiers, array and object elements;
+; .outer includes one separating comma.
 
 (formal_parameters
   "," @parameter.outer
@@ -111,9 +104,7 @@
   .
   ","? @parameter.outer)
 
-; -------------------------------------------------------------------------
 ; Conditionals
-; -------------------------------------------------------------------------
 
 (if_statement) @conditional.outer
 
@@ -154,9 +145,7 @@
 
 (ternary_expression) @conditional.outer
 
-; -------------------------------------------------------------------------
 ; Loops
-; -------------------------------------------------------------------------
 
 [
   (for_statement)
@@ -197,9 +186,7 @@
 (while_alt_statement
   body: (statement_list) @loop.inner)
 
-; -------------------------------------------------------------------------
 ; Calls
-; -------------------------------------------------------------------------
 
 (call_expression) @call.outer
 
@@ -210,9 +197,7 @@
     _+ @call.inner
     ")"))
 
-; -------------------------------------------------------------------------
-; Blocks: .inner is everything between the braces
-; -------------------------------------------------------------------------
+; Blocks
 
 (statement_block) @block.outer
 
@@ -224,9 +209,7 @@
 
 (statement_list) @block.outer @block.inner
 
-; -------------------------------------------------------------------------
 ; Statements, returns, assignments
-; -------------------------------------------------------------------------
 
 (statement) @statement.outer
 
@@ -256,9 +239,7 @@
     key: (_) @assignment.lhs
     value: (_) @assignment.inner @assignment.rhs) @assignment.outer)
 
-; -------------------------------------------------------------------------
 ; Comments, regexes, numbers
-; -------------------------------------------------------------------------
 
 [
   (comment)

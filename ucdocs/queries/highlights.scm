@@ -1,4 +1,4 @@
-; ── Tag keywords ──────────────────────────────────────────────────────────────
+; Tag keywords
 
 (tag_name) @keyword
 
@@ -17,7 +17,7 @@
 (function_tag "@function" @keyword)
 (module_tag "@module" @keyword)
 
-; ── Names ──────────────────────────────────────────────────────────────────
+; Names
 
 (type_param) @type.parameter
 (type_identifier) @type
@@ -27,8 +27,7 @@
 (dict_type "dict" @type.builtin)
 (any_type) @type.builtin
 
-; Lowercase names are parameters only in name positions — elsewhere they are
-; types (`{myType}`), record fields, or typedef names.
+; Lowercase names are parameters only in name positions.
 (param_tag name: (identifier) @variable.parameter)
 (param_tag name: (param_path) @variable.parameter)
 (optional_param name: (_) @variable.parameter)
@@ -42,21 +41,21 @@
 
 (default_value) @constant
 
-; ── Module paths ────────────────────────────────────────────────────────────
+; Module paths
 
 (module_type "module:" @module)
 (module_type path: (module_path) @module)
 (namepath "module:" @module)
 (namepath path: (module_path) @module)
 
-; ── Operators ───────────────────────────────────────────────────────────────
+; Operators
 
 (union_type "|" @operator)
 (nullable_type "?" @operator)
 (function_type "=>" @operator)
 (optional_param "=" @operator)
 
-; ── Punctuation: brackets ────────────────────────────────────────────────────
+; Punctuation: brackets
 
 (type_expression "{" @punctuation.bracket "}" @punctuation.bracket)
 (rest_type_expression "{" @punctuation.bracket "}" @punctuation.bracket)
@@ -71,7 +70,7 @@
 (array_type "[]" @punctuation.bracket)
 (inline_tag "{" @punctuation.bracket "}" @punctuation.bracket)
 
-; ── Punctuation: delimiters ──────────────────────────────────────────────────
+; Punctuation: delimiters
 
 "," @punctuation.delimiter
 (named_type "." @punctuation.delimiter)
@@ -81,15 +80,15 @@
 (anon_function_type ":" @punctuation.delimiter)
 (namepath "#" @punctuation.delimiter)
 
-; ── Punctuation: special ─────────────────────────────────────────────────────
+; Punctuation: special
 
 (rest_type_expression "..." @punctuation.special)
 (rest_param "..." @punctuation.special)
 
-; ── Descriptions ─────────────────────────────────────────────────────────────
+; Descriptions
 
-; @spell only on prose-bearing tags; @example descriptions contain code.
-; Before @comment: tree-sitter-highlight keeps the LAST capture of a node.
+; @spell on prose only (@example holds code), before @comment: the last
+; capture wins.
 (document          (description) @spell)
 (param_tag         description: (description) @spell)
 (returns_tag       description: (description) @spell)
@@ -102,9 +101,7 @@
 
 (description) @comment
 
-; The target of an inline link ({@link module:fs#open}, {@linkcode Config}).
-; After `(description) @comment` above, so it wins. The grammar has no
-; separate target node yet, so this covers the whole tag body.
+; {@link …} body; after `(description) @comment` so it wins.
 (inline_tag
   (tag_name) @_tag
   (description) @markup.link

@@ -17,17 +17,13 @@ endif()
 
 include(GNUInstallDirs)
 
-# One library per grammar: tree-sitter-ucode, tree-sitter-ucode-markup and
-# tree-sitter-ucdocs. Unlike the tree-sitter scaffold, nothing here regenerates
-# the parsers: <grammar>/src is committed (CI checks it is current), and
-# regenerating needs the CLI plus Node for common/define-grammar.js — tools a
-# project that vendors this repository should not need. All paths are relative
-# to this file, so `add_subdirectory()` from another project works.
+# One library per grammar. <grammar>/src is committed, so a vendoring project
+# needs neither Node nor the CLI. Paths are relative to this file, for
+# add_subdirectory().
 function(add_grammar name dir)
     set(src "${CMAKE_CURRENT_SOURCE_DIR}/${dir}/src")
     add_library(tree-sitter-${name} "${src}/parser.c" "${src}/scanner.c")
-    # The shared common/scanner.h includes "tree_sitter/parser.h", which
-    # GCC/Clang resolve via the include path, not relative to the includer.
+    # For common/scanner.h's "tree_sitter/parser.h".
     target_include_directories(tree-sitter-${name}
                                PRIVATE "${src}"
                                INTERFACE $<BUILD_INTERFACE:${CMAKE_CURRENT_SOURCE_DIR}/bindings/c>
@@ -63,8 +59,7 @@ add_grammar(ucode ucode)
 add_grammar(ucode-markup ucode_markup)
 add_grammar(ucdocs ucdocs)
 
-# Only when this is the top-level project, so the target name cannot clash
-# with a parent project's.
+# Top-level only, so the target can't clash with a parent project's.
 if(CMAKE_SOURCE_DIR STREQUAL CMAKE_CURRENT_SOURCE_DIR)
     add_custom_target(ts-test node scripts/run-tests.js
                       WORKING_DIRECTORY "${CMAKE_CURRENT_SOURCE_DIR}"

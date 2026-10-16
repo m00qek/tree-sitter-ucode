@@ -13,9 +13,8 @@ fn main() {
         c_config.include(&wasm_headers);
     }
 
-    // The shared common/scanner.h includes "tree_sitter/parser.h", which
-    // GCC/Clang resolve via the include path, not relative to the includer.
-    // The three grammars' tree_sitter/ headers are identical, so one will do.
+    // For common/scanner.h's "tree_sitter/parser.h"; the three grammars'
+    // copies are identical.
     c_config.include("ucode/src");
 
     for grammar in ["ucode", "ucode_markup", "ucdocs"] {

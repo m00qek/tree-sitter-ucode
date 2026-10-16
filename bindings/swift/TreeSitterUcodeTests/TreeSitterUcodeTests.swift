@@ -14,16 +14,13 @@ final class TreeSitterUcodeTests: XCTestCase {
         XCTAssertEqual(node.nodeType, root)
     }
 
-    // Loads the queries the package bundles for a grammar target, as a
-    // consumer would; LanguageConfiguration compiles the highlights,
-    // injections and locals queries it finds. The bundle is named
-    // <package>_<target>.
+    // LanguageConfiguration compiles the bundled highlights, injections and
+    // locals queries, as a consumer would load them.
     private func checkQueries(_ language: OpaquePointer, _ target: String, _ expected: [String]) throws {
         let bundle = "TreeSitterUcode_\(target)"
 #if os(Linux)
-        // SwiftTreeSitter looks only for the Apple layout (<bundle>.bundle/
-        // Contents/Resources); SwiftPM on Linux puts the resources in
-        // <bundle>.resources next to the test binary.
+        // SwiftTreeSitter only knows the Apple layout (<bundle>.bundle/
+        // Contents/Resources); SwiftPM on Linux writes <bundle>.resources.
         let config = try LanguageConfiguration(
             Language(language: language), name: target,
             queriesURL: Bundle.main.bundleURL.appendingPathComponent("\(bundle).resources/queries"))

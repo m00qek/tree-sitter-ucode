@@ -1,15 +1,11 @@
-//! This crate provides ucode language support for the [tree-sitter] parsing
-//! library, as three grammars:
+//! ucode grammars for [tree-sitter]:
 //!
 //! - [`LANGUAGE_UCODE`]: ucode scripts.
-//! - [`LANGUAGE_UCODE_MARKUP`]: ucode templates — text with `{% %}`, `{{ }}` and
-//!   `{# #}` tags. The code inside the tags parses to the same nodes as in
-//!   scripts.
-//! - [`LANGUAGE_UCDOCS`]: doc comments (`/** … */`), which the other two
-//!   grammars' injection queries hand to it.
+//! - [`LANGUAGE_UCODE_MARKUP`]: ucode templates (`{% %}`, `{{ }}`, `{# #}`);
+//!   tag code parses to the same nodes as in scripts.
+//! - [`LANGUAGE_UCDOCS`]: doc comments (`/** … */`), injected by the other two.
 //!
-//! Typically, you will use one of these constants to add a language to a
-//! tree-sitter [`Parser`], and then use the parser to parse some code:
+//! Load one into a [`Parser`]:
 //!
 //! ```
 //! let code = r#"

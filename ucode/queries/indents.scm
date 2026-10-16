@@ -1,9 +1,6 @@
-; Indentation queries for ucode.
-; Capture names follow the nvim-treesitter standard.
+; nvim-treesitter indents.
 
-; -------------------------------------------------------------------------
-; Brace-delimited constructs — increase indent inside
-; -------------------------------------------------------------------------
+; Brace-delimited constructs
 
 [
   (statement_block)
@@ -14,10 +11,8 @@
   (formal_parameters)
 ] @indent.begin
 
-; A closing delimiter ends its construct's scope, and a line that starts
-; with one is dedented to the opener's level. Only these constructs' closers
-; end a scope: the `)` of `if (a)` must not, or the braceless body after it
-; would lose its indent.
+; Only these closers end a scope: the `)` of `if (a)` must not, or the
+; braceless body after it loses its indent.
 (statement_block "}" @indent.end)
 (switch_body "}" @indent.end)
 (object "}" @indent.end)
@@ -31,11 +26,8 @@
   ")"
 ] @indent.branch
 
-; -------------------------------------------------------------------------
-; Alternative (colon/endif) syntax: the body indents, and the `elif`, `else`
-; and `end*` lines stay at the statement's level. indent.immediate: indent the
-; line after the `:` even before the body (or the end keyword) exists.
-; -------------------------------------------------------------------------
+; Alt syntax: the body indents; elif/else/end* lines stay at the statement's
+; level. indent.immediate: indent after `:` before the body exists.
 
 ([
   (if_alt_statement)
@@ -65,12 +57,8 @@
 (else_alt_clause "else" @indent.branch)
 (elif_clause "elif" @indent.branch)
 
-; -------------------------------------------------------------------------
-; Braceless bodies (`if (a)` + Enter), the way nvim-treesitter's ecma
-; indents do it: the statement indents the lines after its header, and the
-; body dedents what follows it. indent.immediate covers the end of the file,
-; where the not-yet-typed body is zero-width on the header's line.
-; -------------------------------------------------------------------------
+; Braceless bodies, as in nvim-treesitter's ecma indents. indent.immediate
+; covers EOF, where the untyped body is zero-width on the header's line.
 
 ((if_statement
   consequence: (_) @indent.dedent
@@ -78,8 +66,7 @@
   (#not-kind-eq? @indent.dedent "statement_block")) @indent.begin
   (#set! indent.immediate 1))
 
-; With an `else`, only the body itself is indented (its first line too):
-; the else part is the else_clause's.
+; With an `else`, indent only the body.
 ((if_statement
   consequence: (_) @indent.begin
   alternative: (_)
@@ -103,14 +90,11 @@
   (#not-kind-eq? @indent.dedent "statement_block")) @indent.begin
   (#set! indent.immediate 1))
 
-; A dangling `else` at the end of the file has no body yet: the parser makes
-; it an ERROR holding just the keyword.
+; A dangling `else` at EOF is an ERROR holding just the keyword.
 ((ERROR . "else" .) @indent.begin
   (#set! indent.immediate 1))
 
-; -------------------------------------------------------------------------
-; Comments and template strings keep the indentation they have.
-; -------------------------------------------------------------------------
+; Comments and template strings keep their indentation.
 
 [
   (comment)
@@ -119,13 +103,10 @@
 
 (template_string) @indent.ignore
 
-; -------------------------------------------------------------------------
 ; Switch
-; -------------------------------------------------------------------------
 
-; `case` lines are indented inside the switch body, and their statements one
-; level deeper (the Helix indents use the same style), also right after an
-; empty `case 1:`.
+; Cases indent inside the body, their statements one level deeper (as in
+; Helix), including right after an empty `case 1:`.
 ([
   (switch_case)
   (switch_default)

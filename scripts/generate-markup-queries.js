@@ -2,17 +2,11 @@
 /**
  * Generate ucode_markup/queries/*.scm from ucode/queries/*.scm.
  *
- * Both grammars are built from common/define-grammar.js, and a template's
- * tree is the script tree plus `text_statement` nodes and the tag tokens (see
- * the comment at the top of that file). Every code-grammar query therefore
- * applies to templates unchanged, so each markup query file is its
- * `ucode/queries/` counterpart plus, for highlights and tags, the few template-only
- * patterns below. The one rewrite is the root node: `(program)` becomes
- * `(markup)`, the template grammar's start rule.
- *
- * Editors that understand `; inherits: ucode` (Neovim, Helix) could load the
- * code queries themselves, but tree-sitter.json consumers and the CLI need a
- * self-contained file per grammar, so the files are concatenated here instead.
+ * A template tree is the script tree plus text_statement nodes and tag tokens,
+ * so each markup query is its ucode counterpart with `(program)` renamed to
+ * `(markup)`, plus the template-only patterns below. Files are concatenated
+ * rather than using `; inherits:` because the CLI and tree-sitter.json
+ * consumers need self-contained queries.
  *
  * Run via `npm run build`.
  */
@@ -27,7 +21,7 @@ const srcDir = path.join(root, 'ucode', 'queries');
 const dstDir = path.join(root, 'ucode_markup', 'queries');
 
 const HIGHLIGHTS_TEMPLATE_EXTRA = `
-; ── Template-only nodes ─────────────────────────────────────────────────────
+; Template-only nodes
 
 [
   (statement_tag_open)
@@ -44,21 +38,12 @@ const HIGHLIGHTS_TEMPLATE_EXTRA = `
 (comment_tag) @comment
 `;
 
-// A doc comment in its own tag before a declaration in the next one
-//   {% /** Doc. */ %}
-//   {% function f() { %}…{% } %}
-// is separated from it by a text_statement (`%}` newline `{%`), so the base
-// `(comment)* @doc . (declaration)` patterns never see the two as adjacent.
-// These variants accept one text_statement between them, but only one that
-// holds nothing but whitespace (real text in between means the comment is not
-// the declaration's doc). `(comment)+` rather than `*`: without a doc comment
-// the base pattern already tags the declaration, and matching again here
-// would tag it twice. They are PREPENDED, not appended: the base pattern still
-// matches the same declaration (without the doc), and tree-sitter-tags keeps
-// one tag per name, preferring the LOWER pattern index and discarding the
-// loser's docs — so these must come first to win.
+// A doc comment in the tag before a declaration is separated from it by a
+// whitespace-only text_statement, so the base `(comment)* @doc .` patterns
+// miss it. `+` avoids tagging doc-less declarations twice. Prepended:
+// tree-sitter-tags keeps the lowest pattern index per name.
 const TAGS_TEMPLATE_EXTRA = String.raw`
-; ── Template-only: doc comment in the previous tag ───────────────────────────
+; Template-only: doc comment in the previous tag
 
 (
   [(comment) (doc_comment)]+ @doc
@@ -87,11 +72,10 @@ const TAGS_TEMPLATE_EXTRA = String.raw`
 )
 `;
 
-// A line like `{% } %}`, `{% endfor %}` or `{% else %}` starts with the `{%`
-// that ends the body's last text_statement, so the body's indent applies to
-// it; dedent it to the block's level.
+// `{% } %}`, `{% endfor %}`, `{% else %}`: the leading `{%` closes the body's
+// last text_statement, so dedent it to the block's level.
 const INDENTS_TEMPLATE_EXTRA = `
-; ── Template-only: a tag that ends a body ───────────────────────────────────
+; Template-only: a tag that ends a body
 
 (statement_block
   (text_statement

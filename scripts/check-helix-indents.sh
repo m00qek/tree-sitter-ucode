@@ -1,18 +1,10 @@
 #!/usr/bin/env bash
-# Drive a real Helix through the indent cases below and check the indentation
-# it gives a new line — the only way to test editors/helix/queries/*/indents.scm
-# (Helix silently ignores an indents.scm it cannot compile, and `hx --health`
-# still shows it as found). CI runs it (the helix job); locally it needs tmux,
-# a C compiler and a Helix release, e.g. the x86_64-linux tarball from
-# https://github.com/helix-editor/helix/releases.
+# Check editors/helix/queries/*/indents.scm in a real Helix, which silently
+# ignores an indents.scm it can't compile. Each case presses `o` on a line,
+# types X and saves; the X line's indentation must match. Needs tmux and a C
+# compiler.
 #
-#   scripts/check-helix-indents.sh <helix-release-dir>
-#
-# <helix-release-dir> holds the `hx` binary and its `runtime/`. Helix runs in a
-# throwaway config/cache/data directory, with grammars built from this checkout
-# (`npm run build` first) and the queries from editors/helix/queries/.
-# Each case opens a file, presses `o` on a line, types X and saves; the
-# indentation of the X line must match. Exits 1 if any case fails.
+#   scripts/check-helix-indents.sh <helix-release-dir>   # holds hx + runtime/
 set -euo pipefail
 
 HX_DIR=$(cd "${1:?usage: $0 <helix-release-dir>}" && pwd)
@@ -73,8 +65,7 @@ XDG_CONFIG_HOME='$ENV/config' XDG_CACHE_HOME='$ENV/cache' XDG_DATA_HOME='$ENV/da
   HELIX_RUNTIME='$HX_DIR/runtime' exec '$HX_DIR/hx' "\$@"
 EOF
 chmod +x "$HX"
-# Always a fresh build: Helix's own up-to-date check does not see edits to
-# common/scanner.h (it is #included, not listed in the grammar's src/).
+# Always rebuild: Helix's staleness check misses the #included scanner.h.
 "$HX" --grammar build >/dev/null
 "$HX" --version
 

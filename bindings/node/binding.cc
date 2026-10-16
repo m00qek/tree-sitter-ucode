@@ -23,8 +23,7 @@ static Napi::Object Grammar(Napi::Env env, TSLanguage *language) {
     return grammar;
 }
 
-// The package itself is the ucode grammar (so `setLanguage(require('tree-sitter-ucode'))`
-// keeps working); all three grammars are also exported by name.
+// The package itself is the ucode grammar; all three are also exported by name.
 Napi::Object Init(Napi::Env env, Napi::Object exports) {
     exports["language"] = Language(env, tree_sitter_ucode());
     exports["ucode"] = Grammar(env, tree_sitter_ucode());

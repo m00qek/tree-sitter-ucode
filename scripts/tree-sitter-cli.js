@@ -1,9 +1,7 @@
 'use strict';
-// The tree-sitter CLI every script runs: the pinned devDependency binary when
-// it is installed (`npm ci`), otherwise whatever `tree-sitter` is on PATH (CI's
-// test job installs a pinned CLI that way and has no node_modules). Uses the
-// binary inside tree-sitter-cli/ rather than node_modules/.bin/, whose shim is
-// a shell script on Windows that execFileSync cannot run.
+// The pinned devDependency CLI, else `tree-sitter` on PATH (CI's test job has
+// no node_modules). Not node_modules/.bin/: on Windows that is a shell shim
+// execFileSync can't run.
 const fs = require('fs');
 const path = require('path');
 

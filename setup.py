@@ -67,8 +67,7 @@ setup(
                 ("PY_SSIZE_T_CLEAN", None),
                 ("TREE_SITTER_HIDE_SYMBOLS", None),
             ],
-            # The shared common/scanner.h includes "tree_sitter/parser.h", which
-            # GCC/Clang resolve via the include path, not relative to the includer.
+            # For common/scanner.h's "tree_sitter/parser.h".
             include_dirs=["ucode/src"],
             py_limited_api=not get_config_var("Py_GIL_DISABLED"),
         )

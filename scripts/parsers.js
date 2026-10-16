@@ -1,7 +1,6 @@
 'use strict';
-// Where scripts/run-tests.js builds each grammar's shared library:
-// .build/parsers/<name>.dll on Windows, .so everywhere else (tree-sitter build
-// never produces .dylib), matching what CI does.
+// Built grammar libraries: .build/parsers/<name>.{so,dll} (`tree-sitter build`
+// writes .so on macOS too).
 const path = require('path');
 
 const LIB_DIR = path.join(path.dirname(__dirname), '.build', 'parsers');

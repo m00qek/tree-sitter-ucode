@@ -1,6 +1,5 @@
-// Link-and-load test for the C libraries (`make test-c`): built against an
-// installed copy (headers, pkg-config files, shared libraries), it parses one
-// sample per grammar and compiles every installed query with the runtime.
+// `make test-c`: against an installed copy, parse a sample per grammar and
+// compile every installed query.
 //
 //   test <queries-dir>    e.g. $PREFIX/share/tree-sitter/queries
 #include <dirent.h>

@@ -2,8 +2,8 @@
 
 import PackageDescription
 
-// One target per grammar: TreeSitterUcode (scripts), TreeSitterUcodeMarkup
-// (templates) and TreeSitterUcdocs (doc comments).
+// One target per grammar. headerSearchPath: common/scanner.h includes
+// "tree_sitter/parser.h".
 let package = Package(
     name: "TreeSitterUcode",
     products: [
@@ -22,8 +22,6 @@ let package = Package(
                 .copy("ucode/queries")
             ],
             publicHeadersPath: "bindings/swift/ucode",
-            // The shared common/scanner.h includes "tree_sitter/parser.h",
-            // which is resolved via the include path, not relative to the includer.
             cSettings: [.headerSearchPath("ucode/src")]
         ),
         .target(
@@ -35,8 +33,6 @@ let package = Package(
                 .copy("ucode_markup/queries")
             ],
             publicHeadersPath: "bindings/swift/ucode_markup",
-            // The shared common/scanner.h includes "tree_sitter/parser.h",
-            // which is resolved via the include path, not relative to the includer.
             cSettings: [.headerSearchPath("ucode_markup/src")]
         ),
         .target(
@@ -48,8 +44,6 @@ let package = Package(
                 .copy("ucdocs/queries")
             ],
             publicHeadersPath: "bindings/swift/ucdocs",
-            // The shared common/scanner.h includes "tree_sitter/parser.h",
-            // which is resolved via the include path, not relative to the includer.
             cSettings: [.headerSearchPath("ucdocs/src")]
         ),
         .testTarget(

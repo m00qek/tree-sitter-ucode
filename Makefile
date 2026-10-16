@@ -1,10 +1,8 @@
 HOMEPAGE_URL := https://github.com/m00qek/tree-sitter-ucode
 VERSION := 0.8.0
 
-# One library per grammar: tree-sitter-ucode, tree-sitter-ucode-markup and
-# tree-sitter-ucdocs. Unlike the tree-sitter scaffold, nothing here regenerates
-# the parsers: <grammar>/src is committed, and regenerating needs the CLI plus
-# Node for common/define-grammar.js (`npm run build`).
+# One library per grammar. <grammar>/src is committed, so nothing here
+# regenerates the parsers (that needs Node: `npm run build`).
 GRAMMARS := ucode ucode-markup ucdocs
 dir_ucode := ucode
 dir_ucode-markup := ucode_markup
@@ -47,26 +45,22 @@ ifneq ($(filter $(shell uname),FreeBSD NetBSD DragonFly),)
 endif
 endif
 
-# $(call pc_sed): fill in a bindings/c/*.pc.in template.
 pc_sed = sed -e 's|@PROJECT_VERSION@|$(VERSION)|' \
 	-e 's|@CMAKE_INSTALL_LIBDIR@|$(LIBDIR:$(PREFIX)/%=%)|' \
 	-e 's|@CMAKE_INSTALL_INCLUDEDIR@|$(INCLUDEDIR:$(PREFIX)/%=%)|' \
 	-e 's|@PROJECT_HOMEPAGE_URL@|$(HOMEPAGE_URL)|' \
 	-e 's|@CMAKE_INSTALL_PREFIX@|$(PREFIX)|'
 
-# $(call grammar,<name>): the build and install rules for tree-sitter-<name>.
+# $(call grammar,<name>): rules for tree-sitter-<name>.
 define grammar
 LIB_$(1) := tree-sitter-$(1)
 SRC_$(1) := $(dir_$(1))/src
 OBJS_$(1) := $$(SRC_$(1))/parser.o $$(SRC_$(1))/scanner.o
 
-# The shared common/scanner.h includes "tree_sitter/parser.h", which GCC/Clang
-# resolve via the include path, not relative to the includer.
+# -I: common/scanner.h includes "tree_sitter/parser.h" of each grammar.
 $$(SRC_$(1))/%.o: $$(SRC_$(1))/%.c
 	$$(CC) $$(CPPFLAGS) $$(CFLAGS) -I$$(SRC_$(1)) -c $$< -o $$@
 
-# The code grammars' scanner.c only #includes common/scanner.h, where the
-# scanner lives.
 $$(SRC_$(1))/scanner.o: common/scanner.h
 
 lib$$(LIB_$(1)).a: $$(OBJS_$(1))
@@ -86,8 +80,7 @@ all: lib$$(LIB_$(1)).a lib$$(LIB_$(1)).$$(SOEXT) $$(LIB_$(1)).pc
 install-$(1): lib$$(LIB_$(1)).a lib$$(LIB_$(1)).$$(SOEXT)
 	install -d '$$(DESTDIR)$$(DATADIR)'/tree-sitter/queries/$(dir_$(1)) '$$(DESTDIR)$$(INCLUDEDIR)'/tree_sitter '$$(DESTDIR)$$(PCLIBDIR)' '$$(DESTDIR)$$(LIBDIR)'
 	install -m644 bindings/c/tree_sitter/$$(LIB_$(1)).h '$$(DESTDIR)$$(INCLUDEDIR)'/tree_sitter/$$(LIB_$(1)).h
-	# Generated here, not copied: the .pc built by `all` has the PREFIX of
-	# that run, and `make install PREFIX=…` must not install a stale one.
+	# Regenerated: the .pc from `all` may have another PREFIX.
 	$$(call pc_sed) bindings/c/$$(LIB_$(1)).pc.in > '$$(DESTDIR)$$(PCLIBDIR)'/$$(LIB_$(1)).pc
 	install -m644 lib$$(LIB_$(1)).a '$$(DESTDIR)$$(LIBDIR)'/lib$$(LIB_$(1)).a
 ifneq ($$(findstring mingw32,$$(MACHINE)),)
@@ -125,11 +118,8 @@ clean: $(addprefix clean-,$(GRAMMARS))
 test:
 	node scripts/run-tests.js
 
-# Link-and-load test of the C libraries: install into .build/c-test, build
-# bindings/c/test.c from the installed headers, pkg-config files and shared
-# libraries, then parse a sample per grammar and compile every installed
-# query. Needs the tree-sitter runtime (0.25 or newer), found by pkg-config
-# unless TS_CFLAGS / TS_LIBS are given.
+# Install into .build/c-test and build bindings/c/test.c against it. Needs
+# the tree-sitter runtime >= 0.25 (pkg-config, or TS_CFLAGS / TS_LIBS).
 TS_CFLAGS ?= $(shell pkg-config --cflags tree-sitter)
 TS_LIBS ?= $(shell pkg-config --libs tree-sitter)
 C_TEST := $(CURDIR)/.build/c-test

@@ -1,17 +1,8 @@
 /*
- * External scanner for the ucdocs grammar.
- *
- * One token: a run of stars inside description prose. Whether a star-run is
- * prose (markdown bold or italic, a bullet, a trailing star) or the start of
- * the comment terminator (stars then a slash) depends on the character AFTER
- * the run, and tree-sitter's regex tokens have no lookahead: a plain
- * star-run token would eat the stars of the terminator, and a star-run token
- * that requires a following non-slash has to consume that character, which
- * breaks at the end of a line. Here the run is consumed and then accepted
- * only if no slash follows it.
- *
- * (No literal star-slash may appear in this file's comments: it would close
- * them.)
+ * External scanner for ucdocs: a star-run in description prose. Whether the
+ * stars are prose or the comment terminator depends on the character after
+ * the run, and regex tokens have no lookahead. Accept the run only if no '/'
+ * follows. (No literal star-slash in these comments: it would close them.)
  */
 
 #include "tree_sitter/parser.h"
@@ -36,11 +27,8 @@ bool tree_sitter_ucdocs_external_scanner_scan(void *payload, TSLexer *lexer, con
     (void)payload;
     if (!valid_symbols[STARS]) return false;
 
-    /* tree-sitter calls this BEFORE skipping extras, so skip whitespace and
-       any line frames (newline, indentation, ONE frame star) here exactly as
-       the frame extra in grammar.js does — otherwise a line that starts with
-       markdown stars is never seen by this scanner. Skipping is safe even when
-       we end up declining: on `return false` the lexer rewinds. */
+    /* Called before extras are skipped: skip whitespace and line frames
+       (newline, indentation, one star) as grammar.js does. Declining rewinds. */
     for (;;) {
         while (lexer->lookahead == ' ' || lexer->lookahead == '\t')
             lexer->advance(lexer, true);
@@ -51,7 +39,6 @@ bool tree_sitter_ucdocs_external_scanner_scan(void *payload, TSLexer *lexer, con
             lexer->advance(lexer, true);
         if (lexer->lookahead == '*') {
             lexer->advance(lexer, true);
-            /* The frame star was really the terminator's first star. */
             if (lexer->lookahead == '/') return false;
         }
     }
@@ -60,7 +47,6 @@ bool tree_sitter_ucdocs_external_scanner_scan(void *payload, TSLexer *lexer, con
     while (lexer->lookahead == '*')
         lexer->advance(lexer, false);
 
-    /* Stars then a slash: every star of the run belongs to the terminator. */
     if (lexer->lookahead == '/') return false;
 
     lexer->mark_end(lexer);

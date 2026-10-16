@@ -1,8 +1,3 @@
-; Tags queries for ucdocs (JSDoc-style doc comments).
-;
-; A `@typedef` defines a named type; type expressions reference named types
-; and modules.
-
 (typedef_tag
   name: (_) @name) @definition.type
 

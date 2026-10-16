@@ -26,8 +26,7 @@
   ")"
 ] @outdent
 
-; Alt-syntax bodies (`if (c): … endif`, and in templates {% if (c): %}…{% endif %}):
-; the body indents, the end keyword and each elif/else line outdent.
+; Alt-syntax bodies indent; end/elif/else lines outdent.
 [
   (if_alt_statement)
   (for_alt_statement)
@@ -47,11 +46,8 @@
 (elif_clause "elif" @outdent)
 (else_alt_clause "else" @outdent)
 
-; Single-statement bodies without braces. Helix starts from the smallest node
-; that CONTAINS the cursor, and a node ending exactly there does not, so after
-; `if (c)` + Enter the body node is not on the path and the C-style patterns
-; below never fire for a new line. Indent the whole statement's tail instead
-; (only without an `else`, whose line must not indent) …
+; Braceless bodies. After `if (c)` + Enter the body is not on Helix's path
+; (it ends at the cursor), so indent the whole statement (not with an `else`).
 (if_statement
   consequence: (_) @_body
   !alternative
@@ -70,19 +66,16 @@
   body: (_) @_body
   (#not-kind-eq? @_body "statement_block")) @indent
 
-; … and at the end of the file, where the not-yet-typed body is a statement
-; the parser made up from a MISSING token (an identifier or a `;`), extend
-; the statement over the cursor so its indent applies (Helix's `@extend`).
+; At EOF the untyped body is a MISSING token: extend the statement over it.
 (if_statement consequence: (_ . (MISSING) .)) @extend
 (else_clause (_ . (MISSING) .)) @extend
 (while_statement body: (_ . (MISSING) .)) @extend
 (for_statement body: (_ . (MISSING) .)) @extend
 (for_in_statement body: (_ . (MISSING) .)) @extend
-; A dangling `else` at the end of the file gets no inserted body: it is an
-; ERROR holding just the keyword.
+; A dangling `else` at EOF is an ERROR holding just the keyword.
 (ERROR . "else" .) @indent @extend
 
-; Re-indenting an existing body line (as in Helix's C indents).
+; Re-indenting an existing body line.
 (if_statement
   consequence: (_) @indent
   (#not-kind-eq? @indent "statement_block")

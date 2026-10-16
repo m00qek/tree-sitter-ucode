@@ -1,45 +1,33 @@
-; Highlight queries for ucode.
-; Capture names follow the tree-sitter / nvim-treesitter standard.
+; Capture names follow nvim-treesitter. Later patterns win (Neovim, Helix,
+; tree-sitter-highlight), so generic patterns come first.
 
-; -------------------------------------------------------------------------
 ; Identifiers
-; -------------------------------------------------------------------------
 
 (identifier) @variable
 (property_identifier) @variable.member
 (shorthand_property_identifier) @variable.member
 
-; -------------------------------------------------------------------------
 ; Built-in / special values
-; -------------------------------------------------------------------------
 
 (this) @variable.builtin
 [(true) (false)] @boolean
 (null) @constant.builtin
 
-; -------------------------------------------------------------------------
 ; Comments
-; -------------------------------------------------------------------------
 
-; @spell first: tree-sitter-highlight keeps the LAST capture of a node, so
-; `(comment) @comment @spell` would leave comments with no highlight there.
+; @spell first: tree-sitter-highlight keeps a node's last capture.
 (comment) @spell
 (comment) @comment
 
-; Doc comments (`/** … */`, the ones ucdocs is injected into).
 (doc_comment) @spell
 (doc_comment) @comment
 (doc_comment) @comment.documentation
 
-; -------------------------------------------------------------------------
 ; Shebang
-; -------------------------------------------------------------------------
 
 (hash_bang_line) @keyword.directive
 
-; -------------------------------------------------------------------------
 ; Literals
-; -------------------------------------------------------------------------
 
 (number) @number
 
@@ -52,9 +40,7 @@
 
 (regex) @string.regexp
 
-; -------------------------------------------------------------------------
 ; Functions — definitions
-; -------------------------------------------------------------------------
 
 (function_declaration
   name: (identifier) @function)
@@ -62,14 +48,12 @@
 (function_expression
   name: (identifier) @function)
 
-; Method-style object entries: { key: function() {} }  or  { key: () => {} }
+; { key: function() {} } and { key: () => {} }
 (pair
   key: (property_identifier) @function.method
   value: [(function_expression) (arrow_function)])
 
-; -------------------------------------------------------------------------
 ; Functions — calls
-; -------------------------------------------------------------------------
 
 (call_expression
   function: (identifier) @function.call)
@@ -78,10 +62,8 @@
   function: (member_expression
     property: (property_identifier) @function.method.call))
 
-; Builtins: ucode's stdlib functions (uc_stdlib_functions in lib.c, at the
-; release this grammar targets) when called, and the globals the interpreter
-; defines. After the generic patterns above, so these win. `modules` is left
-; out: it is also a common variable name.
+; uc_stdlib_functions (lib.c) and interpreter globals. `modules` is left out:
+; it is a common variable name.
 (call_expression
   function: (identifier) @function.builtin
   (#any-of? @function.builtin
@@ -98,79 +80,50 @@
 ((identifier) @variable.builtin
   (#any-of? @variable.builtin "ARGV" "SCRIPT_NAME" "REQUIRE_SEARCH_PATH" "global"))
 
-; -------------------------------------------------------------------------
 ; Parameters
-; -------------------------------------------------------------------------
 
 (formal_parameters (identifier) @variable.parameter)
 (rest_element (identifier) @variable.parameter)
 (arrow_function parameter: (identifier) @variable.parameter)
 
-; -------------------------------------------------------------------------
 ; Keywords — conditional
-; -------------------------------------------------------------------------
 
 ["if" "elif" "else" "endif"] @keyword.conditional
 ["switch" "case"] @keyword.conditional
-; `default` is context-scoped (not in the list above) so it never overlaps with
-; the export patterns below: every `default` token is matched by exactly one
-; pattern, so the result does not depend on an engine's pattern-precedence rule.
-; (Elsewhere this file relies on later patterns winning, as in Neovim, Helix
-; since 24.03, and tree-sitter-highlight — e.g. `(identifier) @variable` first,
-; refined by the function/parameter patterns after it.)
+; Each `default` is matched by exactly one pattern (here or under Modules).
 (switch_default "default" @keyword.conditional)
 
-; -------------------------------------------------------------------------
 ; Keywords — loops
-; -------------------------------------------------------------------------
 
 ["for" "endfor" "while" "endwhile"] @keyword.repeat
 
-; -------------------------------------------------------------------------
 ; Keywords — functions
-; -------------------------------------------------------------------------
 
 ["function" "endfunction"] @keyword.function
 
-; -------------------------------------------------------------------------
 ; Keywords — control
-; -------------------------------------------------------------------------
 
 "return" @keyword.return
 ["break" "continue"] @keyword
 
-; -------------------------------------------------------------------------
 ; Keywords — exceptions
-; -------------------------------------------------------------------------
 
 ["try" "catch"] @keyword.exception
 
-; -------------------------------------------------------------------------
 ; Keywords — modules
-; -------------------------------------------------------------------------
 
 ["import" "export"] @keyword.import
 ["as" "from"] @keyword.import
 
-; 'default' in a module context (export or import) is a module keyword, not a
-; conditional. The switch `default` is captured separately above, so together
-; with these the every-`default`-matched-exactly-once invariant holds:
-; `export default`, `export { x as default }`, and `import { default as x }`
-; (whose name goes through _module_export_name) each match one pattern here —
-; no priority/order reliance.
 (export_statement "default" @keyword.import)
 (default) @keyword.import
 
-; -------------------------------------------------------------------------
 ; Keywords — storage / operators
-; -------------------------------------------------------------------------
 
 ["const" "let"] @keyword.storage
 ["delete" "in"] @keyword.operator
 
-; -------------------------------------------------------------------------
 ; Operators
-; -------------------------------------------------------------------------
 
 [
   "=" "+=" "-=" "*=" "/=" "%=" "**="
@@ -192,22 +145,16 @@
 (ternary_expression "?" @operator)
 (ternary_expression ":" @operator)
 
-; -------------------------------------------------------------------------
 ; Punctuation
-; -------------------------------------------------------------------------
 
 ["," ";" "."] @punctuation.delimiter
 ["(" ")" "[" "]" "{" "}"] @punctuation.bracket
 
-; Overrides of the generic lists above, so they must come after them (the
-; later pattern wins): the `}` closing `${…}` pairs with its `${`, and a
-; regex's delimiting slashes are part of the regex, not division.
+; Overrides of the lists above, so they must come after them.
 (template_substitution "}" @punctuation.special)
 (regex "/" @string.regexp)
 
-; `:` after an object key, a case label, or an alt-syntax header (`if (c):`,
-; `function f():`). Listed by parent so these never touch the ternary `:`,
-; which is an operator (see above).
+; Non-ternary `:`, listed by parent.
 (pair ":" @punctuation.delimiter)
 (switch_case ":" @punctuation.delimiter)
 (switch_default ":" @punctuation.delimiter)

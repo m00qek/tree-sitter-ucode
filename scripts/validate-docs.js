@@ -1,17 +1,13 @@
 #!/usr/bin/env node
 'use strict';
 /**
- * Validate the ucdocs grammar against real doc comments.
+ * Parse every doc comment in the .c / .h / .uc files directly in each <dir>
+ * with the ucdocs grammar (CI: ucode's own sources, the canonical corpus).
  *
  *   node scripts/validate-docs.js <dir>...
  *
- * Extracts every `/** … *\/` block from the .c, .h and .uc files directly in
- * each <dir> (not recursive) and parses it with the ucdocs grammar. CI runs it
- * on the ucode checkout pinned in ci.yml — its stdlib is documented in these
- * comments, so they are the canonical ucdocs corpus.
- *
- * Exits 1 if any comment fails to parse (outside KNOWN_INVALID), 2 on a setup
- * error (no parser built, or no doc comments found at all).
+ * Exits 1 on a failure outside KNOWN_INVALID, 2 on a setup error or when no
+ * doc comment is found.
  */
 
 const fs = require('fs');
@@ -23,9 +19,7 @@ const TREE_SITTER = require('./tree-sitter-cli');
 const ROOT = path.dirname(__dirname);
 const LIB = require('./parsers').libPath('ucdocs');
 
-// Doc comments that are genuinely malformed upstream — not grammar gaps.
-// Matched by file name and a snippet of the comment, so line shifts elsewhere
-// in the file don't break them.
+// Malformed upstream. Matched by snippet, so line shifts don't break them.
 const KNOWN_INVALID = [
   { file: 'uloop.c', snippet: '{@link module:uloop#process|process().', why: 'unclosed {@link' },
   { file: 'uloop.c', snippet: '{@link module:uloop#task|task().', why: 'unclosed {@link' },
@@ -41,7 +35,7 @@ function* docComments(dir) {
     if (!/\.(c|h|uc)$/.test(name)) continue;
     const file = path.join(dir, name);
     const text = fs.readFileSync(file, 'utf8');
-    // `/**` not followed by `*` or `/` (a `/***` banner or the empty `/**/`).
+    // Not a `/***` banner nor the empty `/**/`.
     const re = /\/\*\*(?![*/])[\s\S]*?\*\//g;
     let m;
     while ((m = re.exec(text))) {
@@ -68,8 +62,7 @@ docs.forEach((d, i) => {
 const list = path.join(tmp, 'docs.list');
 fs.writeFileSync(list, docs.map((d) => d.tmp).join('\n'));
 
-// `parse --quiet` prints one line per file whose tree has an ERROR/MISSING
-// node, and exits 1 when there is any.
+// `--quiet` prints only the failing files, and exits 1 if there are any.
 let out;
 try {
   out = execFileSync(TREE_SITTER,

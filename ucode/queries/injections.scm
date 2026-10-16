@@ -1,14 +1,11 @@
-; Inject ucdocs into JSDoc block comments (/** ... */; the scanner tells them
-; from `/***` dividers and the empty `/**/`).
 ((doc_comment) @injection.content
   (#set! injection.language "ucdocs"))
 
-; Regex literals. ucode compiles them as POSIX extended regexes (regcomp),
-; which the `regex` grammar editors ship for JavaScript highlights well.
+; ucode regexes are POSIX ERE; the `regex` grammar handles them well.
 ((regex_pattern) @injection.content
   (#set! injection.language "regex"))
 
-; printf-style format strings: the first argument of printf() and sprintf().
+; Format string of printf() and sprintf().
 (call_expression
   function: (identifier) @_function
   arguments: (arguments

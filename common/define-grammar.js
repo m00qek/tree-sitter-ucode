@@ -3,32 +3,16 @@
  * @license MIT
  *
  * Based on tree-sitter-javascript (MIT, Max Brunsfeld, Amaan Qureshi).
- * Ucode is an ECMAScript-like language for OpenWrt system scripting.
- * See README.md for a full list of syntax differences from JavaScript.
  */
 
 /// <reference types="tree-sitter-cli/dsl" />
 // @ts-check
 
 /**
- * Both parsers are built from this one rule set (the same pattern
- * tree-sitter-typescript uses for typescript/tsx):
- *
- *   ucode         — a script: a statement list from the first byte.
- *   ucode_markup  — a template: starts in TEXT mode. ucode's own lexer turns a
- *                   template into one statement stream in which the text
- *                   between `%}` and `{%` is a statement (the compiler emits it
- *                   as a print). So a template is a script wrapped in an
- *                   implicit leading `%}` and trailing `{%`, and the only
- *                   template-specific rule is `text_statement`, allowed
- *                   wherever a statement is. Blocks, alt-syntax bodies,
- *                   function bodies, switch cases, arrow bodies — anything
- *                   that holds statements — therefore span tags for free.
- *
- * The two differ only in the start rule and in whether `text_statement` (and
- * the tag rules it uses) exist. The external-token list is identical in both,
- * since the scanner implementation is shared; the script grammar simply never
- * reaches the template tokens.
+ * Builds both parsers. A template (ucode_markup) is a script whose text
+ * between `%}` and `{%` is a statement (`text_statement`), so blocks span
+ * tags. The external-token list is shared; scripts never reach the template
+ * tokens.
  *
  * @param {'ucode' | 'ucode_markup'} name
  */
@@ -51,45 +35,27 @@ module.exports = function defineGrammar(name) {
       $.expression_tag_trim_open,    //  9  {{-
       $.expression_tag_close,        // 10  }}
       $.expression_tag_trim_close,   // 11  -}}
-      $.comment_content,             // 12  {# ... #} body (scans up to #}/-#})
-      $.comment,                     // 13  // line and /* */ block comments
-      $._single_quote_string_content, // 14  '...' body (scans up to ' / \ / EOF; raw newlines are content)
-      $._double_quote_string_content, // 15  "..." body (scans up to " / \ / EOF; raw newlines are content)
-      $._regex_content,               // 16  /.../ body (scans up to the closing / or EOF; raw newlines are content)
-      $._octal_escape,                 // 17  \NNN octal escape in a string/template, range-checked to <= 255
-      $._asi_gap,                      // 18  zero-width no-op emitted before an own-line comment when ASI declines (see scanner)
-      $._tag_semicolon,                // 19  zero-width ';' before %} / -%} in an unbraced-body position (template only; see scanner)
-      $._text_end,                     // 20  zero-width end of input (see scanner)
-      // Never emitted: offered only right after `return`, so the scanner can
-      // tell that state apart and keep a following line's expression as the
-      // return value instead of ending the statement at the newline.
-      $._return_marker,                // 21
-      // Zero-width end of input at the end of a statement list (see
-      // statements() below and BLOCK_END in common/scanner.h).
-      $._block_end,                    // 22
-      // A `/** … */` doc comment (JSDoc's rule: exactly two stars, then not
-      // `/`); every other comment is `comment`.
-      $.doc_comment,                   // 23
-      // Used by no rule, so tree-sitter marks it valid only during error
-      // recovery (when it marks every external token valid) — the scanner's
-      // documented way to detect that mode. Keep it last.
+      $.comment_content,             // 12  {# ... #} body
+      $.comment,                     // 13  // and /* */ comments
+      $._single_quote_string_content, // 14
+      $._double_quote_string_content, // 15
+      $._regex_content,               // 16
+      $._octal_escape,                 // 17  \NNN, range-checked to <= 255
+      $._asi_gap,                      // 18  zero-width, before an own-line comment when ASI declines
+      $._tag_semicolon,                // 19  zero-width `;` before %} in an unbraced body
+      $._text_end,                     // 20  zero-width end of input
+      $._return_marker,                // 21  never emitted; marks the state after `return`
+      $._block_end,                    // 22  zero-width end of input closing a statement list
+      $.doc_comment,                   // 23  /** … */
+      // Used by no rule, so it is valid only during error recovery. Keep it last.
       $._error_sentinel,               // 24
     ],
 
     extras: $ => [
       $.comment,
       $.doc_comment,
-      // Zero-width marker the external scanner emits at an own-line comment when
-      // ASI does NOT fire before it (a continuation like `a\n// c\n.b`). It lets
-      // the scanner decide ASI by peeking PAST the comment yet still emit the
-      // comment on the next call at the same position — see scan_comment /
-      // scan_asi_before_comment in common/scanner.h. Hidden and zero-width, so
-      // it never appears in the tree; listed as an extra because it can occur at
-      // any inter-statement position a comment can.
       $._asi_gap,
-      // Exactly C isspace(), which is what ucode's lexer skips. Not `\s`: in a
-      // tree-sitter regex that is Unicode-aware and would also accept NBSP,
-      // U+2028/2029, BOM and friends, all "Unexpected character" in ucode.
+      // C isspace(), as ucode's lexer; `\s` would also accept Unicode spaces.
       /[ \t\n\r\f\v]/,
     ],
 
@@ -180,13 +146,9 @@ module.exports = function defineGrammar(name) {
     word: $ => $.identifier,
 
     rules: {
-      // tree-sitter uses the FIRST rule as the start rule, so the entry rule is
-      // spread in before everything else.
+      // The first rule is the start rule.
       ...(isTemplate ? {
-        // A template starts in text mode: leading text, then (once the first
-        // `{%` opens code) an ordinary statement list in which every later
-        // `%}…{%` stretch is a text_statement, then optional trailing text
-        // after the last `%}`. A file may also end inside an open `{%` tag.
+        // Leading text, then a statement list once the first `{%` opens code.
         markup: $ => seq(
           optional($.hash_bang_line),
           optional($._text),
@@ -194,20 +156,14 @@ module.exports = function defineGrammar(name) {
             $._stmt_open,
             repeat($.statement),
           )),
-          // The end of the statement list, or of leading text that never
-          // opened a `{%` (see statements() below).
           optional($._block_end),
-          // Zero-width end of input. Hidden and only ever at the very end, so
-          // it never shows in a tree; it exists for error recovery — see
-          // statements() below and TEXT_END in common/scanner.h.
+          // For error recovery only; never shows in a tree.
           optional($._text_end),
         ),
       } : {
         program: $ => seq(
           optional($.hash_bang_line),
           statements($),
-          // Zero-width end of input, as in the markup root above. See
-          // statements() below.
           optional($._text_end),
         ),
       }),
@@ -217,56 +173,34 @@ module.exports = function defineGrammar(name) {
       // -----------------------------------------------------------------------
 
       ...(isTemplate ? {
-        // `%} text {{ expr }} {# c #} {%` — the text between two code tags, as
-        // one statement. Valid wherever a statement is, which is exactly where
-        // ucode accepts it: `{% if (x) { %}hi{% } %}` is an if_statement whose
-        // statement_block holds this node; `{% x = [ %}hi{% ] %}` is an ERROR
-        // because text is not an expression. With no text in between
-        // (`{% a %}{% b %}`) it is just the two delimiters.
-        //
-        // The text after a template's last `%}` is a text_statement too, the
-        // only one with no `{%` after it: the end of input closes it. (The `{%`
-        // is optional only there — mid-file, the text always runs into the
-        // next `{%`.) A file that ends inside open blocks — a block still
-        // being typed — recovers with the missing `}` / `endif` / … instead
-        // of an ERROR around the whole block; see statements() below.
+        // `%} text {%`: valid wherever a statement is, as in ucode. Only the
+        // last one in a file may lack the `{%`.
         text_statement: $ => seq(
           $._stmt_close,
           optional($._text),
           optional($._stmt_open),
         ),
 
-        // Shared by text_statement and the markup entry's leading text, so both
-        // reduce the same run of text, raw or in {{ }} / {# #} tags.
         _text: $ => repeat1(choice(
           $.raw_text,
           $.expression_tag,
           $.comment_tag,
         )),
 
-        // {{ expr }} or {{- expr -}}. ucode requires an expression here — `{{ }}`
-        // is "Expecting expression" at parse time, not merely a semantic reject.
+        // ucode rejects an empty `{{ }}`.
         expression_tag: $ => seq(
           field('open',  $._expr_open),
           $._expressions,
           field('close', $._expr_close),
         ),
 
-        // {# ... #}  with optional whitespace-stripping markers
+        // comment_content is external: a regex can't stop before `#}` in `x##}`.
         comment_tag: $ => seq(
           field('open',    choice(alias('{#-', $.comment_tag_trim_open), alias('{#', $.comment_tag_open))),
           optional(field('content', $.comment_content)),
           field('close',   choice(alias('-#}', $.comment_tag_trim_close), alias('#}', $.comment_tag_close))),
         ),
 
-        // comment_content is an external token (see common/scanner.h): it scans
-        // everything up to but not including the first #} or -#}. A regex cannot do
-        // this — maximal munch would consume the '#' of the terminator (e.g. the
-        // second '#' of `{# x##}`), and tree-sitter regexes have no lookahead.
-
-        // Inline wrappers for tag delimiter tokens.
-        // Each groups all variants (plain / trim / lstrip) so grammar rules stay
-        // concise while still surfacing distinct node types for highlight queries.
         _stmt_open:  $ => choice($.statement_tag_open, $.statement_tag_trim_open, $.statement_tag_lstrip_open),
         _stmt_close: $ => choice($.statement_tag_close, $.statement_tag_trim_close),
         _expr_open:  $ => choice($.expression_tag_open, $.expression_tag_trim_open),
@@ -276,11 +210,7 @@ module.exports = function defineGrammar(name) {
       hash_bang_line: _ => /#!.*/,
 
       //
-      // Export declarations
-      // Ucode export is simpler than JS: no `from`, no namespace re-exports.
-      // `export default` always takes an expression (requires trailing semicolon).
-      // `export function name() {}` requires one too (it is optional only on ucode
-      // master, which this grammar does not target yet).
+      // Export declarations: no `from`, no namespace re-exports.
       //
 
       export_statement: $ => choice(
@@ -289,13 +219,11 @@ module.exports = function defineGrammar(name) {
           field('clause', $.export_clause),
           $._semicolon,
         ),
-        // `export let/const …;` already carries its own terminating semicolon.
         seq(
           'export',
           field('declaration', $.lexical_declaration),
         ),
-        // ucode requires the `;` after `export function f() {}` and `export
-        // default …`; kept strict on purpose, unlike lenient ASI (see README).
+        // ucode requires these `;` (optional only on ucode master); no ASI.
         seq(
           'export',
           field('declaration', $.function_declaration),
@@ -309,8 +237,7 @@ module.exports = function defineGrammar(name) {
         ),
       ),
 
-      // `export {};` is "Expecting Label" in ucode — the specifier list must
-      // have at least one entry.
+      // ucode rejects `export {};`.
       export_clause: $ => seq(
         '{',
         commaSep1($.export_specifier),
@@ -325,8 +252,7 @@ module.exports = function defineGrammar(name) {
         )),
       ),
 
-      // `default` is a named node, so every specifier has a `name` (and an
-      // `alias`) node that queries can see.
+      // Named `default`, so queries see every specifier's name and alias.
       _module_export_name: $ => choice(
         $.identifier,
         $.string,
@@ -340,7 +266,6 @@ module.exports = function defineGrammar(name) {
 
       //
       // Import declarations
-      // Ucode keeps full ES module static import syntax.
       //
 
       import_statement: $ => seq(
@@ -369,8 +294,7 @@ module.exports = function defineGrammar(name) {
 
       namespace_import: $ => seq('*', 'as', $.identifier),
 
-      // `import {} from "x";` is "Expecting Label, String or 'default'" in
-      // ucode — the specifier list must have at least one entry.
+      // ucode rejects `import {} from "x";`.
       named_imports: $ => seq(
         '{',
         commaSep1($.import_specifier),
@@ -401,19 +325,14 @@ module.exports = function defineGrammar(name) {
         ...(isTemplate ? [$.text_statement] : []),
       ),
 
-      // A leading `{` in statement position parses here as an object literal, but
-      // ucode always opens a block there and rejects it (it has no labeled
-      // statements, so `{a: 1};` is a block whose `a: 1` is a syntax error).
-      // Forcing that error would need a whole `expression`-can't-start-with-`{`
-      // hierarchy; we leave the semantic rejection to the compiler instead (a
-      // documented divergence — see README; the same applies to the arrow body).
+      // Divergence: `{a: 1};` parses as an object; ucode reads a block and
+      // rejects it. Matching that would need a no-leading-`{` expression set.
       expression_statement: $ => seq(
         $._expressions,
         $._semicolon,
       ),
 
-      // `let` declarators may omit the initializer; `const` requires one.
-      // ucode rejects `const a;` ("Expecting initializer expression").
+      // ucode rejects `const a;`.
       lexical_declaration: $ => choice(
         seq(
           field('kind', 'let'),
@@ -427,18 +346,8 @@ module.exports = function defineGrammar(name) {
         ),
       ),
 
-      // Initializer declaration for a C-style for-header. Differs from
-      // lexical_declaration in two ucode-faithful ways:
-      //   - no trailing `$._semicolon`: the for-header supplies its own literal
-      //     `;`, and ucode does NOT insert a semicolon there
-      //     (`for (let i = 0⏎i < 3; …)` is an error), and
-      //   - `let` only: ucode rejects `const` in a for-header initializer
-      //     (`for (const …)` → "Expecting expression"), just as it does for the
-      //     for-in target.
-      // Aliased back to lexical_declaration in the for-header so the tree node
-      // name is unchanged. No `kind` field on the `let`: it is invariant here
-      // (always `let`), no query reads it, and adding it costs about 20% more
-      // parse states (measured: 1027 → 1233).
+      // A for-header initializer: `let` only and no ASI, as in ucode. No `kind`
+      // field: it is always `let`, and the field costs ~20% more parse states.
       _for_lexical_declaration: $ => seq(
         'let',
         commaSep1($.variable_declarator),
@@ -454,7 +363,6 @@ module.exports = function defineGrammar(name) {
         $._initializer,
       ),
 
-      // The statements of an alt-syntax body (see altBody() below).
       statement_list: $ => repeat1($.statement),
 
       statement_block: $ => prec.right(seq(
@@ -464,32 +372,19 @@ module.exports = function defineGrammar(name) {
         optional($._automatic_semicolon),
       )),
 
-      // An unbraced control-flow body accepts any statement except a lexical
-      // declaration: ucode rejects `if (x) let y = 1;` / `while (c) const z = 1;`
-      // ("Expecting expression") but accepts expression statements, `function`
-      // declarations and blocks. (The `:`…`endif` alt-syntax body, which is
-      // block-like, still allows `let`/`const` and uses `statement` directly.)
-      // Mirror `statement` minus `lexical_declaration` — and minus import/export,
-      // which ucode allows only at a module's top level (`if (1) import "m";`
-      // also errors with "Expecting expression").
+      // ucode rejects let/const, import and export as an unbraced body.
       _unbraced_statement: $ => choice(
         $.expression_statement,
         $.function_declaration,
         $.statement_block,
 
         ...controlStatements($),
-        // ucode's compiler turns every `%}` into `;`, so in a template an
-        // unbraced body that runs into a tag close is EMPTY — `{% if (a) %}x`
-        // is `if (a) ;` followed by the text as the NEXT statement (and a later
-        // `{% else %}` is then an error, as in ucode). The scanner emits this
-        // zero-width token only directly before `%}` / `-%}`; text_statement
-        // itself is deliberately NOT an unbraced body.
+        // `%}` is `;` in ucode, so `{% if (a) %}x` is `if (a) ;` then text.
         ...(isTemplate ? [alias($._tag_semicolon, $.empty_statement)] : []),
       ),
 
       else_clause: $ => seq('else', $._unbraced_statement),
 
-      // Standard brace-based if
       if_statement: $ => prec.right(seq(
         'if',
         field('condition', $.parenthesized_expression),
@@ -497,9 +392,6 @@ module.exports = function defineGrammar(name) {
         optional(field('alternative', $.else_clause)),
       )),
 
-      // Alternative colon/endif syntax: if (cond): stmts … elif (c): … else: … endif
-      // In a template the bodies span tags like any other statement list:
-      // {% if (c): %}text{% endif %} is this rule with a text_statement body.
       if_alt_statement: $ => seq(
         'if',
         field('condition', $.parenthesized_expression),
@@ -517,7 +409,6 @@ module.exports = function defineGrammar(name) {
         altBody($, 'consequence'),
       ),
 
-      // Like else_clause, the body has no field name.
       else_alt_clause: $ => seq(
         'else',
         altBody($),
@@ -555,10 +446,7 @@ module.exports = function defineGrammar(name) {
         'endfor',
       ),
 
-      // `for (x in obj)` binds `variable` (a key of an object, an item of an
-      // array); the two-variable `for (k, v in obj)` binds `key` and `value`.
-      // The loop target must be a plain identifier: ucode rejects member/subscript
-      // targets (`for (a.x in o)`) and only `let` (never `const`) may declare it.
+      // ucode allows only plain identifiers here, declared with `let` only.
       _for_in_header: $ => seq(
         '(',
         optional(field('kind', 'let')),
@@ -585,19 +473,14 @@ module.exports = function defineGrammar(name) {
         'endwhile',
       ),
 
-      // ucode requires the catch clause (`try {}` alone errors with "Unexpected
-      // token"); the catch parameter parens stay optional (`try {} catch {}` is
-      // valid). Unlike ECMAScript there is no `finally`.
+      // `catch` is required; there is no `finally`.
       try_statement: $ => seq(
         'try',
         field('body', $.statement_block),
         field('handler', $.catch_clause),
       ),
 
-      // ucode has no labeled statements, so `break`/`continue` take no label.
-      // These parse anywhere a statement is valid, including top level; ucode
-      // rejects `break`/`continue` outside a loop or switch, but only at compile
-      // time — that context check is left to the compiler (documented divergence).
+      // No labels. Use outside a loop is a compile-time error left to ucode.
       break_statement: $ => seq(
         'break',
         $._semicolon,
@@ -608,10 +491,8 @@ module.exports = function defineGrammar(name) {
         $._semicolon,
       ),
 
-      // ucode never inserts semicolons, so `return` followed by a newline
-      // still returns the next line's expression. _return_marker (never
-      // emitted) tells the scanner it is right after `return`, where the
-      // lenient newline ASI applies only if no expression can follow.
+      // ucode has no ASI, so `return⏎x` returns x. _return_marker lets the
+      // scanner see this state and skip the newline ASI.
       return_statement: $ => seq(
         'return',
         optional($._return_marker),
@@ -696,7 +577,7 @@ module.exports = function defineGrammar(name) {
         $.call_expression,
       ),
 
-      // ucode allows a trailing comma but NOT interior elision (`{a:1,,b:2}`).
+      // Trailing comma, but no elision.
       object: $ => prec('object', seq(
         '{',
         optional(seq(
@@ -710,7 +591,7 @@ module.exports = function defineGrammar(name) {
         '}',
       )),
 
-      // ucode allows a trailing comma but NOT interior elision (`[1,,2]`).
+      // Trailing comma, but no elision.
       array: $ => seq(
         '[',
         optional(seq(
@@ -723,9 +604,7 @@ module.exports = function defineGrammar(name) {
         ']',
       ),
 
-      // ucode lexes `?.[` and `?.(` as single tokens, so nothing — not even
-      // whitespace or a comment — may separate the `?.` from the bracket
-      // (`a?. [1]` is an error). Before a property name it may (`a?. b`).
+      // ucode lexes `?.[` and `?.(` as one token, hence token.immediate below.
       optional_chain: _ => '?.',
 
       call_expression: $ => choice(
@@ -761,11 +640,7 @@ module.exports = function defineGrammar(name) {
         field('index', $._expressions), ']',
       )),
 
-      // Assignment targets. ucode rejects a parenthesized whole target
-      // (`(a) = 1` is "Unexpected token"), so the left-hand side is a plain
-      // reference. (An optional chain anywhere in the target — `a?.b = 1` — is
-      // also rejected by ucode, but that is a semantic lval check the grammar
-      // does not attempt; member/subscript here still permit `?.`.)
+      // ucode rejects `(a) = 1`. `a?.b = 1` is left to its compiler.
       _lhs_expression: $ => choice(
         $.member_expression,
         $.subscript_expression,
@@ -817,7 +692,7 @@ module.exports = function defineGrammar(name) {
           ['*', 'binary_times'],
           ['/', 'binary_times'],
           ['%', 'binary_times'],
-          ['**', 'binary_exp'],  // left-associative in ucode: 4**3**2 == (4**3)**2
+          ['**', 'binary_exp'],  // left-associative in ucode
           ['<', 'binary_relation'],
           ['<=', 'binary_relation'],
           ['==', 'binary_equality'],
@@ -826,7 +701,7 @@ module.exports = function defineGrammar(name) {
           ['!==', 'binary_equality'],
           ['>=', 'binary_relation'],
           ['>', 'binary_relation'],
-          ['??', 'logical_or'],    // same level as ||, freely mixable
+          ['??', 'logical_or'],    // same level as ||
           ['in', 'binary_relation'],
         ].map(([operator, precedence]) =>
           prec.left(precedence, seq(
@@ -842,12 +717,7 @@ module.exports = function defineGrammar(name) {
         field('argument', $.expression),
       )),
 
-      // ucode's `delete` accepts a property access (member or subscript), or a
-      // parenthesized one: `delete o.k`, `delete o["k"]`, `delete (o.k)`. Unlike
-      // an assignment/update target, an optional chain IS allowed (`delete a?.b`).
-      // `delete x` and `delete (5)` are rejected by ucode at compile time, but
-      // the parenthesized-non-property case is a semantic lval check the grammar
-      // does not attempt (mirroring how tree-sitter-javascript treats `delete`).
+      // `delete (5)` is left to ucode's compiler.
       delete_expression: $ => prec.left('unary', seq(
         field('operator', 'delete'),
         field('argument', choice(
@@ -857,8 +727,6 @@ module.exports = function defineGrammar(name) {
         )),
       )),
 
-      // The operand of ++/-- must be an assignable reference: `++5` and `5++`
-      // are "Invalid increment/decrement operand" in ucode.
       update_expression: $ => prec.left('update', choice(
         seq(
           field('argument', $._lhs_expression),
@@ -883,7 +751,6 @@ module.exports = function defineGrammar(name) {
         field('body', $.statement_block),
       )),
 
-      // Function declaration — brace body or alternative colon/endfunction syntax
       function_declaration: $ => prec.right('declaration', seq(
         'function',
         field('name', $.identifier),
@@ -901,9 +768,7 @@ module.exports = function defineGrammar(name) {
           $._call_signature,
         ),
         '=>',
-        // `x => {a: 1}` parses the body as an object, but ucode reads `{` after
-        // `=>` as a block and rejects it — write `x => ({a: 1})` for an object.
-        // Same root as expression_statement's leading-`{` divergence (see there).
+        // Divergence: `x => {a: 1}` is an object here, a rejected block in ucode.
         field('body', choice(
           $.expression,
           $.statement_block,
@@ -912,9 +777,7 @@ module.exports = function defineGrammar(name) {
 
       _call_signature: $ => field('parameters', $.formal_parameters),
 
-      // A rest element (`...name`) must be the final parameter, and there can be
-      // only one.  ucode rejects a rest param followed by anything — including a
-      // trailing comma.  A trailing comma is allowed only after plain parameters.
+      // A rest element comes last, with no trailing comma.
       formal_parameters: $ => seq(
         '(',
         optional(choice(
@@ -931,14 +794,8 @@ module.exports = function defineGrammar(name) {
       // Primitives
       //
 
-      // The string body is scanned by the external scanner (see common/scanner.h),
-      // exactly like template_string's `_template_chars`. A regular internal
-      // `token.immediate` fragment would lose to the external `comment` token,
-      // which is a global `extra` and is offered by tree-sitter even inside a
-      // string: a string starting with `/*` or `//` (e.g. the glob `'/*.uc'`)
-      // was then mis-lexed as a block/line comment. Because the content token is
-      // dispatched before COMMENT in the scanner, it shadows the comment inside
-      // the string while still leaving escape sequences as their own nodes.
+      // External content tokens: an internal one loses to the external
+      // `comment` extra, so `'/*.uc'` would lex as a comment.
       string: $ => choice(
         seq(
           '"',
@@ -960,15 +817,8 @@ module.exports = function defineGrammar(name) {
         ),
       ),
 
-      // Ucode extends JS escapes with \e (ESC), \a (BEL), and octal sequences.
-      // Unlike JS, ucode supports only the 4-hex `\uXXXX` form — not `\u{...}`.
-      //
-      // The octal branch lives entirely in the external `_octal_escape` token
-      // (aliased back to escape_sequence above and in template_string below),
-      // not here: ucode range-checks octal escapes to <= 255 (\377), a check
-      // that requires computing the value, not something a regex can express
-      // (see the doc comment on scan_octal_escape in common/scanner.h for why a
-      // capped regex alternative like [0-3][0-7]{2}|[0-7]{1,2} does not work).
+      // No `\u{…}`. Octal escapes are the external _octal_escape, which
+      // range-checks them to <= 255.
       escape_sequence: _ => token.immediate(seq(
         '\\',
         choice(
@@ -978,13 +828,6 @@ module.exports = function defineGrammar(name) {
           /\r\n/,
         ),
       )),
-
-      // `comment` is an external token (see externals / common/scanner.h). A `//`
-      // line comment runs to the end of the line (or EOF), matching ucode — a
-      // same-line `%}` inside a statement tag is swallowed as comment content, so
-      // `{% x = 1; // note %}` on one line is an unterminated tag (ucode swallows
-      // the `%}` too). Block comments `/* */` end at `*/`, and an unterminated
-      // block comment at EOF is an ERROR (ucode "Unterminated comment").
 
       template_string: $ => seq(
         '`',
@@ -1003,34 +846,9 @@ module.exports = function defineGrammar(name) {
         '}',
       ),
 
-      // The pattern body is the external token `_regex_content` (see externals /
-      // common/scanner.h scan_regex_content), aliased back to `regex_pattern` so the
-      // tree shape is unchanged.  ucode lexes regexes with parse_string(lex, '/')
-      // (lexer.c parse_regexp) — the same routine as strings — so raw newlines are
-      // ordinary content and only EOF makes the literal unterminated.  A grammar
-      // token cannot model that without swallowing the file tail on an
-      // unterminated '/', which is why the body lives in the external scanner (it
-      // returns false at EOF, recovering statement-by-statement like the
-      // string-content tokens).  The scanner also handles the character-class
-      // structure (leading '^'/']' literals, nested [:name:]/[.coll.]/[=eq=]).
-      //
-      // DOCUMENTED DIVERGENCE (not emulated — see README): `a++ / b` parses here
-      // as ordinary division, but ucode rejects it ("Unterminated string", since
-      // its lexer starts scanning a regex at that '/' and never finds a closer
-      // before EOF/newline) — verified against both the local oracle and the
-      // packaged 2026.01.16 release, rc=255 for every unparenthesized form
-      // (`(a++) / b` works fine; only the bare postfix-then-slash sequence
-      // fails). Root cause lives entirely in ucode itself: lexer.c's no_regexp
-      // flag is set after every other value-producing token (identifiers,
-      // literals, ')', ']', etc. — see compiler.c) but never after postfix
-      // TK_INC/TK_DEC, so the lexer treats the following '/' as a regex opener
-      // instead of division — still true on ucode master, not something a
-      // future release is likely to have already fixed. Faithfully reproducing
-      // it would mean starting a regex scan after '++'/'--', which is wrong far
-      // more often than the actual bug is meaningful (`a++ / b` is ordinary,
-      // intentional division in the vast majority of real code) — a case where
-      // matching ucode exactly would make the grammar *worse*, not more
-      // faithful. Left as a divergence; a candidate for an upstream ucode fix.
+      // The body is external: raw newlines are content, and an unterminated
+      // `/` must not swallow the rest of the file.
+      // Divergence: `a++ / b` is division here; ucode's lexer reads a regex.
       regex: $ => seq(
         '/',
         field('pattern', alias($._regex_content, $.regex_pattern)),
@@ -1038,28 +856,10 @@ module.exports = function defineGrammar(name) {
         optional(field('flags', $.regex_flags)),
       ),
 
-      // Ucode supports only g, i, s flags (not m, u, y, d)
       regex_flags: _ => token.immediate(/[gis]+/),
 
-      // Ucode number literals extend JS with:
-      // - C-style legacy octal: 0177
-      // - Hex float: 0x1.8
-      // - Uppercase prefixes: 0O, 0B (already in JS grammar)
-      //
-      // Unlike JS, ucode does NOT support:
-      // - numeric underscore separators (1_000)
-      // - leading-dot floats (.5) — a digit is required before the dot
-      //
-      // Leading-zero handling matches ucode exactly (verified against the
-      // interpreter). After a leading `0` (not 0x/0b/0o):
-      //   - `.`/`e` follows      -> decimal float/exp, the 0 is a lone zero (0.5, 0e2)
-      //   - a [0-7] digit follows -> legacy octal; ALL further digits must be
-      //                              [0-7] and no `.`/`e` is allowed (0177 ok;
-      //                              017.5, 0177e2, 019 rejected)
-      //   - an [89] digit follows -> decimal (08, 09, 089, 0812, 08.5e2)
-      // Invalid forms (019, 0189, 0177e2, 0123.5, 00.5) are not matched by any
-      // alternative; they split into adjacent tokens and surface as parse errors,
-      // matching ucode's "Invalid number literal".
+      // Adds legacy octal (0177) and hex floats (0x1.8); no `1_000`, no `.5`.
+      // After a leading 0: [0-7] is octal to the end, [89] is decimal.
       number: _ => {
         const hexDigits = /[\da-fA-F]+/;
         const hexLiteral = seq(choice('0x', '0X'), hexDigits);
@@ -1073,15 +873,11 @@ module.exports = function defineGrammar(name) {
         const binaryLiteral = seq(choice('0b', '0B'), /[0-1]+/);
         const octalLiteral = seq(choice('0o', '0O'), /[0-7]+/);
 
-        // Legacy C octal: `0` then octal digits only, no fraction/exponent.
         const legacyOctalLiteral = seq('0', /[0-7]+/);
 
         const decimalLiteral = choice(
-          // No leading zero: 1-9 then optional digits/fraction/exponent.
           seq(/[1-9]/, optional(decimalDigits), optional(fraction), optional(exponentPart)),
-          // Leading zero followed by 8 or 9: legacy non-octal decimal.
           seq('0', /[89]/, optional(decimalDigits), optional(fraction), optional(exponentPart)),
-          // A lone zero, optionally with a fraction and/or exponent.
           seq('0', optional(choice(seq(fraction, optional(exponentPart)), exponentPart))),
         );
 
@@ -1095,12 +891,7 @@ module.exports = function defineGrammar(name) {
         ));
       },
 
-      // ucode identifiers are ASCII only: a leading letter or underscore, then
-      // letters, digits, or underscores. Unlike JS there is no `$`, no unicode
-      // escape sequences (`\u...` is an "Unexpected character"), and no non-ASCII
-      // letters — real ucode rejects `$x`, `a$b`, and `café` all as "Unexpected
-      // character". (property_identifier and shorthand_property_identifier alias
-      // this rule, so they inherit the same alphabet.)
+      // ASCII only, no `$`.
       identifier: _ => /[A-Za-z_][A-Za-z0-9_]*/,
 
       this: _ => 'this',
@@ -1108,18 +899,14 @@ module.exports = function defineGrammar(name) {
       false: _ => 'false',
       null: _ => 'null',
 
-      // Unlike arrays/objects, ucode call arguments allow neither interior
-      // elision (`f(1,,2)`) nor a trailing comma (`f(1,2,)`).
+      // No trailing comma, unlike arrays and objects.
       arguments: $ => seq(
         '(',
         commaSep(choice($.expression, $.spread_element)),
         ')',
       ),
 
-      // ucode object keys are a label, a string, or a computed `[expr]` — a bare
-      // numeric key (`{1: 2}`) is rejected at parse time ("Expecting label",
-      // compiler.c uc_compiler_compile_object) even after the 8d7d15e method-
-      // shorthand change, which uses the same key check.
+      // ucode rejects numeric keys (`{1: 2}`).
       _property_name: $ => reserved('properties', choice(
         alias($.identifier, $.property_identifier),
         $.string,
@@ -1134,26 +921,16 @@ module.exports = function defineGrammar(name) {
         field('value', $.expression),
       ),
 
-      // _block_end: the end of input ends a statement, as it does for ASI;
-      // during EOF recovery this lets `return {` / `foo(a,` close with one
-      // MISSING token (see statements() below).
+      // _block_end: end of input ends a statement, so `foo(a,` at EOF needs
+      // only one MISSING token.
       _semicolon: $ => choice($._automatic_semicolon, ';', $._block_end),
     },
   });
 };
 
 function countingForHeader($) {
-  // KNOWN LIMITATION (documented divergence): the expression-initializer branch
-  // accepts any expression, which is MORE permissive than ucode.  ucode's
-  // C-style for-init is a stateful hand-parser (uc_compiler_compile_for /
-  // _for_count in lang/compiler.c): after a leading identifier it accepts only
-  // `x`, `x = e`, `x op= e` or `x => e` (no binary/member/call/postfix), and a
-  // top-level `in` there forces the for-in interpretation — so ucode rejects
-  // `for (a in b; …)`, `for (a + b; …)`, `for (a.b; …)`, `for (a(); …)`, etc.
-  // Matching that exactly would need a restricted label-expression rule plus a
-  // no-in expression variant (ECMAScript's Expression[~In]) — a large, fragile
-  // special-case for constructs no one writes.  We stay permissive on purpose;
-  // the ASI and `const` restrictions above (the parts that matter) are enforced.
+  // Divergence: any expression initializer is accepted; ucode allows only
+  // `x`, `x = e`, `x op= e` or `x => e` there.
   return seq(
     'for',
     '(',
@@ -1171,9 +948,7 @@ function countingForHeader($) {
   );
 }
 
-// The statements that may be a statement list's item and also an unbraced
-// body (`if (c) …`, `else …`, a loop body): everything but imports, exports,
-// `let` / `const` declarations and, in a template, text.
+// Statements valid both in a list and as an unbraced body.
 function controlStatements($) {
   return [
     $.if_statement,
@@ -1194,19 +969,12 @@ function controlStatements($) {
   ];
 }
 
-// A statement list. It may end with the zero-width _block_end, which only the
-// end of input produces: in a file that ends inside open blocks (one still
-// being typed), the scanner emits it once per open block, and the parser
-// inserts each block's missing `}` / `endif` / … instead of turning the whole
-// block into an ERROR. See BLOCK_END in common/scanner.h.
+// At EOF the scanner emits _block_end once per open block, so the parser
+// inserts each missing `}` / `endif` instead of an ERROR around the block.
 function statements($) {
   return seq(repeat($.statement), optional($._block_end));
 }
 
-// The body of an alt-syntax statement (`if (c): … endif`, `for (…): … endfor`,
-// `function f(): … endfunction`, …): its statements in one statement_list
-// node, as a brace body has its statement_block. Absent when the body is
-// empty. Ends with the optional _block_end, like statements() above.
 function altBody($, fieldName) {
   const list = fieldName ? field(fieldName, $.statement_list) : $.statement_list;
   return seq(optional(list), optional($._block_end));
