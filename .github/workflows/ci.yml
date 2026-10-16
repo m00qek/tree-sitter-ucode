@@ -401,7 +401,9 @@ jobs:
         uses: actions/setup-node@249970729cb0ef3589644e2896645e5dc5ba9c38 # v6.5.0
         with:
           package-manager-cache: false
-          node-version: '22'
+          # npm 11 bundles node-gyp 12, the first to know Visual Studio 2026
+          # (windows-11-arm). N-API prebuilds don't depend on the Node version.
+          node-version: '24'
 
       - name: Install cross-compiler (Linux only)
         if: matrix.os == 'ubuntu-24.04'
@@ -424,22 +426,8 @@ jobs:
           CXX: aarch64-linux-gnu-g++
 
       - name: Build prebuilt binary
-        if: matrix.os != 'ubuntu-24.04' && matrix.os != 'windows-11-arm'
+        if: matrix.os != 'ubuntu-24.04'
         run: npx prebuildify --napi --strip
-
-      # node-gyp's PowerShell lookup of Visual Studio overflows its output
-      # buffer on this image; inside a VS developer environment it uses
-      # VCINSTALLDIR instead.
-      - name: Build prebuilt binary (Windows arm64)
-        if: matrix.os == 'windows-11-arm'
-        shell: pwsh
-        run: |
-          $vs = & "${env:ProgramFiles(x86)}\Microsoft Visual Studio\Installer\vswhere.exe" -latest -products * -requires Microsoft.VisualStudio.Component.VC.Tools.ARM64 -property installationPath
-          cmd /c "`"$vs\VC\Auxiliary\Build\vcvarsall.bat`" arm64 && set" | ForEach-Object {
-            if ($_ -match '^([^=]+)=(.*)$') { Set-Item "env:$($Matches[1])" $Matches[2] }
-          }
-          if (-not $env:VCINSTALLDIR) { throw "vcvarsall.bat did not set up the environment" }
-          npx prebuildify --napi --strip
 
       - name: Upload prebuild artifact
         uses: actions/upload-artifact@cf430e030ddbb5b0abf93d22962f4752f3646cd9 # v7.0.2
