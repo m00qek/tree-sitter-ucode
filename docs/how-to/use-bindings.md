@@ -136,3 +136,27 @@ try parser.setLanguage(Language(language: tree_sitter_ucode()))
 
 Import `TreeSitterUcodeMarkup` for `tree_sitter_ucode_markup()` and
 `TreeSitterUcdocs` for `tree_sitter_ucdocs()`.
+
+Each module ships its grammar's `queries/` directory as a SwiftPM resource
+bundle named `TreeSitterUcode_<module>`. Where SwiftPM puts it depends on the
+build:
+
+| Build | Queries directory |
+| --- | --- |
+| Xcode | `TreeSitterUcode_<module>.bundle/Contents/Resources/queries` |
+| `swift build` / `swift test` on macOS | `TreeSitterUcode_<module>.bundle/queries` |
+| Linux | `TreeSitterUcode_<module>.resources/queries` |
+
+SwiftTreeSitter 0.25.0's `LanguageConfiguration(_:name:bundleName:)` looks
+only in the Xcode location on macOS, so outside Xcode pass the directory
+yourself:
+
+```swift
+let queries = Bundle.main.bundleURL
+    .appendingPathComponent("TreeSitterUcode_TreeSitterUcode.bundle/queries")
+let config = try LanguageConfiguration(
+    Language(language: tree_sitter_ucode()), name: "TreeSitterUcode",
+    queriesURL: queries)
+```
+
+`bindings/swift/TreeSitterUcodeTests` tries all three locations.
