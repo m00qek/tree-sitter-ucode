@@ -1,0 +1,109 @@
+site_name: tree-sitter-ucode
+site_description: Tree-sitter grammars for ucode scripts, ucode templates and ucode doc comments
+site_url: https://m00qek.github.io/tree-sitter-ucode/
+repo_url: https://github.com/m00qek/tree-sitter-ucode
+repo_name: m00qek/tree-sitter-ucode
+edit_uri: edit/main/docs/
+
+exclude_docs: |
+  requirements.txt
+
+theme:
+  name: material
+  features:
+    - navigation.tabs
+    - navigation.tabs.sticky
+    - navigation.sections
+    - navigation.indexes
+    - content.code.copy
+  palette:
+    - media: "(prefers-color-scheme: light)"
+      scheme: default
+      toggle:
+        icon: material/brightness-7
+        name: Switch to dark mode
+    - media: "(prefers-color-scheme: dark)"
+      scheme: slate
+      toggle:
+        icon: material/brightness-4
+        name: Switch to light mode
+
+markdown_extensions:
+  - admonition
+  - attr_list
+  - tables
+  - toc:
+      permalink: true
+  - pymdownx.highlight
+  - pymdownx.superfences
+
+validation:
+  links:
+    anchors: warn
+    unrecognized_links: warn
+
+nav:
+  - Home: index.md
+  - Tutorials:
+      - tutorials/index.md
+      - Build on the grammars: tutorials/build-on-the-grammars.md
+      - Make your first grammar change: tutorials/first-grammar-change.md
+  - How-to guides:
+      - how-to/index.md
+      - Integrating:
+          - Register in Neovim: how-to/register-neovim.md
+          - Register in Helix: how-to/register-helix.md
+          - Use a binding: how-to/use-bindings.md
+          - Build and load the WASM parsers: how-to/use-wasm.md
+          - Set up injections: how-to/set-up-injections.md
+          - Handle ERROR and MISSING nodes: how-to/handle-errors.md
+          - Choose a query set: how-to/choose-query-set.md
+      - Contributing:
+          - Set up a development checkout: how-to/set-up.md
+          - Change the grammar: how-to/change-grammar.md
+          - Change a query: how-to/change-queries.md
+          - Add a corpus test: how-to/add-corpus-test.md
+          - Run the tests: how-to/run-tests.md
+          - Validate against real code: how-to/validate-real-code.md
+          - Check the editor queries: how-to/check-editor-queries.md
+          - Retarget a newer ucode release: how-to/retarget-ucode.md
+          - Prepare a pull request: how-to/prepare-pull-request.md
+      - Maintaining:
+          - Bump the version: how-to/bump-version.md
+          - Cut a release: how-to/cut-release.md
+          - Update a pinned GitHub Action: how-to/update-actions.md
+          - Build and publish this site: how-to/publish-docs.md
+  - Reference:
+      - reference/index.md
+      - Grammars:
+          - Grammars and file types: reference/grammars.md
+          - ucode nodes: reference/nodes-ucode.md
+          - ucode_markup nodes: reference/nodes-ucode-markup.md
+          - ucdocs nodes and tags: reference/nodes-ucdocs.md
+          - Queries and captures: reference/queries.md
+          - Bindings: reference/bindings.md
+          - Compatibility: reference/compatibility.md
+      - Language:
+          - ucode compared with JavaScript: reference/ucode-vs-javascript.md
+          - Known deviations from ucode: reference/deviations.md
+      - Repository:
+          - External tokens: reference/external-tokens.md
+          - Project layout: reference/project-layout.md
+          - Build files and scripts: reference/scripts.md
+          - Test suites: reference/test-suites.md
+          - CI workflows: reference/ci.md
+          - Version strings: reference/versions.md
+      - Changelog: changelog.md
+  - Explanation:
+      - explanation/index.md
+      - For integrators:
+          - The public API and stability: explanation/public-api.md
+          - The targeted ucode version: explanation/targeted-version.md
+          - Error recovery: explanation/error-recovery.md
+      - Design:
+          - Architecture: explanation/architecture.md
+          - Templates as a statement stream: explanation/templates.md
+          - The external scanner: explanation/scanner.md
+          - Lenient semicolon insertion: explanation/asi.md
+          - Doc comments and ucdocs: explanation/doc-comments.md
+          - Editor queries in this repository: explanation/editor-queries.md

@@ -47,3 +47,6 @@ Package.resolved
 .zig-cache/
 zig-cache/
 zig-out/
+
+# MkDocs output
+site/

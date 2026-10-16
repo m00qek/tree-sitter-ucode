@@ -435,7 +435,7 @@ x = a /? b : c;
 --------------------------------------------------------------------------------
 
 ================================================================================
-Division after postfix increment parses as division (divergence — see README)
+Division after postfix increment parses as division (divergence — see docs/reference/deviations.md)
 ================================================================================
 
 let x = a++ / b;
@@ -574,7 +574,7 @@ for (const c = 0; c < 3; ) {}
 --------------------------------------------------------------------------------
 
 ================================================================================
-Lenient ASI: a bare newline separates two statements (divergence — see README)
+Lenient ASI: a bare newline separates two statements (divergence — see docs/reference/deviations.md)
 ================================================================================
 
 x = 1

@@ -72,10 +72,10 @@ Notable changes to tree-sitter-ucode. Releases up to v0.8.0 are described in the
 - The Node package exports all three grammars: `.ucode`, `.ucode_markup` and `.ucdocs`. The
   package itself is still the `ucode` grammar.
 - C, Rust, Python, Go and Swift bindings, each exposing all three grammars (C: one library per
-  grammar, buildable with make or CMake). See "Use from other languages" in the README; only
+  grammar, buildable with make or CMake). See [Use a binding](how-to/use-bindings.md); only
   the npm package is published so far.
 - Helix support: queries generated for Helix's capture names under `editors/helix/queries/`, and a
-  complete setup in the README (including `ucdocs` injection into doc comments). Tested with
+  complete setup in [Register in Helix](how-to/register-helix.md) (including `ucdocs` injection into doc comments). Tested with
   Helix 25.07.1.
 - Templates: a doc comment in its own tag (`{% /** Doc. */ %}`) attaches to the declaration in
   the next tag in `tags.scm`.
@@ -88,7 +88,7 @@ Notable changes to tree-sitter-ucode. Releases up to v0.8.0 are described in the
   (`printf`). Doc comments are also `@comment.documentation`, and the target of `{@link …}` is
   `@markup.link`.
 - Scripts are recognised by a `#!` line naming `ucode` (`first-line-regex` in tree-sitter.json,
-  `shebangs` in the README's Helix setup).
+  `shebangs` in the Helix setup).
 - Highlight and tags assertion tests (`test/highlight/`, `test/tags/`), run by `npm test` through
   tree-sitter-highlight and tree-sitter-tags themselves.
 - Node prebuilds for macOS on Intel (darwin-x64) and Windows on Arm (win32-arm64).
@@ -134,7 +134,7 @@ Notable changes to tree-sitter-ucode. Releases up to v0.8.0 are described in the
   inside the function body, a regex's slashes belong to the regex instead of being operators, and
   the `}` closing `${…}` matches its `${`.
 - `.ut` files are templates: they go to `ucode_markup` only (the `ucode` grammar claimed them
-  too), and the README's Helix setup maps `*.ut` to `ucode-markup` instead of `*.uc.tmpl`.
+  too), and the Helix setup maps `*.ut` to `ucode-markup` instead of `*.uc.tmpl`.
 - Locals: alt-syntax `if` / `elif` / `else` / `while` bodies and `switch` bodies are scopes, as
   they are in ucode.
 - Tags: every exported `const` / `let` that is not a function is tagged, with its doc comment;
@@ -154,6 +154,9 @@ Notable changes to tree-sitter-ucode. Releases up to v0.8.0 are described in the
 
 ### Development
 
+- Documentation is an MkDocs site in `docs/`, published at
+  <https://m00qek.github.io/tree-sitter-ucode/>. It replaces `CONTRIBUTING.md` and
+  `CHANGELOG.md` (now this page); the README is a short pointer to the site.
 - `npm test` adds structural checks the corpus tests cannot see: scanner token order, whitespace
   at node boundaries, highlight coverage. CI validates ucdocs against ucode's stdlib doc comments.
   `npm run test:bindings` smoke-tests the Node binding.
@@ -169,6 +172,11 @@ Notable changes to tree-sitter-ucode. Releases up to v0.8.0 are described in the
 - `scripts/check-helix-indents.sh` checks the Helix indent queries in a real Helix; CI runs it.
 - CI: every GitHub Action is pinned to a commit SHA (the version is in a comment beside it),
   including in the publish path, which holds the token for npm provenance.
+- CI: workflows grant only `contents: read` by default, checkouts drop their credentials, every
+  job has a timeout, and `ci.yml` uses no caches because it builds the release artifacts. A
+  `workflows` job runs actionlint and zizmor; Dependabot proposes action and docs-tool updates
+  weekly. Docs-only pushes to `main` skip CI; `docs.yml` builds the site on pull requests and
+  deploys it to GitHub Pages from `main`.
 - `scripts/check-nvim-queries.lua` checks the Neovim indents, folds and text objects in a real
   Neovim with nvim-treesitter and nvim-treesitter-textobjects; CI runs it.
 - Every binding test (C, Rust, Go, Python, Swift, Node) parses a sample per grammar and compiles the

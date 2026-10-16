@@ -259,7 +259,7 @@ export default 42
 --------------------------------------------------------------------------------
 
 ; ucode requires the `;` after `export default`; the grammar keeps it
-; strict on purpose (see README).
+; strict on purpose (see docs/reference/deviations.md).
 
 ================================================================================
 default by name in import and export lists
