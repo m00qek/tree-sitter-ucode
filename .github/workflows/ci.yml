@@ -391,7 +391,9 @@ jobs:
         uses: actions/setup-node@249970729cb0ef3589644e2896645e5dc5ba9c38 # v6.5.0
         with:
           package-manager-cache: false
-          node-version: '22'
+          # npm 11 bundles node-gyp 12, the first to know Visual Studio 2026
+          # (windows-11-arm). N-API prebuilds don't depend on the Node version.
+          node-version: '24'
 
       - name: Install cross-compiler (Linux only)
         if: matrix.os == 'ubuntu-24.04'

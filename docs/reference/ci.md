@@ -24,7 +24,7 @@ artifacts.
 | `neovim` | Ubuntu | `scripts/check-nvim-queries.lua` with Neovim 0.12.5 and pinned commits of nvim-treesitter and nvim-treesitter-textobjects |
 | `workflows` | Ubuntu | `actionlint` (with shellcheck) and `zizmor` over `.github/` |
 | `wasm` | Ubuntu, after `test` and `validate` | builds the three `.wasm` parsers |
-| `prebuild` | Ubuntu, macOS (arm64 and x64), Windows (x64 and arm64), after `test` and `validate` | Node.js prebuilds; Ubuntu also cross-builds linux-arm64 |
+| `prebuild` | Ubuntu, macOS (arm64 and x64), Windows (x64 and arm64), after `test` and `validate` | N-API prebuilds built with Node.js 24 (its node-gyp 12 knows Visual Studio 2026, which the Windows arm64 image ships); Ubuntu also cross-builds linux-arm64 |
 | `version` | Ubuntu, `v*` tags only | fails unless all nine [version strings](versions.md) equal the tag without its `v` |
 | `publish` | Ubuntu, `v*` tags only, after `version`, `wasm`, `prebuild`, `bindings`, `bindings-swift`, `helix` and `neovim` | `npm publish --provenance` with the `.wasm` files and prebuilds |
 
