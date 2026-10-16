@@ -31,12 +31,34 @@ scripts and templates alike. The mechanism is the repeated zero-width
 `_block_end` token described in
 [The external scanner](scanner.md#end-of-input-inside-open-blocks).
 
-It does not always succeed. tree-sitter weighs the cost of each possible
-recovery, and with two nested open blocks the outcome depends on the input.
-In our checks, a function with an open `if` block holding four statements
-kept both blocks (one MISSING `}` each, plus a small ERROR), while the same
-nesting with a single statement in the inner block became one ERROR over the
-whole file.
+It does not always succeed in very small files. tree-sitter weighs the cost
+of each possible recovery: every MISSING token has a fixed cost, while an
+ERROR wrapping the whole file costs more the larger the file is. With two or
+more open blocks in a tiny file, one ERROR over everything is cheaper, and
+tree-sitter picks it. These costs are constants in the tree-sitter runtime;
+a grammar cannot change them.
+
+Measured with a function and nested `if` blocks, all left open at the end of
+the file:
+
+| Open blocks | Whole file is one ERROR when the innermost block holds | Structure kept from |
+| --- | --- | --- |
+| 1 | never | 1 statement |
+| 2 | 1–3 statements | 4 statements |
+| 3 | 1 statement | 2 statements |
+| 4 | 1–3 statements | 4 statements |
+
+Code elsewhere in the file counts too: five complete statements before the
+open function are enough for two open blocks to keep their structure. In
+practice this happens only while a new file is being started without
+auto-paired braces.
+
+The grammar does not try to close blocks itself at the end of the file (for
+example, with a zero-width closer from the scanner). That would make
+incomplete code parse without errors, so `has_error` would be false and
+editors would show nothing. Invalid code always produces ERROR or MISSING
+nodes. A tool that needs exact structure for a tiny incomplete file can
+append the missing closers and parse again.
 
 ## Half-typed tags
 
