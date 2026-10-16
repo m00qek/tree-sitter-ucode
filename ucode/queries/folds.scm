@@ -36,3 +36,16 @@
 ; -------------------------------------------------------------------------
 
 (function_declaration "endfunction") @fold
+
+; -------------------------------------------------------------------------
+; Switch cases, multi-line comments, and runs of imports
+; -------------------------------------------------------------------------
+
+[
+  (switch_case)
+  (switch_default)
+  (comment)
+  (doc_comment)
+] @fold
+
+(import_statement)+ @fold

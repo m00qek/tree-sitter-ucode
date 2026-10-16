@@ -17,26 +17,40 @@
   (formal_parameters)
 ] @indent.begin
 
-; Closing delimiters — decrease indent
+; A closing delimiter ends its construct's scope, and a line that starts
+; with one is dedented to the opener's level. Only these constructs' closers
+; end a scope: the `)` of `if (a)` must not, or the braceless body after it
+; would lose its indent.
+(statement_block "}" @indent.end)
+(switch_body "}" @indent.end)
+(object "}" @indent.end)
+(array "]" @indent.end)
+(arguments ")" @indent.end)
+(formal_parameters ")" @indent.end)
+
 [
   "}"
   "]"
   ")"
-] @indent.end
+] @indent.branch
 
 ; -------------------------------------------------------------------------
-; Alternative (colon/endif) syntax
+; Alternative (colon/endif) syntax: the body indents, and the `elif`, `else`
+; and `end*` lines stay at the statement's level. indent.immediate: indent the
+; line after the `:` even before the body (or the end keyword) exists.
 ; -------------------------------------------------------------------------
 
-; The ':' after the condition opens the body
-(if_alt_statement ":" @indent.begin)
-(elif_clause ":" @indent.begin)
-(for_alt_statement ":" @indent.begin)
-(for_in_alt_statement ":" @indent.begin)
-(while_alt_statement ":" @indent.begin)
-(function_declaration ":" @indent.begin)
+([
+  (if_alt_statement)
+  (for_alt_statement)
+  (for_in_alt_statement)
+  (while_alt_statement)
+] @indent.begin
+  (#set! indent.immediate 1))
 
-; Closing keywords close the body
+((function_declaration ":") @indent.begin
+  (#set! indent.immediate 1))
+
 [
   "endif"
   "endfor"
@@ -44,23 +58,99 @@
   "endfunction"
 ] @indent.end
 
+[
+  "endif"
+  "endfor"
+  "endwhile"
+  "endfunction"
+] @indent.branch
+
+(else_alt_clause "else" @indent.branch)
+(elif_clause "elif" @indent.branch)
+
 ; -------------------------------------------------------------------------
-; Branch keywords (else/elif) — dedent keyword, indent following body
+; Braceless bodies (`if (a)` + Enter), the way nvim-treesitter's ecma
+; indents do it: the statement indents the lines after its header, and the
+; body dedents what follows it. indent.immediate covers the end of the file,
+; where the not-yet-typed body is zero-width on the header's line.
 ; -------------------------------------------------------------------------
 
-(else_clause "else") @indent.branch
-(else_alt_clause "else") @indent.branch
-(elif_clause "elif") @indent.branch
+((if_statement
+  consequence: (_) @indent.dedent
+  !alternative
+  (#not-kind-eq? @indent.dedent "statement_block")) @indent.begin
+  (#set! indent.immediate 1))
 
-; else_alt_clause has no ':' delimiter (grammar: 'else' then its statement_list),
-; so @indent.branch alone only dedents the 'else' keyword — it does not
-; open an indent scope for the body. Add @indent.begin on the whole node
-; so the body statements are indented one level relative to 'else'.
-(else_alt_clause) @indent.begin
+; With an `else`, only the body itself is indented (its first line too):
+; the else part is the else_clause's.
+((if_statement
+  consequence: (_) @indent.begin
+  alternative: (_)
+  (#not-kind-eq? @indent.begin "statement_block"))
+  (#set! indent.start_at_same_line 1)
+  (#set! indent.immediate 1))
+((else_clause
+  (_) @indent.dedent
+  (#not-kind-eq? @indent.dedent "statement_block" "if_statement")) @indent.begin
+  (#set! indent.immediate 1))
+((while_statement
+  body: (_) @indent.dedent
+  (#not-kind-eq? @indent.dedent "statement_block")) @indent.begin
+  (#set! indent.immediate 1))
+((for_statement
+  body: (_) @indent.dedent
+  (#not-kind-eq? @indent.dedent "statement_block")) @indent.begin
+  (#set! indent.immediate 1))
+((for_in_statement
+  body: (_) @indent.dedent
+  (#not-kind-eq? @indent.dedent "statement_block")) @indent.begin
+  (#set! indent.immediate 1))
+
+; A dangling `else` at the end of the file has no body yet: the parser makes
+; it an ERROR holding just the keyword.
+((ERROR . "else" .) @indent.begin
+  (#set! indent.immediate 1))
+
+; -------------------------------------------------------------------------
+; Comments and template strings keep the indentation they have.
+; -------------------------------------------------------------------------
+
+[
+  (comment)
+  (doc_comment)
+] @indent.auto
+
+(template_string) @indent.ignore
 
 ; -------------------------------------------------------------------------
 ; Switch
 ; -------------------------------------------------------------------------
 
-(switch_case "case") @indent.branch
-(switch_default "default") @indent.branch
+; `case` lines are indented inside the switch body, and their statements one
+; level deeper (the Helix indents use the same style), also right after an
+; empty `case 1:`.
+([
+  (switch_case)
+  (switch_default)
+] @indent.begin
+  (#set! indent.immediate 1))
+
+; ── Template-only: a tag that ends a body ───────────────────────────────────
+
+(statement_block
+  (text_statement
+    [
+      (statement_tag_open)
+      (statement_tag_trim_open)
+      (statement_tag_lstrip_open)
+    ] @indent.branch .)
+  .
+  "}")
+
+(statement_list
+  (text_statement
+    [
+      (statement_tag_open)
+      (statement_tag_trim_open)
+      (statement_tag_lstrip_open)
+    ] @indent.branch .) .)

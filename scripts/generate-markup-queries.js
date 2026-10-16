@@ -87,9 +87,35 @@ const TAGS_TEMPLATE_EXTRA = String.raw`
 )
 `;
 
+// A line like `{% } %}`, `{% endfor %}` or `{% else %}` starts with the `{%`
+// that ends the body's last text_statement, so the body's indent applies to
+// it; dedent it to the block's level.
+const INDENTS_TEMPLATE_EXTRA = `
+; ── Template-only: a tag that ends a body ───────────────────────────────────
+
+(statement_block
+  (text_statement
+    [
+      (statement_tag_open)
+      (statement_tag_trim_open)
+      (statement_tag_lstrip_open)
+    ] @indent.branch .)
+  .
+  "}")
+
+(statement_list
+  (text_statement
+    [
+      (statement_tag_open)
+      (statement_tag_trim_open)
+      (statement_tag_lstrip_open)
+    ] @indent.branch .) .)
+`;
+
 // [prepend, append] per file.
 const EXTRAS = {
   'highlights.scm': ['', HIGHLIGHTS_TEMPLATE_EXTRA],
+  'indents.scm': ['', INDENTS_TEMPLATE_EXTRA],
   'tags.scm': [TAGS_TEMPLATE_EXTRA.trimStart() + '\n', ''],
 };
 

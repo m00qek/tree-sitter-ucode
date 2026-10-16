@@ -55,6 +55,8 @@ scripts/
   generate-markup-queries.js  derives ucode_markup/queries/*.scm from ucode/queries/
   generate-helix-queries.js   derives editors/helix/queries/ (highlights/locals renamed to
                               Helix's names; Helix-style textobjects and indents inline)
+  check-helix-indents.sh      types into a real Helix and checks each new line's indentation
+  check-nvim-queries.lua      checks the Neovim indents, folds and text objects in Neovim
   run-tests.js                builds (into .build/parsers/) and tests all three grammars
   validate-corpus.js          validates the grammars against real ucode code
   validate-docs.js            validates ucdocs against real doc comments (ucode's stdlib)
@@ -90,6 +92,16 @@ changing them, the scanner (node end positions drive indentation) or error recov
 `scripts/check-helix-indents.sh <helix-release-dir>`, which needs tmux and an unpacked Helix
 release. It types into a real Helix and checks the indentation of each new line. CI runs it too
 (the `helix` job, Helix 25.07.1).
+
+The Neovim indents, folds and text objects (`ucode/queries/`, Neovim's capture names) are read
+by plugins, nvim-treesitter's `indentexpr` and nvim-treesitter-textobjects, so check them in a
+real Neovim after changing them, or the scanner or error recovery:
+
+```sh
+nvim --headless --clean -l scripts/check-nvim-queries.lua <nvim-treesitter> <nvim-treesitter-textobjects>
+```
+
+Both plugin arguments are checkouts of their `main` branch; CI's `neovim` job pins the commits.
 
 The external lexer is hand-written and handles features that context-free grammars cannot express: automatic semicolon insertion, template string, string and regex content, comment terminators, template tag delimiters, and zero-width tokens for error recovery. All of its logic lives in **`common/scanner.h`** — edit that file. `ucode/src/scanner.c` and `ucode_markup/src/scanner.c` are thin shims that only export the entry points and `#include "../../common/scanner.h"`, so a single implementation is shared by both the `ucode` and `ucode_markup` parsers. None of these are touched by `tree-sitter generate`.
 

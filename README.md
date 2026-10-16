@@ -228,6 +228,36 @@ The easiest way to install this grammar in Neovim is with
 [tree-sitter-manager.nvim](https://github.com/m00qek/tree-sitter-manager.nvim),
 which handles parser registration, filetype detection, and query setup automatically.
 
+The queries under `ucode/`, `ucode_markup/` and `ucdocs/queries/` use Neovim's capture names:
+highlights, injections, locals, folds, indents (for nvim-treesitter's `indentexpr`) and text
+objects (for nvim-treesitter-textobjects). `scripts/check-nvim-queries.lua` checks the
+indents, folds and text objects in a real Neovim.
+
+Two things the queries cannot do on their own:
+
+- **Re-indent when typing an end keyword.** Neovim re-indents a line while typing only for the
+  keys in `'indentkeys'`; add the alt-syntax keywords for the ucode filetypes:
+
+  ```lua
+  vim.api.nvim_create_autocmd('FileType', {
+    pattern = { 'ucode', 'ucode_markup' },
+    callback = function()
+      vim.opt_local.indentkeys:append({ '=endif', '=endfor', '=endwhile', '=endfunction', '=elif', '=else' })
+    end,
+  })
+  ```
+
+- **Highlight template text as another language.** What a template produces varies (HTML in
+  LuCI, nftables rules in firewall4), so its text is not injected by default. To treat it as
+  HTML, add `~/.config/nvim/after/queries/ucode_markup/injections.scm`:
+
+  ```query
+  ;; extends
+  ((raw_text) @injection.content
+    (#set! injection.language "html")
+    (#set! injection.combined))
+  ```
+
 ## Use in Helix
 
 Helix needs the grammars, a `languages.toml` entry per language — including `ucdocs`, which

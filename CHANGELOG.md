@@ -92,6 +92,13 @@ Notable changes to tree-sitter-ucode. Releases up to v0.8.0 are described in the
 - Highlight and tags assertion tests (`test/highlight/`, `test/tags/`), run by `npm test` through
   tree-sitter-highlight and tree-sitter-tags themselves.
 - Node prebuilds for macOS on Intel (darwin-x64) and Windows on Arm (win32-arm64).
+- Neovim: text objects follow nvim-treesitter-textobjects' conventions: `@parameter.outer`
+  takes its comma; call arguments, import specifiers and array/object elements are parameters;
+  `@block.inner` and the other `.inner` objects select everything between the braces; new
+  `@statement`, `@return`, `@assignment`, `@comment`, `@regex` and `@number` objects. Indents
+  dedent a line that starts with `}` `]` `)` or an end keyword, indent braceless bodies and empty
+  `case`s, and keep doc comment lines as they are (new `ucdocs/queries/indents.scm`). Folds
+  cover `case`s, multi-line comments and runs of imports.
 
 ### Fixed
 
@@ -157,6 +164,8 @@ Notable changes to tree-sitter-ucode. Releases up to v0.8.0 are described in the
 - `tree-sitter.json` validates against the official schema, and declares `common/scanner.h` as
   an external file so the CLI rebuilds its cached parsers when the shared scanner changes.
 - `scripts/check-helix-indents.sh` checks the Helix indent queries in a real Helix; CI runs it.
+- `scripts/check-nvim-queries.lua` checks the Neovim indents, folds and text objects in a real
+  Neovim with nvim-treesitter and nvim-treesitter-textobjects; CI runs it.
 - Every binding test (C, Rust, Go, Python, Swift, Node) parses a sample per grammar and compiles the
   shipped queries. `make test-c` installs the C libraries into a temporary prefix and builds a
   program against the installed headers, pkg-config files and shared libraries; CI runs it with
