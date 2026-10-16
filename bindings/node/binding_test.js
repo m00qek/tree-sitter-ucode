@@ -35,8 +35,12 @@ for (const name of Object.keys(samples)) {
   for (const file of fs.readdirSync(dir).filter((f) => f.endsWith(".scm"))) {
     test(`${name}/queries/${file} compiles`, () => {
       let source = fs.readFileSync(path.join(dir, file), "utf8");
-      // tree-sitter-tags' own directives, which the runtime rejects.
-      source = source.replace(/\(#(strip|select-adjacent)! [^)]*\)/g, "");
+      // Predicates and directives of other tools, which the runtime rejects:
+      // tree-sitter-tags' (#strip!, #select-adjacent!) and nvim-treesitter's
+      // (#kind-eq?, used by the Neovim indents).
+      source = source
+        .replace(/\(#(strip|select-adjacent)! [^)]*\)/g, "")
+        .replace(/\(#(not-)?kind-eq\? [^)]*\)/g, "");
       new Parser.Query(ucode[name], source);
     });
   }

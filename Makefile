@@ -65,6 +65,10 @@ OBJS_$(1) := $$(SRC_$(1))/parser.o $$(SRC_$(1))/scanner.o
 $$(SRC_$(1))/%.o: $$(SRC_$(1))/%.c
 	$$(CC) $$(CPPFLAGS) $$(CFLAGS) -I$$(SRC_$(1)) -c $$< -o $$@
 
+# The code grammars' scanner.c only #includes common/scanner.h, where the
+# scanner lives.
+$$(SRC_$(1))/scanner.o: common/scanner.h
+
 lib$$(LIB_$(1)).a: $$(OBJS_$(1))
 	$$(AR) $$(ARFLAGS) $$@ $$^
 

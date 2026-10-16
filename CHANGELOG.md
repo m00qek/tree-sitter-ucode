@@ -144,6 +144,9 @@ Notable changes to tree-sitter-ucode. Releases up to v0.8.0 are described in the
 - ucdocs: bare `{list}` and `{dict}` types, a lowercase `@template t` and a bare `@module` parse,
   and so does a `}` in prose with no `{` before it; all were errors. Identifiers no longer accept
   `$`, which ucode does not have.
+- C: `make` rebuilt a code grammar's scanner only when its `scanner.c` shim changed, not when
+  `common/scanner.h` (the scanner itself) did, so an incremental build could link a stale
+  scanner.
 - C: `make install PREFIX=…` after a plain `make` installed pkg-config files that still pointed at
   `/usr/local`; the `.pc` files are now generated at install time.
 - Nothing may separate `?.` from a following `[` or `(`: `a?. [1]` and `a?.⏎(1)` are errors, as
