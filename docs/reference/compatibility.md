@@ -29,7 +29,7 @@ not follow OpenWrt's.
 
 | Grammar version | Targeted ucode commit (date) | OpenWrt releases that ship that ucode |
 | --- | --- | --- |
-| Unreleased (0.9.0) | [`85922056`](https://github.com/jow-/ucode/commit/85922056ef7abeace3cca3ab28bc1ac2d88e31b1) (2026-01-16) | 25.12.0, 25.12.1, 25.12.2, 25.12.3, 25.12.4, 25.12.5 |
+| 0.9.0 | [`85922056`](https://github.com/jow-/ucode/commit/85922056ef7abeace3cca3ab28bc1ac2d88e31b1) (2026-01-16) | 25.12.0, 25.12.1, 25.12.2, 25.12.3, 25.12.4, 25.12.5 |
 | 0.8.0 | [`85922056`](https://github.com/jow-/ucode/commit/85922056ef7abeace3cca3ab28bc1ac2d88e31b1) (2026-01-16) | 25.12.0, 25.12.1, 25.12.2, 25.12.3, 25.12.4, 25.12.5 |
 | 0.1.0 to 0.7.0 | not recorded: CI validated against ucode's `master` branch at the time of each run | not recorded |
 

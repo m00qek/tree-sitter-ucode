@@ -1,5 +1,5 @@
 HOMEPAGE_URL := https://github.com/m00qek/tree-sitter-ucode
-VERSION := 0.8.0
+VERSION := 0.9.0
 
 # One library per grammar. <grammar>/src is committed, so nothing here
 # regenerates the parsers (that needs Node: `npm run build`).

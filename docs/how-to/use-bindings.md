@@ -8,14 +8,8 @@ of exported names is in [Bindings](../reference/bindings.md).
 ## Node.js
 
 ```sh
-npm install tree-sitter-ucode tree-sitter
+npm install tree-sitter-ucode@^0.9.0 tree-sitter@^0.25
 ```
-
-The named exports below (`.ucode`, `.ucode_markup`, `.ucdocs`) are newer than
-the last release, v0.8.0 (see the [changelog](../changelog.md)). Until the
-next release, install from a checkout instead: run `npm install` in the
-checkout, then `npm install tree-sitter@^0.25 <path-to-checkout>` in your
-project, as in [Build on the grammars](../tutorials/build-on-the-grammars.md).
 
 The package itself is the `ucode` grammar; all three are also exported by
 name:
@@ -121,7 +115,7 @@ parser.SetLanguage(tree_sitter.NewLanguage(tree_sitter_ucode.LanguageUcode()))
 ## Swift
 
 ```swift
-.package(url: "https://github.com/m00qek/tree-sitter-ucode", branch: "main")
+.package(url: "https://github.com/m00qek/tree-sitter-ucode", from: "0.9.0")
 ```
 
 The `TreeSitterUcode` product contains three modules, one per grammar:

@@ -5,6 +5,8 @@ Notable changes to tree-sitter-ucode. Releases up to v0.8.0 are described in the
 
 ## Unreleased
 
+## 0.9.0 (2026-10-16)
+
 ### Breaking changes
 
 - **Templates are parsed as ucode's statement stream.** ucode compiles a template as one stream of

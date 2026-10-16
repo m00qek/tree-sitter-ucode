@@ -17,7 +17,7 @@ license-files = [ "LICENSE" ]
 name = "tree-sitter-ucode"
 readme = "README.md"
 requires-python = ">=3.10"
-version = "0.8.0"
+version = "0.9.0"
 
 [project.urls]
 Homepage = "https://github.com/m00qek/tree-sitter-ucode"
