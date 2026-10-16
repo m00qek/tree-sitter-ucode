@@ -237,7 +237,12 @@
           "name": "string"
         },
         {
-          "type": "STRING",
+          "type": "ALIAS",
+          "content": {
+            "type": "STRING",
+            "value": "default"
+          },
+          "named": true,
           "value": "default"
         }
       ]
@@ -1521,19 +1526,27 @@
           ]
         },
         {
-          "type": "FIELD",
-          "name": "left",
-          "content": {
-            "type": "SYMBOL",
-            "name": "identifier"
-          }
-        },
-        {
           "type": "CHOICE",
           "members": [
             {
+              "type": "FIELD",
+              "name": "variable",
+              "content": {
+                "type": "SYMBOL",
+                "name": "identifier"
+              }
+            },
+            {
               "type": "SEQ",
               "members": [
+                {
+                  "type": "FIELD",
+                  "name": "key",
+                  "content": {
+                    "type": "SYMBOL",
+                    "name": "identifier"
+                  }
+                },
                 {
                   "type": "STRING",
                   "value": ","
@@ -1547,9 +1560,6 @@
                   }
                 }
               ]
-            },
-            {
-              "type": "BLANK"
             }
           ]
         },
@@ -1559,7 +1569,7 @@
         },
         {
           "type": "FIELD",
-          "name": "right",
+          "name": "object",
           "content": {
             "type": "SYMBOL",
             "name": "_expressions"
@@ -4885,6 +4895,10 @@
     },
     {
       "type": "SYMBOL",
+      "name": "doc_comment"
+    },
+    {
+      "type": "SYMBOL",
       "name": "_asi_gap"
     },
     {
@@ -5130,6 +5144,10 @@
     {
       "type": "SYMBOL",
       "name": "_block_end"
+    },
+    {
+      "type": "SYMBOL",
+      "name": "doc_comment"
     },
     {
       "type": "SYMBOL",

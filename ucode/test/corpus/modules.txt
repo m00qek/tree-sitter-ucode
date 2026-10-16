@@ -261,3 +261,30 @@ export default 42
 ; ucode requires the `;` after `export default`; the grammar keeps it
 ; strict on purpose (see README).
 
+================================================================================
+default by name in import and export lists
+================================================================================
+
+import { default as d, "x" as y } from "./mod.uc";
+export { d as default };
+
+--------------------------------------------------------------------------------
+
+(program
+  (import_statement
+    clause: (import_clause
+      named: (named_imports
+        (import_specifier
+          name: (default)
+          alias: (identifier))
+        (import_specifier
+          name: (string
+            (string_fragment))
+          alias: (identifier))))
+    source: (string
+      (string_fragment)))
+  (export_statement
+    clause: (export_clause
+      (export_specifier
+        name: (identifier)
+        alias: (default)))))

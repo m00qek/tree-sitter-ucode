@@ -82,9 +82,9 @@ for (let k, v in obj) {
 
 (program
   (for_in_statement
-    left: (identifier)
+    key: (identifier)
     value: (identifier)
-    right: (identifier)
+    object: (identifier)
     body: (statement_block
       (expression_statement
         (call_expression
@@ -105,13 +105,14 @@ for (k in arr) {
 
 (program
   (for_in_statement
-    left: (identifier)
-    right: (identifier)
+    variable: (identifier)
+    object: (identifier)
     body: (statement_block
       (expression_statement
         (call_expression
           function: (identifier)
-          arguments: (arguments (identifier)))))))
+          arguments: (arguments
+            (identifier)))))))
 
 ================================================================================
 Alternative for-in/endfor syntax
@@ -123,8 +124,8 @@ for (k in arr): print(k); endfor
 
 (program
   (for_in_alt_statement
-    left: (identifier)
-    right: (identifier)
+    variable: (identifier)
+    object: (identifier)
     body: (statement_list
       (expression_statement
         (call_expression
@@ -263,12 +264,13 @@ for (let k in obj) print(k);
 
 (program
   (for_in_statement
-    left: (identifier)
-    right: (identifier)
+    variable: (identifier)
+    object: (identifier)
     body: (expression_statement
       (call_expression
         function: (identifier)
-        arguments: (arguments (identifier))))))
+        arguments: (arguments
+          (identifier))))))
 
 ================================================================================
 For-in with let keyword and block body
@@ -280,8 +282,8 @@ for (let k in obj) {}
 
 (program
   (for_in_statement
-    left: (identifier)
-    right: (identifier)
+    variable: (identifier)
+    object: (identifier)
     body: (statement_block)))
 
 ================================================================================
@@ -294,9 +296,9 @@ for (let k, v in obj) {}
 
 (program
   (for_in_statement
-    left: (identifier)
+    key: (identifier)
     value: (identifier)
-    right: (identifier)
+    object: (identifier)
     body: (statement_block)))
 
 ================================================================================
@@ -370,9 +372,9 @@ for (let k, v in arr): print(k, v); endfor
 
 (program
   (for_in_alt_statement
-    left: (identifier)
+    key: (identifier)
     value: (identifier)
-    right: (identifier)
+    object: (identifier)
     body: (statement_list
       (expression_statement
         (call_expression
@@ -419,8 +421,8 @@ if (x): for (k in arr): print(k); endfor endif
       (identifier))
     consequence: (statement_list
       (for_in_alt_statement
-        left: (identifier)
-        right: (identifier)
+        variable: (identifier)
+        object: (identifier)
         body: (statement_list
           (expression_statement
             (call_expression
@@ -438,9 +440,9 @@ for (k, v in obj) print(k);
 
 (program
   (for_in_statement
-    left: (identifier)
+    key: (identifier)
     value: (identifier)
-    right: (identifier)
+    object: (identifier)
     body: (expression_statement
       (call_expression
         function: (identifier)

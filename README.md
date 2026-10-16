@@ -99,7 +99,9 @@ The grammar tracks ucode's parser closely, with a few deliberate divergences:
 
 ## Doc comment grammar (ucdocs)
 
-`/** */` blocks are parsed by the `ucdocs` grammar and injected into the host parse tree.
+`/** */` blocks are `doc_comment` nodes in the code grammars (exactly two stars: `/***` and
+`/**/` are plain `comment`s, as in JSDoc). They are parsed by the `ucdocs` grammar, injected
+into the host parse tree.
 The grammar understands the following tags:
 
 | Tag | Syntax |
@@ -124,7 +126,7 @@ Type expressions support: primitives (`int`, `integer`, `float`, `double`, `numb
 names plus ucode's own runtime type names), `*`/`any`, `list<T>`, `dict<T>`, record types (`{field: T}`), named types
 (`TypeName`, `TypeName<T, U>`), cross-module refs (`module:path.To.Type`), named function
 types `(name: T) => U`, anonymous function types `function(T): U` (both may end in a rest
-parameter: `(...any) => R`, `function(string, ...any)`), JSDoc's dotted generic `Array.<T>`, union `T | U`, nullable
+parameter: `(...any) => R`, `function(string, ...any)`), JSDoc's dotted generic `Array.<T>`, union `T | U` (one flat `union_type` however many members), nullable
 `?T`, and array postfix `T[]`. Inline `{@link ...}` tags and optional params `[name=default]`
 are also supported; a default may be any value up to the closing `]`
 (`[mode="r"]`, `[mode=0o666]`, `[end=buffer.length()]`).
@@ -133,7 +135,9 @@ A ` - ` between a name and its description is the JSDoc separator and is not par
 description. A block tag starts at an `@` at the beginning of a word; an `@` inside a word
 (`foo@bar.com`, `` `@` ``) is ordinary prose. Descriptions may contain markdown: only the
 single ` * ` comment frame at the start of each line is stripped, so `**bold**`, `*italic*` and
-`* bullets` stay intact.
+`* bullets` stay intact. None of a `description`'s children (`text` runs, `inline_tag`s and the
+tokens of brace text) crosses a line end, so its text without the frame is the source of its
+children, line by line.
 
 ## Requirements
 

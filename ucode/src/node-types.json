@@ -810,7 +810,7 @@
         "types": [
           {
             "type": "default",
-            "named": false
+            "named": true
           },
           {
             "type": "identifier",
@@ -828,7 +828,7 @@
         "types": [
           {
             "type": "default",
-            "named": false
+            "named": true
           },
           {
             "type": "identifier",
@@ -985,6 +985,16 @@
           }
         ]
       },
+      "key": {
+        "multiple": false,
+        "required": false,
+        "types": [
+          {
+            "type": "identifier",
+            "named": true
+          }
+        ]
+      },
       "kind": {
         "multiple": false,
         "required": false,
@@ -995,17 +1005,7 @@
           }
         ]
       },
-      "left": {
-        "multiple": false,
-        "required": true,
-        "types": [
-          {
-            "type": "identifier",
-            "named": true
-          }
-        ]
-      },
-      "right": {
+      "object": {
         "multiple": false,
         "required": true,
         "types": [
@@ -1020,6 +1020,16 @@
         ]
       },
       "value": {
+        "multiple": false,
+        "required": false,
+        "types": [
+          {
+            "type": "identifier",
+            "named": true
+          }
+        ]
+      },
+      "variable": {
         "multiple": false,
         "required": false,
         "types": [
@@ -1109,6 +1119,16 @@
           }
         ]
       },
+      "key": {
+        "multiple": false,
+        "required": false,
+        "types": [
+          {
+            "type": "identifier",
+            "named": true
+          }
+        ]
+      },
       "kind": {
         "multiple": false,
         "required": false,
@@ -1119,17 +1139,7 @@
           }
         ]
       },
-      "left": {
-        "multiple": false,
-        "required": true,
-        "types": [
-          {
-            "type": "identifier",
-            "named": true
-          }
-        ]
-      },
-      "right": {
+      "object": {
         "multiple": false,
         "required": true,
         "types": [
@@ -1144,6 +1154,16 @@
         ]
       },
       "value": {
+        "multiple": false,
+        "required": false,
+        "types": [
+          {
+            "type": "identifier",
+            "named": true
+          }
+        ]
+      },
+      "variable": {
         "multiple": false,
         "required": false,
         "types": [
@@ -1586,7 +1606,7 @@
         "types": [
           {
             "type": "default",
-            "named": false
+            "named": true
           },
           {
             "type": "identifier",
@@ -2648,8 +2668,17 @@
     "named": false
   },
   {
+    "type": "default",
+    "named": true
+  },
+  {
     "type": "delete",
     "named": false
+  },
+  {
+    "type": "doc_comment",
+    "named": true,
+    "extra": true
   },
   {
     "type": "elif",

@@ -67,14 +67,18 @@ module.exports = function defineGrammar(name) {
       // Zero-width end of input at the end of a statement list (see
       // statements() below and BLOCK_END in common/scanner.h).
       $._block_end,                    // 22
+      // A `/** … */` doc comment (JSDoc's rule: exactly two stars, then not
+      // `/`); every other comment is `comment`.
+      $.doc_comment,                   // 23
       // Used by no rule, so tree-sitter marks it valid only during error
       // recovery (when it marks every external token valid) — the scanner's
       // documented way to detect that mode. Keep it last.
-      $._error_sentinel,               // 23
+      $._error_sentinel,               // 24
     ],
 
     extras: $ => [
       $.comment,
+      $.doc_comment,
       // Zero-width marker the external scanner emits at an own-line comment when
       // ASI does NOT fire before it (a continuation like `a\n// c\n.b`). It lets
       // the scanner decide ASI by peeking PAST the comment yet still emit the
@@ -321,10 +325,12 @@ module.exports = function defineGrammar(name) {
         )),
       ),
 
+      // `default` is a named node, so every specifier has a `name` (and an
+      // `alias`) node that queries can see.
       _module_export_name: $ => choice(
         $.identifier,
         $.string,
-        'default',
+        alias('default', $.default),
       ),
 
       declaration: $ => choice(
@@ -549,16 +555,19 @@ module.exports = function defineGrammar(name) {
         'endfor',
       ),
 
-      // Supports both `for (k in obj)` and `for (k, v in obj)` (ucode two-variable form).
+      // `for (x in obj)` binds `variable` (a key of an object, an item of an
+      // array); the two-variable `for (k, v in obj)` binds `key` and `value`.
       // The loop target must be a plain identifier: ucode rejects member/subscript
       // targets (`for (a.x in o)`) and only `let` (never `const`) may declare it.
       _for_in_header: $ => seq(
         '(',
         optional(field('kind', 'let')),
-        field('left', $.identifier),
-        optional(seq(',', field('value', $.identifier))),
+        choice(
+          field('variable', $.identifier),
+          seq(field('key', $.identifier), ',', field('value', $.identifier)),
+        ),
         'in',
-        field('right', $._expressions),
+        field('object', $._expressions),
         ')',
       ),
 

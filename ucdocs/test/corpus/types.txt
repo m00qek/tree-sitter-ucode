@@ -288,7 +288,7 @@ Union type
         (primitive_type)))))
 
 ================================================================================
-Union of three types is left-associative
+Union of three types is one flat union_type
 ================================================================================
 
 /**
@@ -301,9 +301,8 @@ Union of three types is left-associative
   (type_tag
     type: (type_expression
       (union_type
-        (union_type
-          (primitive_type)
-          (primitive_type))
+        (primitive_type)
+        (primitive_type)
         (primitive_type)))))
 
 ================================================================================
@@ -873,7 +872,8 @@ empty record type is a type, not brace text
     type: (type_expression
       (record_type))
     name: (identifier)
-    description: (description)))
+    description: (description
+      (text))))
 
 ================================================================================
 rest parameter in a function type
@@ -966,4 +966,5 @@ record type right after @returns keeps field names free of surrounding spaces
         (record_field
           name: (identifier)
           type: (primitive_type))))
-    description: (description)))
+    description: (description
+      (text))))

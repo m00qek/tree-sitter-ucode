@@ -1,7 +1,6 @@
-; Inject ucdocs into JSDoc block comments (/** ... */).
-; The [^*/] guard excludes /*** section dividers (≥3 stars) and /**/ (empty, non-JSDoc).
-((comment) @injection.content
-  (#match? @injection.content "^/\\*\\*[^*/]")
+; Inject ucdocs into JSDoc block comments (/** ... */; the scanner tells them
+; from `/***` dividers and the empty `/**/`).
+((doc_comment) @injection.content
   (#set! injection.language "ucdocs"))
 
 ; Regex literals. ucode compiles them as POSIX extended regexes (regcomp),

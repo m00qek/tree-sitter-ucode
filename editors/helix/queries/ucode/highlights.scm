@@ -29,9 +29,10 @@
 (comment)
 (comment) @comment
 
-; Doc comments (the ones ucdocs is injected into; see injections.scm).
-((comment) @comment.block.documentation
-  (#match? @comment.block.documentation "^/\\*\\*[^*/]"))
+; Doc comments (`/** … */`, the ones ucdocs is injected into).
+(doc_comment)
+(doc_comment) @comment
+(doc_comment) @comment.block.documentation
 
 ; -------------------------------------------------------------------------
 ; Shebang
@@ -161,8 +162,7 @@
 ; (whose name goes through _module_export_name) each match one pattern here —
 ; no priority/order reliance.
 (export_statement "default" @keyword.control.import)
-(export_specifier "default" @keyword.control.import)
-(import_specifier "default" @keyword.control.import)
+(default) @keyword.control.import
 
 ; -------------------------------------------------------------------------
 ; Keywords — storage / operators

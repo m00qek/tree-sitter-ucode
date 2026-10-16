@@ -29,7 +29,8 @@
  * 20  TEXT_END                     $._text_end                     zero-width end of input
  * 21  RETURN_MARKER                $._return_marker                never emitted; valid only right after `return`
  * 22  BLOCK_END                    $._block_end                    zero-width end of input, closing one statement list
- * 23  ERROR_SENTINEL               $._error_sentinel               never emitted; valid only in error recovery
+ * 23  DOC_COMMENT                  $.doc_comment                   slash-star-star doc comment
+ * 24  ERROR_SENTINEL               $._error_sentinel               never emitted; valid only in error recovery
  */
 
 #ifndef UCODE_COMMON_SCANNER_H_
@@ -74,6 +75,7 @@ enum TokenType {
     TEXT_END,
     RETURN_MARKER,
     BLOCK_END,
+    DOC_COMMENT,
     ERROR_SENTINEL,
 };
 
@@ -627,38 +629,51 @@ static bool asi_after_newline_decision(TSLexer *lexer, bool after_return) {
  */
 typedef enum { CMT_NONE, CMT_NONE_NEWLINE, CMT_FOUND, CMT_ABORT } CommentResult;
 
+typedef enum { BODY_UNTERMINATED, BODY_COMMENT, BODY_DOC } CommentBody;
+
 /*
  * Advance past the rest of a comment, from its second character ('/' or '*').
- * Returns false for a block comment left open at EOF.
  *
  * A line comment runs to the end of the line or EOF, as in ucode, swallowing
  * a `%}` on that line. A block comment's opening '*' also counts towards its
  * close, as in ucode's lexer (lexer.c parse_comment): slash-star-slash is a
- * complete, empty comment.
+ * complete, empty comment. A block comment that opens with exactly two stars
+ * and no `/` right after them is a doc comment (JSDoc's rule: slash-star-star-
+ * star and slash-star-star-slash are not). BODY_UNTERMINATED: a block comment
+ * left open at EOF.
  */
-static bool skip_comment_body(TSLexer *lexer) {
+static CommentBody skip_comment_body(TSLexer *lexer) {
     if (lexer->lookahead == '/') {
         while (!lexer->eof(lexer) && !is_line_terminator(lexer->lookahead))
             advance(lexer);
-        return true;
+        return BODY_COMMENT;
     }
     advance(lexer);  /* the '*' */
     if (lexer->lookahead == '/') {
         advance(lexer);
-        return true;
+        return BODY_COMMENT;
+    }
+    bool doc = false;
+    if (lexer->lookahead == '*') {
+        advance(lexer);
+        if (lexer->lookahead == '/') {
+            advance(lexer);
+            return BODY_COMMENT;
+        }
+        doc = lexer->lookahead != '*';
     }
     while (!lexer->eof(lexer)) {
         if (lexer->lookahead == '*') {
             advance(lexer);
             if (lexer->lookahead == '/') {
                 advance(lexer);
-                return true;
+                return doc ? BODY_DOC : BODY_COMMENT;
             }
         } else {
             advance(lexer);
         }
     }
-    return false;
+    return BODY_UNTERMINATED;
 }
 
 /*
@@ -686,7 +701,7 @@ static bool scan_asi_before_comment(TSLexer *lexer, bool after_return) {
     bool newline_before_next;
 
     for (;;) {
-        if (!skip_comment_body(lexer)) {
+        if (skip_comment_body(lexer) == BODY_UNTERMINATED) {
             /* Unterminated block comment: an error either way. The next call
                re-scans it, and scan_comment returns CMT_ABORT. */
             lexer->result_symbol = ASI_GAP;
@@ -766,8 +781,9 @@ static CommentResult scan_comment(TSLexer *lexer, Scanner *state,
 
     /* An unterminated block comment is an error in ucode ("Unterminated
        comment"), so it is not a token. */
-    if (!skip_comment_body(lexer)) return CMT_ABORT;
-    lexer->result_symbol = COMMENT;
+    CommentBody body = skip_comment_body(lexer);
+    if (body == BODY_UNTERMINATED) return CMT_ABORT;
+    lexer->result_symbol = body == BODY_DOC ? DOC_COMMENT : COMMENT;
     lexer->mark_end(lexer);
     return CMT_FOUND;
 }

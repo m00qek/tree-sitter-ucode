@@ -94,7 +94,11 @@
 
 (for_in_statement
   kind: _
-  left: (identifier) @local.definition
+  variable: (identifier) @local.definition
+  (#set! local.kind var))
+(for_in_statement
+  kind: _
+  key: (identifier) @local.definition
   (#set! local.kind var))
 (for_in_statement
   kind: _
@@ -102,7 +106,11 @@
   (#set! local.kind var))
 (for_in_alt_statement
   kind: _
-  left: (identifier) @local.definition
+  variable: (identifier) @local.definition
+  (#set! local.kind var))
+(for_in_alt_statement
+  kind: _
+  key: (identifier) @local.definition
   (#set! local.kind var))
 (for_in_alt_statement
   kind: _

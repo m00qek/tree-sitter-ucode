@@ -189,10 +189,6 @@
         {
           "type": "record_type",
           "named": true
-        },
-        {
-          "type": "union_type",
-          "named": true
         }
       ]
     }
@@ -239,6 +235,10 @@
       "types": [
         {
           "type": "inline_tag",
+          "named": true
+        },
+        {
+          "type": "text",
           "named": true
         }
       ]
@@ -849,10 +849,6 @@
         },
         {
           "type": "record_type",
-          "named": true
-        },
-        {
-          "type": "union_type",
           "named": true
         }
       ]
@@ -1567,10 +1563,6 @@
         {
           "type": "record_type",
           "named": true
-        },
-        {
-          "type": "union_type",
-          "named": true
         }
       ]
     }
@@ -1823,6 +1815,10 @@
   },
   {
     "type": "tag_name",
+    "named": true
+  },
+  {
+    "type": "text",
     "named": true
   },
   {

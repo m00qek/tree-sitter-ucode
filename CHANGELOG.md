@@ -54,6 +54,18 @@ Notable changes to tree-sitter-ucode. Releases up to v0.8.0 are described in the
 - **`for_statement`'s `condition` field no longer includes the `;`** after the condition.
 - **`{#` / `#}` are named nodes** (`comment_tag_open`, `comment_tag_trim_open`,
   `comment_tag_close`, `comment_tag_trim_close`), like the delimiters of the other tags.
+- **For-in fields say what they bind:** `for (k, v in o)` has `key`, `value` and `object`
+  (was `left`, `value` and `right`); `for (x in o)` has `variable` and `object` (was `left` and
+  `right`).
+- **`default` in import and export lists is a named `(default)` node** in the `name` or `alias`
+  field (`import { default as d }`, `export { d as default }`); it was an anonymous keyword.
+- **Doc comments are `doc_comment` nodes:** `/** … */` with exactly two stars (`/***` and `/**/`
+  stay `comment`). Queries that matched `(comment)` with a `#match?` on `^/\*\*` should match
+  `(doc_comment)` instead; the bundled ones do.
+- **ucdocs:** `union_type` is flat (`a | b | c` is one node with three members, not nested
+  pairs), and a `description`'s prose is a list of `text` children that never cross a line end,
+  so the comment frame (` * `) is never inside a child. Brace text in prose no longer spans line
+  ends either.
 
 ### Added
 

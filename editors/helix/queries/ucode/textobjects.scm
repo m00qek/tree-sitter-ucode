@@ -19,9 +19,9 @@
   ((_) @parameter.inside . ","? @parameter.around) @parameter.around)
 
 ; Comments
-(comment) @comment.inside
+[(comment) (doc_comment)] @comment.inside
 
-(comment)+ @comment.around
+[(comment) (doc_comment)]+ @comment.around
 
 ; Array elements and object entries
 (array

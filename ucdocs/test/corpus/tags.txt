@@ -28,7 +28,8 @@ Single-line doc block with description
 --------------------------------------------------------------------------------
 
 (document
-  (description))
+  (description
+    (text)))
 
 ================================================================================
 Description prose containing literal asterisks
@@ -39,7 +40,12 @@ Description prose containing literal asterisks
 --------------------------------------------------------------------------------
 
 (document
-  (description))
+  (description
+    (text)
+    (text)
+    (text)
+    (text)
+    (text)))
 
 ================================================================================
 Empty doc block written as three stars
@@ -76,7 +82,8 @@ Description only
 --------------------------------------------------------------------------------
 
 (document
-  (description))
+  (description
+    (text)))
 
 ================================================================================
 param with type and name
@@ -109,7 +116,8 @@ param with type, name and description
     type: (type_expression
       (primitive_type))
     name: (identifier)
-    description: (description)))
+    description: (description
+      (text))))
 
 ================================================================================
 param description may contain braces (regex quantifier, object example)
@@ -124,7 +132,8 @@ param description may contain braces (regex quantifier, object example)
     type: (type_expression
       (primitive_type))
     name: (identifier)
-    description: (description)))
+    description: (description
+      (text))))
 
 ================================================================================
 param description starting with a brace still keeps {type} as the type
@@ -185,7 +194,9 @@ single-character type followed by a prose brace in the description
       (named_type
         name: (type_identifier)))
     name: (identifier)
-    description: (description)))
+    description: (description
+      (text)
+      (text))))
 
 ================================================================================
 returns description may contain braces
@@ -199,7 +210,8 @@ returns description may contain braces
   (returns_tag
     type: (type_expression
       (primitive_type))
-    description: (description)))
+    description: (description
+      (text))))
 
 ================================================================================
 param without type
@@ -244,7 +256,8 @@ return (alias) with type and description
   (returns_tag
     type: (type_expression
       (primitive_type))
-    description: (description)))
+    description: (description
+      (text))))
 
 ================================================================================
 template with single type param
@@ -386,7 +399,8 @@ throws without type
 
 (document
   (throws_tag
-    description: (description)))
+    description: (description
+      (text))))
 
 ================================================================================
 deprecated with description
@@ -400,7 +414,8 @@ deprecated with description
 
 (document
   (deprecated_tag
-    description: (description)))
+    description: (description
+      (text))))
 
 ================================================================================
 deprecated without description
@@ -427,7 +442,8 @@ since
 
 (document
   (since_tag
-    description: (description)))
+    description: (description
+      (text))))
 
 ================================================================================
 see
@@ -441,7 +457,8 @@ see
 
 (document
   (see_tag
-    description: (description)))
+    description: (description
+      (text))))
 
 ================================================================================
 example
@@ -456,7 +473,8 @@ example
 
 (document
   (example_tag
-    description: (description)))
+    description: (description
+      (text))))
 
 ================================================================================
 default
@@ -470,7 +488,8 @@ default
 
 (document
   (default_tag
-    description: (description)))
+    description: (description
+      (text))))
 
 ================================================================================
 optional param with no default
@@ -593,10 +612,9 @@ union of module type references
   (param_tag
     type: (type_expression
       (union_type
-        (union_type
-          (primitive_type)
-          (module_type
-            path: (module_path)))
+        (primitive_type)
+        (module_type
+          path: (module_path))
         (module_type
           path: (module_path))))
     name: (identifier)))
@@ -613,9 +631,12 @@ description with inline link tag (URL)
 
 (document
   (description
+    (text)
     (inline_tag
       (tag_name)
-      (description))))
+      (description
+        (text)))
+    (text)))
 
 ================================================================================
 description with inline link tag (module reference, no link text)
@@ -631,7 +652,8 @@ description with inline link tag (module reference, no link text)
   (description
     (inline_tag
       (tag_name)
-      (description))))
+      (description
+        (text)))))
 
 ================================================================================
 description with inline tag followed by more text
@@ -645,9 +667,12 @@ description with inline tag followed by more text
 
 (document
   (description
+    (text)
     (inline_tag
       (tag_name)
-      (description))))
+      (description
+        (text)))
+    (text)))
 
 ================================================================================
 example with object literal containing braces
@@ -662,7 +687,9 @@ example with object literal containing braces
 
 (document
   (example_tag
-    description: (description)))
+    description: (description
+      (text)
+      (text))))
 
 ================================================================================
 example with deeply nested braces (object literal containing arrow function containing object literal)
@@ -684,7 +711,9 @@ example with deeply nested braces (object literal containing arrow function cont
 
 (document
   (example_tag
-    description: (description)))
+    description: (description
+      (text)
+      (text))))
 
 ================================================================================
 bare slash in description does not close the document prematurely
@@ -698,7 +727,8 @@ bare slash in description does not close the document prematurely
 --------------------------------------------------------------------------------
 
 (document
-  (description)
+  (description
+    (text))
   (param_tag
     type: (type_expression
       (primitive_type))
@@ -718,7 +748,8 @@ double slash in example body does not close the document prematurely
 
 (document
   (example_tag
-    description: (description))
+    description: (description
+      (text)))
   (param_tag
     type: (type_expression
       (primitive_type))
@@ -915,9 +946,13 @@ description with a closing brace and no opening one
 
 (document
   (description
+    (text)
+    (text)
     (inline_tag
       (tag_name)
-      (description))))
+      (description
+        (text)))
+    (text)))
 
 ================================================================================
 unknown tag
@@ -932,7 +967,8 @@ unknown tag
 (document
   (unknown_tag
     (tag_name)
-    description: (description)))
+    description: (description
+      (text))))
 
 ================================================================================
 full function doc block
@@ -950,7 +986,8 @@ full function doc block
 --------------------------------------------------------------------------------
 
 (document
-  (description)
+  (description
+    (text))
   (template_tag
     (type_param)
     (type_param))
@@ -961,7 +998,8 @@ full function doc block
         params: (named_type
           name: (type_identifier))))
     name: (identifier)
-    description: (description))
+    description: (description
+      (text)))
   (param_tag
     type: (type_expression
       (function_type
@@ -974,7 +1012,8 @@ full function doc block
           params: (named_type
             name: (type_identifier)))))
     name: (identifier)
-    description: (description))
+    description: (description
+      (text)))
   (returns_tag
     type: (type_expression
       (named_type
@@ -1020,7 +1059,8 @@ typedef with a trailing description
           type: (named_type
             name: (type_identifier)))))
     name: (type_identifier)
-    description: (description)))
+    description: (description
+      (text))))
 
 ================================================================================
 bare typedef whose name comes from @name and shape from @property
@@ -1039,17 +1079,20 @@ bare typedef whose name comes from @name and shape from @property
   (typedef_tag)
   (unknown_tag
     (tag_name)
-    description: (description))
+    description: (description
+      (text)))
   (property_tag
     type: (type_expression
       (primitive_type))
     name: (property_name)
-    description: (description))
+    description: (description
+      (text)))
   (property_tag
     type: (type_expression
       (primitive_type))
     name: (property_name)
-    description: (description)))
+    description: (description
+      (text))))
 
 ================================================================================
 property with a plain name
@@ -1064,7 +1107,8 @@ property with a plain name
     type: (type_expression
       (primitive_type))
     name: (property_name)
-    description: (description)))
+    description: (description
+      (text))))
 
 ================================================================================
 property with a dotted name
@@ -1079,7 +1123,8 @@ property with a dotted name
     type: (type_expression
       (primitive_type))
     name: (property_name)
-    description: (description)))
+    description: (description
+      (text))))
 
 ================================================================================
 optional property with a default
@@ -1096,7 +1141,8 @@ optional property with a default
     name: (optional_param
       name: (identifier)
       default: (default_value))
-    description: (description)))
+    description: (description
+      (text))))
 
 ================================================================================
 property named * (any further key)
@@ -1117,7 +1163,8 @@ property named * (any further key)
         (array_type
           (primitive_type))))
     name: (property_name)
-    description: (description)))
+    description: (description
+      (text))))
 
 ================================================================================
 property without a type
@@ -1130,7 +1177,8 @@ property without a type
 (document
   (property_tag
     name: (property_name)
-    description: (description)))
+    description: (description
+      (text))))
 
 ================================================================================
 param default value: string
@@ -1147,7 +1195,8 @@ param default value: string
     name: (optional_param
       name: (identifier)
       default: (default_value))
-    description: (description)))
+    description: (description
+      (text))))
 
 ================================================================================
 param default value: string containing a bracket
@@ -1164,7 +1213,8 @@ param default value: string containing a bracket
     name: (optional_param
       name: (identifier)
       default: (default_value))
-    description: (description)))
+    description: (description
+      (text))))
 
 ================================================================================
 param default value: negative number
@@ -1181,7 +1231,8 @@ param default value: negative number
     name: (optional_param
       name: (identifier)
       default: (default_value))
-    description: (description)))
+    description: (description
+      (text))))
 
 ================================================================================
 param default value: octal number
@@ -1198,7 +1249,8 @@ param default value: octal number
     name: (optional_param
       name: (identifier)
       default: (default_value))
-    description: (description)))
+    description: (description
+      (text))))
 
 ================================================================================
 param default value: constant
@@ -1215,7 +1267,8 @@ param default value: constant
     name: (optional_param
       name: (identifier)
       default: (default_value))
-    description: (description)))
+    description: (description
+      (text))))
 
 ================================================================================
 param default value: path
@@ -1232,7 +1285,8 @@ param default value: path
     name: (optional_param
       name: (identifier)
       default: (default_value))
-    description: (description)))
+    description: (description
+      (text))))
 
 ================================================================================
 param default value: call expression
@@ -1249,7 +1303,8 @@ param default value: call expression
     name: (optional_param
       name: (identifier)
       default: (default_value))
-    description: (description)))
+    description: (description
+      (text))))
 
 ================================================================================
 param default value: array literal
@@ -1267,7 +1322,8 @@ param default value: array literal
     name: (optional_param
       name: (identifier)
       default: (default_value))
-    description: (description)))
+    description: (description
+      (text))))
 
 ================================================================================
 param with a dotted name
@@ -1283,7 +1339,8 @@ param with a dotted name
       (primitive_type))
     name: (param_path
       (identifier))
-    description: (description)))
+    description: (description
+      (text))))
 
 ================================================================================
 param name followed by a full stop stays the name
@@ -1298,7 +1355,8 @@ param name followed by a full stop stays the name
     type: (type_expression
       (primitive_type))
     name: (identifier)
-    description: (description)))
+    description: (description
+      (text))))
 
 ================================================================================
 param description separator is not part of the description
@@ -1313,7 +1371,8 @@ param description separator is not part of the description
     type: (type_expression
       (primitive_type))
     name: (identifier)
-    description: (description)))
+    description: (description
+      (text))))
 
 ================================================================================
 separator on property, returns, throws and typedef
@@ -1334,21 +1393,25 @@ separator on property, returns, throws and typedef
       (named_type
         name: (type_identifier)))
     name: (type_identifier)
-    description: (description))
+    description: (description
+      (text)))
   (property_tag
     type: (type_expression
       (primitive_type))
     name: (property_name)
-    description: (description))
+    description: (description
+      (text)))
   (returns_tag
     type: (type_expression
       (primitive_type))
-    description: (description))
+    description: (description
+      (text)))
   (throws_tag
     type: (type_expression
       (named_type
         name: (type_identifier)))
-    description: (description)))
+    description: (description
+      (text))))
 
 ================================================================================
 a leading minus sign in a description is kept
@@ -1363,7 +1426,8 @@ a leading minus sign in a description is kept
     type: (type_expression
       (primitive_type))
     name: (identifier)
-    description: (description)))
+    description: (description
+      (text))))
 
 ================================================================================
 an @ inside a word is prose, not a tag
@@ -1374,7 +1438,8 @@ an @ inside a word is prose, not a tag
 --------------------------------------------------------------------------------
 
 (document
-  (description))
+  (description
+    (text)))
 
 ================================================================================
 an @ after whitespace still starts a tag on a one-line comment
@@ -1389,11 +1454,13 @@ an @ after whitespace still starts a tag on a one-line comment
     type: (type_expression
       (primitive_type))
     name: (identifier)
-    description: (description))
+    description: (description
+      (text)))
   (returns_tag
     type: (type_expression
       (primitive_type))
-    description: (description)))
+    description: (description
+      (text))))
 
 ================================================================================
 ucode runtime type names are primitive types
@@ -1407,17 +1474,12 @@ ucode runtime type names are primitive types
   (param_tag
     type: (type_expression
       (union_type
-        (union_type
-          (union_type
-            (union_type
-              (union_type
-                (union_type
-                  (primitive_type)
-                  (primitive_type))
-                (primitive_type))
-              (primitive_type))
-            (primitive_type))
-          (primitive_type))
+        (primitive_type)
+        (primitive_type)
+        (primitive_type)
+        (primitive_type)
+        (primitive_type)
+        (primitive_type)
         (primitive_type)))
     name: (identifier)))
 
@@ -1434,7 +1496,8 @@ a primitive type name can still be a parameter name
     type: (type_expression
       (primitive_type))
     name: (identifier)
-    description: (description)))
+    description: (description
+      (text))))
 
 ================================================================================
 markdown bold at the start and end of a line
@@ -1448,7 +1511,11 @@ markdown bold at the start and end of a line
 --------------------------------------------------------------------------------
 
 (document
-  (description))
+  (description
+    (text)
+    (text)
+    (text)
+    (text)))
 
 ================================================================================
 markdown italic and a trailing star
@@ -1462,7 +1529,12 @@ markdown italic and a trailing star
 --------------------------------------------------------------------------------
 
 (document
-  (description))
+  (description
+    (text)
+    (text)
+    (text)
+    (text)
+    (text)))
 
 ================================================================================
 markdown bullets keep their stars
@@ -1476,7 +1548,11 @@ markdown bullets keep their stars
 --------------------------------------------------------------------------------
 
 (document
-  (description))
+  (description
+    (text)
+    (text)
+    (text)
+    (text)))
 
 ================================================================================
 only one frame star is stripped after a blank line
@@ -1491,7 +1567,11 @@ only one frame star is stripped after a blank line
 --------------------------------------------------------------------------------
 
 (document
-  (description))
+  (description
+    (text)
+    (text)
+    (text)
+    (text)))
 
 ================================================================================
 stars before the terminator belong to it
@@ -1502,7 +1582,8 @@ stars before the terminator belong to it
 --------------------------------------------------------------------------------
 
 (document
-  (description))
+  (description
+    (text)))
 
 ================================================================================
 stars before the terminator on their own line
@@ -1515,7 +1596,8 @@ stars before the terminator on their own line
 --------------------------------------------------------------------------------
 
 (document
-  (description))
+  (description
+    (text)))
 
 ================================================================================
 markdown in a param description
@@ -1533,7 +1615,11 @@ markdown in a param description
     type: (type_expression
       (primitive_type))
     name: (identifier)
-    description: (description)))
+    description: (description
+      (text)
+      (text)
+      (text)
+      (text))))
 
 ================================================================================
 nested braces first inside example braces
@@ -1545,4 +1631,7 @@ nested braces first inside example braces
 
 (document
   (example_tag
-    description: (description)))
+    description: (description
+      (text)
+      (text)
+      (text))))

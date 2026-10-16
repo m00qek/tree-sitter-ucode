@@ -28,8 +28,8 @@ function h(get) { return { get, set: get }; }
       name: (identifier)
       value: (number)))
   (for_in_statement
-    left: (identifier)
-    right: (identifier)
+    variable: (identifier)
+    object: (identifier)
     body: (expression_statement
       (call_expression
         function: (identifier)
@@ -769,8 +769,8 @@ in b) {}
 
 (program
   (for_in_statement
-    left: (identifier)
-    right: (identifier)
+    variable: (identifier)
+    object: (identifier)
     body: (statement_block)))
 
 ================================================================================

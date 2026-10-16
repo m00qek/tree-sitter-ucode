@@ -20,7 +20,7 @@
 ; -------------------------------------------------------------------------
 
 (
-  (comment)* @doc
+  [(comment) (doc_comment)]* @doc
   .
   (function_declaration
     name: (identifier) @name) @definition.function
@@ -33,7 +33,7 @@
 ; -------------------------------------------------------------------------
 
 (
-  (comment)* @doc
+  [(comment) (doc_comment)]* @doc
   .
   (function_expression
     name: (identifier) @name) @definition.function
@@ -46,7 +46,7 @@
 ; -------------------------------------------------------------------------
 
 (
-  (comment)* @doc
+  [(comment) (doc_comment)]* @doc
   .
   (lexical_declaration
     (variable_declarator
@@ -81,7 +81,7 @@
 ; -------------------------------------------------------------------------
 
 (
-  (comment)* @doc
+  [(comment) (doc_comment)]* @doc
   .
   (export_statement
     (lexical_declaration

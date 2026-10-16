@@ -73,8 +73,16 @@ module.exports = grammar({
     // A `}` with no `{` before it is prose too (the `}` of a block). An
     // unbalanced `{` is still an error: telling it from the start of brace text
     // would need lookahead to the end of the comment.
+    //
+    // The prose runs are `text` nodes, and none crosses a line end, so a
+    // description's text without the comment frame (` * ` at each line start)
+    // is its children joined line by line.
     _description: $ => repeat1(choice(
-      $._text, $._stars, $.inline_tag, $._brace_text, $._stray_close_brace,
+      alias($._text, $.text),
+      alias($._stars, $.text),
+      $.inline_tag,
+      $._brace_text,
+      $._stray_close_brace,
     )),
 
     // prec(-1): inside an inline tag, the tag's own closing `}` wins.
@@ -103,8 +111,9 @@ module.exports = grammar({
       '{',
       optional(seq(
         choice(token(prec(-1, /[^{}@\s]/)), $._brace_text),
+        // Not across a line end, so the comment frame stays an extra.
         repeat(choice(
-          /[^{}]+/,
+          /[^{}\n]+/,
           $._brace_text,
         )),
       )),
@@ -280,7 +289,9 @@ module.exports = grammar({
     // {..Type} — only valid on @param, signals a rest/variadic parameter.
     rest_type_expression: $ => seq('{', '...', $._type, '}'),
 
-    _type: $ => choice(
+    _type: $ => choice($._non_union_type, $.union_type),
+
+    _non_union_type: $ => choice(
       $.primitive_type,
       $.list_type,
       $.dict_type,
@@ -289,7 +300,6 @@ module.exports = grammar({
       $.module_type,
       $.function_type,
       $.anon_function_type,
-      $.union_type,
       $.nullable_type,
       $.any_type,
       $.parenthesized_type,
@@ -391,15 +401,17 @@ module.exports = grammar({
     // for clarity in complex expressions like ?(T|U).
     parenthesized_type: $ => seq('(', $._type, ')'),
 
-    // T[] postfix array notation.  Precedence 3 > nullable (2) > union (1)
-    // so ?T[] == ?(T[]) and T[]|U[] == (T[])|(U[]).
-    array_type: $ => prec(3, seq($._type, '[]')),
+    // T[] postfix array notation; precedence 3 > nullable (2), so ?T[] == ?(T[]).
+    array_type: $ => prec(3, seq($._non_union_type, '[]')),
 
-    // Left-associative so T | U | V parses as (T | U) | V.
-    union_type: $ => prec.left(1, seq($._type, '|', $._type)),
+    // Flat: T | U | V is one union_type with three members. `T[]` and `?T`
+    // bind tighter (their operand is never a bare union), and a function
+    // type's return type takes the whole union (prec 1: continue the union
+    // rather than end the return type).
+    union_type: $ => prec(1, seq($._non_union_type, repeat1(seq('|', $._non_union_type)))),
 
-    // ?T is sugar for T | null; higher precedence than union so ?T | U == (?T) | U.
-    nullable_type: $ => prec(2, seq('?', $._type)),
+    // ?T is sugar for T | null; ?T | U == (?T) | U.
+    nullable_type: $ => prec(2, seq('?', $._non_union_type)),
 
     // Uppercase-starting names: PascalCase typedef references and type parameters.
     type_identifier: _ => new RegExp(`[A-Z][${ID_CONT}]*`),

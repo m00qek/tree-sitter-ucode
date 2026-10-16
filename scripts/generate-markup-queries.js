@@ -61,7 +61,7 @@ const TAGS_TEMPLATE_EXTRA = String.raw`
 ; ── Template-only: doc comment in the previous tag ───────────────────────────
 
 (
-  (comment)+ @doc
+  [(comment) (doc_comment)]+ @doc
   .
   (text_statement) @_gap
   .
@@ -73,7 +73,7 @@ const TAGS_TEMPLATE_EXTRA = String.raw`
 )
 
 (
-  (comment)+ @doc
+  [(comment) (doc_comment)]+ @doc
   .
   (text_statement) @_gap
   .

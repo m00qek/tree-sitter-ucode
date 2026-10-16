@@ -86,13 +86,19 @@
 
 (for_in_statement
   kind: _
-  left: (identifier) @local.definition.variable)
+  variable: (identifier) @local.definition.variable)
+(for_in_statement
+  kind: _
+  key: (identifier) @local.definition.variable)
 (for_in_statement
   kind: _
   value: (identifier) @local.definition.variable)
 (for_in_alt_statement
   kind: _
-  left: (identifier) @local.definition.variable)
+  variable: (identifier) @local.definition.variable)
+(for_in_alt_statement
+  kind: _
+  key: (identifier) @local.definition.variable)
 (for_in_alt_statement
   kind: _
   value: (identifier) @local.definition.variable)

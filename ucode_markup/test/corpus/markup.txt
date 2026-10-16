@@ -245,8 +245,8 @@ for-in alt-syntax
 (markup
   (statement_tag_open)
   (for_in_alt_statement
-    left: (identifier)
-    right: (identifier)
+    variable: (identifier)
+    object: (identifier)
     body: (statement_list
       (text_statement
         (statement_tag_close)
@@ -420,8 +420,8 @@ Brace-bodied for-in spanning tags
 (markup
   (statement_tag_open)
   (for_in_statement
-    left: (identifier)
-    right: (identifier)
+    variable: (identifier)
+    object: (identifier)
     body: (statement_block
       (text_statement
         (statement_tag_close)
@@ -567,8 +567,8 @@ nested if inside for-in body
 (markup
   (statement_tag_open)
   (for_in_alt_statement
-    left: (identifier)
-    right: (identifier)
+    variable: (identifier)
+    object: (identifier)
     body: (statement_list
       (text_statement
         (statement_tag_close)
@@ -603,8 +603,8 @@ nested for-in inside while body
         (statement_tag_close)
         (statement_tag_open))
       (for_in_alt_statement
-        left: (identifier)
-        right: (identifier)
+        variable: (identifier)
+        object: (identifier)
         body: (statement_list
           (text_statement
             (statement_tag_close)
@@ -831,8 +831,8 @@ For-in alt-syntax with raw text in body
 (markup
   (statement_tag_open)
   (for_in_alt_statement
-    left: (identifier)
-    right: (identifier)
+    variable: (identifier)
+    object: (identifier)
     body: (statement_list
       (text_statement
         (statement_tag_close)
@@ -856,13 +856,13 @@ Compact double for-in nesting (both loops in one tag pair)
 (markup
   (statement_tag_open)
   (for_in_alt_statement
-    left: (identifier)
-    right: (array
+    variable: (identifier)
+    object: (array
       (number))
     body: (statement_list
       (for_in_alt_statement
-        left: (identifier)
-        right: (array
+        variable: (identifier)
+        object: (array
           (number))
         body: (statement_list
           (text_statement
@@ -1058,13 +1058,13 @@ Trailing statement shares the compact double for-in end tag
 (markup
   (statement_tag_open)
   (for_in_alt_statement
-    left: (identifier)
-    right: (array
+    variable: (identifier)
+    object: (array
       (number))
     body: (statement_list
       (for_in_alt_statement
-        left: (identifier)
-        right: (array
+        variable: (identifier)
+        object: (array
           (number))
         body: (statement_list
           (text_statement
@@ -1663,8 +1663,8 @@ row {{ x }}
   (raw_text)
   (statement_tag_open)
   (for_in_alt_statement
-    left: (identifier)
-    right: (identifier)
+    variable: (identifier)
+    object: (identifier)
     body: (statement_list
       (text_statement
         (statement_tag_close)
@@ -1730,8 +1730,8 @@ row {{ x }}
   (raw_text)
   (statement_tag_open)
   (for_in_alt_statement
-    left: (identifier)
-    right: (identifier)
+    variable: (identifier)
+    object: (identifier)
     body: (statement_list
       (text_statement
         (statement_tag_close)
@@ -1760,8 +1760,8 @@ text
   (raw_text)
   (statement_tag_open)
   (for_in_alt_statement
-    left: (identifier)
-    right: (identifier)
+    variable: (identifier)
+    object: (identifier)
     body: (statement_list
       (text_statement
         (statement_tag_close)
