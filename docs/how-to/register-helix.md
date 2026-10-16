@@ -8,8 +8,8 @@ set is in `editors/helix/queries/` (see
 
 Use the same revision of this repository for the grammars and the queries.
 The layout below (`ucode/`, `ucode_markup/`, `ucdocs/` and `editors/helix/`)
-is newer than v0.8.0. The examples pin commit
-`cb05bb84e761ec63cadbd02c98e1c07995e0ec6b`; replace it everywhere if you pin
+is new in v0.9.0. The examples pin v0.9.0's commit,
+`4a243af329fae2f4ff01e0fc80133cbab8314600`; replace it everywhere if you pin
 another revision.
 
 ## Languages and grammars
@@ -43,15 +43,15 @@ grammar         = "ucdocs"
 
 [[grammar]]
 name   = "ucode"
-source = { git = "https://github.com/m00qek/tree-sitter-ucode", rev = "cb05bb84e761ec63cadbd02c98e1c07995e0ec6b", subpath = "ucode" }
+source = { git = "https://github.com/m00qek/tree-sitter-ucode", rev = "4a243af329fae2f4ff01e0fc80133cbab8314600", subpath = "ucode" }
 
 [[grammar]]
 name   = "ucode_markup"
-source = { git = "https://github.com/m00qek/tree-sitter-ucode", rev = "cb05bb84e761ec63cadbd02c98e1c07995e0ec6b", subpath = "ucode_markup" }
+source = { git = "https://github.com/m00qek/tree-sitter-ucode", rev = "4a243af329fae2f4ff01e0fc80133cbab8314600", subpath = "ucode_markup" }
 
 [[grammar]]
 name   = "ucdocs"
-source = { git = "https://github.com/m00qek/tree-sitter-ucode", rev = "cb05bb84e761ec63cadbd02c98e1c07995e0ec6b", subpath = "ucdocs" }
+source = { git = "https://github.com/m00qek/tree-sitter-ucode", rev = "4a243af329fae2f4ff01e0fc80133cbab8314600", subpath = "ucdocs" }
 ```
 
 - The Helix language for templates is `ucode-markup`, with a hyphen; its
@@ -73,7 +73,7 @@ Helix finds queries by language name under its runtime directory. Copy
 
 ```sh
 git clone https://github.com/m00qek/tree-sitter-ucode /tmp/tree-sitter-ucode
-git -C /tmp/tree-sitter-ucode checkout cb05bb84e761ec63cadbd02c98e1c07995e0ec6b
+git -C /tmp/tree-sitter-ucode checkout 4a243af329fae2f4ff01e0fc80133cbab8314600
 mkdir -p ~/.config/helix/runtime/queries
 cp -r /tmp/tree-sitter-ucode/editors/helix/queries/* ~/.config/helix/runtime/queries/
 ```
