@@ -15,6 +15,10 @@ each with the tag on a `v*` push.
 | `CMakeLists.txt` | `VERSION` in `project()` | `tree-sitter version` |
 | `Makefile` | `VERSION :=` | by hand |
 
+Each generated `src/parser.c` also embeds the version, from
+`tree-sitter.json`, in its language metadata. Regenerating the parsers
+updates it; CI's `validate` job fails if a committed parser is stale.
+
 The steps are in [Bump the version](../how-to/bump-version.md).
 
 The C shared libraries use the major version in their soname

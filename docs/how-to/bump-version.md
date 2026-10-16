@@ -13,6 +13,14 @@ npm install --package-lock-only      # package-lock.json (both entries)
 cargo update -p tree-sitter-ucode    # Cargo.lock
 ```
 
+Then regenerate the parsers, which embed the version from `tree-sitter.json`:
+
+```sh
+for g in ucode ucode_markup ucdocs; do
+  npx tree-sitter generate $g/grammar.js --output $g/src
+done
+```
+
 On macOS, use `sed -i ''` instead of `sed -i`.
 
 Check that all nine strings agree. These are the checks CI's `version` job
