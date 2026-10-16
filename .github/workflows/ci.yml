@@ -4,6 +4,11 @@ on:
   push:
     branches: [main]
     tags: ['v*']
+    # Ignored for tag pushes, so a release always runs everything.
+    paths-ignore:
+      - docs/**
+      - mkdocs.yml
+      - README.md
   pull_request:
     branches: [main]
     paths:
@@ -28,9 +33,13 @@ on:
       - setup.py
       - Package.swift
       - .github/workflows/**
+      - .github/dependabot.yml
 
 env:
   FORCE_JAVASCRIPT_ACTIONS_TO_NODE24: true
+
+permissions:
+  contents: read
 
 concurrency:
   group: ${{ github.workflow }}-${{ github.ref }}
@@ -40,6 +49,7 @@ jobs:
   test:
     name: Test parser — ${{ matrix.os }}
     runs-on: ${{ matrix.os }}
+    timeout-minutes: 15
     strategy:
       fail-fast: false
       matrix:
@@ -48,18 +58,19 @@ jobs:
     steps:
       - name: Checkout repository
         uses: actions/checkout@d23441a48e516b6c34aea4fa41551a30e30af803 # v6.1.0
+        with:
+          persist-credentials: false
 
       - name: Set up tree-sitter
         uses: tree-sitter/setup-action/cli@faab9a23fa6195da0f1cf868219cc1e89f238d3d # v2
         with:
-          # Pin to the same CLI the other jobs use via the npm devDependency
-          # (tree-sitter-cli 0.27.1). The default `latest` would float the test
-          # matrix onto a different generator than validate/wasm and local dev.
+          # Same CLI as the npm devDependency.
           tree-sitter-ref: v0.27.1
 
       - name: Set up Node.js
         uses: actions/setup-node@249970729cb0ef3589644e2896645e5dc5ba9c38 # v6.5.0
         with:
+          package-manager-cache: false
           node-version: "22"
 
       - name: Run corpus tests
@@ -68,16 +79,19 @@ jobs:
   validate:
     name: Validate
     runs-on: ubuntu-latest
+    timeout-minutes: 20
 
     steps:
       - name: Checkout repository
         uses: actions/checkout@d23441a48e516b6c34aea4fa41551a30e30af803 # v6.1.0
+        with:
+          persist-credentials: false
 
       - name: Set up Node.js
         uses: actions/setup-node@249970729cb0ef3589644e2896645e5dc5ba9c38 # v6.5.0
         with:
+          package-manager-cache: false
           node-version: '22'
-          cache: npm
 
       - name: Install dependencies
         run: npm ci
@@ -87,17 +101,15 @@ jobs:
 
       - name: Verify generated files are up to date
         run: |
-          gen_paths='ucode/src/ ucode_markup/src/ ucode_markup/queries/ ucdocs/src/ editors/helix/queries/'
+          gen_paths=(ucode/src/ ucode_markup/src/ ucode_markup/queries/ ucdocs/src/ editors/helix/queries/)
           node scripts/generate-markup-queries.js
           node scripts/generate-helix-queries.js
           npx tree-sitter generate ucode/grammar.js --output ucode/src
           npx tree-sitter generate ucode_markup/grammar.js --output ucode_markup/src
           npx tree-sitter generate ucdocs/grammar.js --output ucdocs/src
-          # Catch modified tracked files (with a helpful diff)...
-          git diff --exit-code $gen_paths
-          # ...and NEW untracked artifacts a generator started emitting, which
-          # `git diff` ignores — a generator's derived-file set can grow.
-          untracked="$(git status --porcelain --untracked-files=all -- $gen_paths)"
+          git diff --exit-code "${gen_paths[@]}"
+          # New untracked outputs, which `git diff` ignores.
+          untracked="$(git status --porcelain --untracked-files=all -- "${gen_paths[@]}")"
           if [ -n "$untracked" ]; then
             echo "Untracked generated files (run the generators and commit them):"
             echo "$untracked"
@@ -110,16 +122,12 @@ jobs:
       - name: Checkout ucode language test suite
         uses: actions/checkout@d23441a48e516b6c34aea4fa41551a30e30af803 # v6.1.0
         with:
+          persist-credentials: false
           repository: jow-/ucode
-          # Pinned to the ucode commit shipped by OpenWrt 25.12 (verified via
-          # the ucode-2026.01.16~85922056-r1 package on an OpenWrt 25.12.3
-          # image — the version string embeds this short hash). This grammar
-          # intentionally targets that release, not ucode's unpinned master;
-          # see README.md's "Targeted ucode version" section before bumping.
+          # The ucode shipped by OpenWrt 25.12 (ucode-2026.01.16~85922056-r1).
           ref: 85922056ef7abeace3cca3ab28bc1ac2d88e31b1
           path: ucode-lang
-          # tests/custom: the language test corpus; the C sources carry the
-          # stdlib's JSDoc, the canonical ucdocs corpus.
+          # tests/custom: language corpus; C sources: the ucdocs corpus.
           sparse-checkout: |
             tests/custom
             /*.c
@@ -137,9 +145,9 @@ jobs:
       - name: Checkout firewall4
         uses: actions/checkout@d23441a48e516b6c34aea4fa41551a30e30af803 # v6.1.0
         with:
+          persist-credentials: false
           repository: openwrt/firewall4
-          # Pinned so an upstream change cannot turn CI red on its own;
-          # bump it deliberately (upstream HEAD of 2026-08-27).
+          # Pinned so upstream can't turn CI red on its own.
           ref: c2ae8c8940a89407da32fbd662d4010ee2c9bbe6
           path: firewall4
           fetch-depth: 1
@@ -150,10 +158,13 @@ jobs:
   bindings:
     name: Bindings — C, Rust, Go, Python
     runs-on: ubuntu-latest
+    timeout-minutes: 20
 
     steps:
       - name: Checkout repository
         uses: actions/checkout@d23441a48e516b6c34aea4fa41551a30e30af803 # v6.1.0
+        with:
+          persist-credentials: false
 
       - name: C — build with make
         run: make -j
@@ -170,6 +181,7 @@ jobs:
         uses: actions/setup-go@924ae3a1cded613372ab5595356fb5720e22ba16 # v6.5.0
         with:
           go-version-file: go.mod
+          cache: false
 
       - name: Go — test
         run: go test ./bindings/go/
@@ -192,12 +204,12 @@ jobs:
             "venv-$py/bin/python" -m unittest discover -v -s bindings/python/tests
           done
 
-      # Last, so the runtime checkout cannot leak into the steps above.
-      # The oldest supported runtime (ABI 15 needs 0.25), built from source:
-      # Ubuntu's libtree-sitter is too old.
+      # Last, so the runtime checkout can't leak into the steps above. The
+      # oldest supported runtime (ABI 15), from source: Ubuntu's is too old.
       - name: C — check out the tree-sitter 0.25 runtime
         uses: actions/checkout@d23441a48e516b6c34aea4fa41551a30e30af803 # v6.1.0
         with:
+          persist-credentials: false
           repository: tree-sitter/tree-sitter
           ref: v0.25.10
           path: tree-sitter-runtime
@@ -212,10 +224,13 @@ jobs:
   bindings-swift:
     name: Bindings — Swift
     runs-on: macos-latest
+    timeout-minutes: 20
 
     steps:
       - name: Checkout repository
         uses: actions/checkout@d23441a48e516b6c34aea4fa41551a30e30af803 # v6.1.0
+        with:
+          persist-credentials: false
 
       - name: Swift — test
         run: swift test
@@ -223,10 +238,13 @@ jobs:
   helix:
     name: Helix indents
     runs-on: ubuntu-latest
+    timeout-minutes: 15
 
     steps:
       - name: Checkout repository
         uses: actions/checkout@d23441a48e516b6c34aea4fa41551a30e30af803 # v6.1.0
+        with:
+          persist-credentials: false
 
       - name: Install Helix 25.07.1 and tmux
         run: |
@@ -236,23 +254,25 @@ jobs:
           echo "3f08e63ecd388fff657ad39722f88bb03dcf326f1f2da2700d99e1dc40ab2e8b  helix.tar.xz" | sha256sum -c
           tar -xJf helix.tar.xz -C "$RUNNER_TEMP"
 
-      # Types into a real Helix and checks the new line's indentation.
       - name: Check the Helix indent queries
         run: scripts/check-helix-indents.sh "$RUNNER_TEMP/helix-25.07.1-x86_64-linux"
 
   neovim:
     name: Neovim indents, folds and text objects
     runs-on: ubuntu-latest
+    timeout-minutes: 15
 
     steps:
       - name: Checkout repository
         uses: actions/checkout@d23441a48e516b6c34aea4fa41551a30e30af803 # v6.1.0
+        with:
+          persist-credentials: false
 
       - name: Set up Node.js
         uses: actions/setup-node@249970729cb0ef3589644e2896645e5dc5ba9c38 # v6.5.0
         with:
+          package-manager-cache: false
           node-version: '22'
-          cache: npm
 
       - name: Build the parsers
         run: |
@@ -266,11 +286,11 @@ jobs:
           tar -xzf nvim.tar.gz -C "$RUNNER_TEMP"
           echo "$RUNNER_TEMP/nvim-linux-x86_64/bin" >> "$GITHUB_PATH"
 
-      # The plugins that read the queries, at the commits the queries were
-      # checked with (both on their main branch).
+      # main-branch commits the queries were checked with.
       - name: Check out nvim-treesitter
         uses: actions/checkout@d23441a48e516b6c34aea4fa41551a30e30af803 # v6.1.0
         with:
+          persist-credentials: false
           repository: nvim-treesitter/nvim-treesitter
           ref: 910fdf6f49e9dee7e7257c7d11a76b040fdfb9de
           path: nvim/nvim-treesitter
@@ -278,6 +298,7 @@ jobs:
       - name: Check out nvim-treesitter-textobjects
         uses: actions/checkout@d23441a48e516b6c34aea4fa41551a30e30af803 # v6.1.0
         with:
+          persist-credentials: false
           repository: nvim-treesitter/nvim-treesitter-textobjects
           ref: 5c7b0263797dfd1bd6202f2b219f3b53a80b2187
           path: nvim/nvim-treesitter-textobjects
@@ -287,29 +308,49 @@ jobs:
           nvim --headless --clean -l scripts/check-nvim-queries.lua \
             nvim/nvim-treesitter nvim/nvim-treesitter-textobjects
 
-  wasm:
-    name: Build WASM
-    needs: [test, validate]
+  workflows:
+    name: Lint workflows
     runs-on: ubuntu-latest
+    timeout-minutes: 10
 
     steps:
       - name: Checkout repository
         uses: actions/checkout@d23441a48e516b6c34aea4fa41551a30e30af803 # v6.1.0
+        with:
+          persist-credentials: false
+
+      - name: actionlint
+        run: |
+          curl -fsSLo actionlint.tar.gz https://github.com/rhysd/actionlint/releases/download/v1.7.12/actionlint_1.7.12_linux_amd64.tar.gz
+          echo "8aca8db96f1b94770f1b0d72b6dddcb1ebb8123cb3712530b08cc387b349a3d8  actionlint.tar.gz" | sha256sum -c
+          tar -xzf actionlint.tar.gz actionlint
+          ./actionlint -color
+
+      - name: zizmor
+        run: pipx run zizmor==1.31.1 --format=github .github
+        env:
+          GH_TOKEN: ${{ github.token }}
+
+  wasm:
+    name: Build WASM
+    needs: [test, validate]
+    runs-on: ubuntu-latest
+    timeout-minutes: 15
+
+    steps:
+      - name: Checkout repository
+        uses: actions/checkout@d23441a48e516b6c34aea4fa41551a30e30af803 # v6.1.0
+        with:
+          persist-credentials: false
 
       - name: Set up Node.js
         uses: actions/setup-node@249970729cb0ef3589644e2896645e5dc5ba9c38 # v6.5.0
         with:
+          package-manager-cache: false
           node-version: '22'
-          cache: npm
 
       - name: Install dependencies
         run: npm ci
-
-      - name: Cache wasi-sdk
-        uses: actions/cache@caa296126883cff596d87d8935842f9db880ef25 # v5.1.0
-        with:
-          path: ~/.cache/tree-sitter
-          key: wasi-sdk-${{ hashFiles('package-lock.json') }}
 
       - name: Build WASM
         run: |
@@ -338,16 +379,19 @@ jobs:
           - { os: windows-11-arm, arch: arm64 }
 
     runs-on: ${{ matrix.os }}
+    timeout-minutes: 20
 
     steps:
       - name: Checkout repository
         uses: actions/checkout@d23441a48e516b6c34aea4fa41551a30e30af803 # v6.1.0
+        with:
+          persist-credentials: false
 
       - name: Set up Node.js
         uses: actions/setup-node@249970729cb0ef3589644e2896645e5dc5ba9c38 # v6.5.0
         with:
+          package-manager-cache: false
           node-version: '22'
-          cache: npm
 
       - name: Install cross-compiler (Linux only)
         if: matrix.os == 'ubuntu-24.04'
@@ -383,10 +427,13 @@ jobs:
     name: Tag matches every version string
     if: startsWith(github.ref, 'refs/tags/v')
     runs-on: ubuntu-latest
+    timeout-minutes: 5
 
     steps:
       - name: Checkout repository
         uses: actions/checkout@d23441a48e516b6c34aea4fa41551a30e30af803 # v6.1.0
+        with:
+          persist-credentials: false
 
       - name: Compare the tag with each manifest and lockfile
         run: |
@@ -413,17 +460,22 @@ jobs:
     name: Publish to npm
     needs: [version, wasm, prebuild, bindings, bindings-swift, helix, neovim]
     runs-on: ubuntu-latest
+    timeout-minutes: 15
     if: startsWith(github.ref, 'refs/tags/v')
     permissions:
+      contents: read
       id-token: write  # required for npm provenance via OIDC
 
     steps:
       - name: Checkout repository
         uses: actions/checkout@d23441a48e516b6c34aea4fa41551a30e30af803 # v6.1.0
+        with:
+          persist-credentials: false
 
       - name: Set up Node.js
         uses: actions/setup-node@249970729cb0ef3589644e2896645e5dc5ba9c38 # v6.5.0
         with:
+          package-manager-cache: false
           node-version: '24'
           registry-url: 'https://registry.npmjs.org'
 
